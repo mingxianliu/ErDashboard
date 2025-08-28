@@ -49,7 +49,10 @@ class ProjectDashboard {
         const projects = [];
         const allActivity = [];
 
-        for (const repoConfig of CONFIG.repositories) {
+        // 先解析萬用字元（repoPattern）成具體 repo 清單
+        const resolvedRepos = await this.resolveRepositories(CONFIG.repositories);
+
+        for (const repoConfig of resolvedRepos) {
             try {
                 console.log(`收集 ${repoConfig.name} 的資料...`);
 
@@ -126,6 +129,34 @@ class ProjectDashboard {
 
         this.showLoading(false);
         console.log('資料收集完成');
+    }
+
+    async resolveRepositories(repos) {
+        const resolved = [];
+        for (const item of repos) {
+            if (item.repoPattern && item.owner) {
+                try {
+                    const allRepos = await this.github.listOwnerReposAll(item.owner);
+                    const matched = this.github.filterReposByPattern(allRepos, item.repoPattern);
+                    matched.forEach(r => {
+                        resolved.push({
+                            name: item.name ? `${item.name} - ${r.name}` : r.name,
+                            owner: item.owner,
+                            repo: r.name,
+                            description: item.description || r.description || '',
+                            featurePrefix: item.featurePrefix, // 套用通用前綴
+                            color: item.color || '#36b9cc',
+                            priority: item.priority || 999
+                        });
+                    });
+                } catch (e) {
+                    console.error('解析 repoPattern 失敗:', e);
+                }
+            } else {
+                resolved.push(item);
+            }
+        }
+        return resolved;
     }
 
     calculateProjectStats(features) {

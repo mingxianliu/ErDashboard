@@ -65,6 +65,43 @@ jobs:
               });
             }
 
+            async list(path) {
+              return new Promise((resolve, reject) => {
+                const options = { headers: { 'Authorization': `token ${this.token}`, 'User-Agent': 'GitHub-Actions-Collector', 'Accept': 'application/vnd.github.v3+json' } };
+                https.get(`${this.baseUrl}${path}`, options, (res) => {
+                  let data = '';
+                  res.on('data', c => data += c);
+                  res.on('end', () => { try { resolve(JSON.parse(data)); } catch(e){ reject(e); } });
+                }).on('error', reject);
+              });
+            }
+
+            async listOwnerReposAll(owner) {
+              const perPage = 100; let page = 1; const all = [];
+              const paged = async (base) => {
+                page = 1;
+                while (true) {
+                  const batch = await this.list(`${base}?per_page=${perPage}&page=${page}`);
+                  if (!Array.isArray(batch) || batch.length === 0) break;
+                  all.push(...batch);
+                  if (batch.length < perPage) break;
+                  page += 1;
+                }
+              };
+              try { await paged(`/users/${owner}/repos`); }
+              catch(e) { /* ignore */ }
+              if (all.length === 0) {
+                await paged(`/orgs/${owner}/repos`);
+              }
+              return all;
+            }
+
+            filterByPattern(repos, pattern) {
+              const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
+              const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+              return repos.filter(r => regex.test(r.name));
+            }
+
             async fetchAllIssues(owner, repo, state = 'all') {
               const perPage = 100;
               let page = 1;
@@ -103,7 +140,31 @@ jobs:
             async collectAllData() {
               const projects = [];
               const allActivity = [];
-              for (const repo of CONFIG.repositories) {
+              // 先解析 repoPattern
+              const resolved = [];
+              for (const item of CONFIG.repositories) {
+                if (item.repoPattern && item.owner) {
+                  try {
+                    const list = await this.listOwnerReposAll(item.owner);
+                    const matched = this.filterByPattern(list, item.repoPattern);
+                    matched.forEach(r => {
+                      resolved.push({
+                        name: item.name ? `${item.name} - ${r.name}` : r.name,
+                        owner: item.owner,
+                        repo: r.name,
+                        description: item.description || r.description || '',
+                        featurePrefix: item.featurePrefix,
+                        color: item.color || '#36b9cc',
+                        priority: item.priority || 999
+                      });
+                    });
+                  } catch (e) { console.error('解析 repoPattern 失敗:', e.message); }
+                } else {
+                  resolved.push(item);
+                }
+              }
+
+              for (const repo of resolved) {
                 try {
                   console.log(`收集 ${repo.name} 資料...`);
                   const [repoInfo, issues] = await Promise.all([
