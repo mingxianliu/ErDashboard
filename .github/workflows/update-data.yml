@@ -2,254 +2,383 @@ name: 更新專案進度資料
 
 on:
   schedule:
-    - cron: '0 */2 * * *'  # 每2小時執行一次
-  workflow_dispatch:        # 手動觸發
+    # 每 2 小時執行一次
+    - cron: '0 */2 * * *'
+  workflow_dispatch: # 允許手動觸發
   push:
-    branches: [main]
-    paths: ['js/config.js']  # 當配置改變時觸發
+    branches: [ main ]
+    paths:
+      - 'js/config.js' # 當配置檔案變更時也觸發
 
 permissions:
   contents: write
+  issues: read
+  metadata: read
 
 jobs:
-  update-data:
+  update-progress-data:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-      - name: 收集專案資料
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PAT: ${{ secrets.PAT }}
-        run: |
-          mkdir -p data
-          cat > collect-data.js << 'EOF'
-          const fs = require('fs');
-          const https = require('https');
+    - name: Install dependencies
+      run: |
+        npm init -y
+        npm install axios
 
-          // 從 config.js 讀取配置
-          const configContent = fs.readFileSync('js/config.js', 'utf8');
-          const CONFIG = eval(configContent.replace('const CONFIG = ', ''));
+    - name: Create data collection script
+      run: |
+        cat > collect-data.js << 'EOF'
+        const fs = require('fs');
+        const axios = require('axios');
 
-          class GitHubDataCollector {
-            constructor(token) {
-              this.token = token;
-              this.baseUrl = 'https://api.github.com';
+        // 直接定義配置，避免讀取 JavaScript 檔案
+        const repositories = [
+          {
+            name: "Er 專案群",
+            owner: "mingxianliu",
+            repoPattern: "Er*",
+            description: "自動匹配所有以 Er 開頭的 repo",
+            color: "#17a2b8",
+            priority: 1,
+            prefixRules: [
+              { pattern: "ErCore*",    prefix: "ERC" },
+              { pattern: "ErAI*",      prefix: "ERA" },
+              { pattern: "ErAid-Ecosystem*", prefix: "ERAI" },
+              { pattern: "ErForge*",   prefix: "ERF" },
+              { pattern: "ErTidy*",    prefix: "ERT" },
+              { pattern: "ErGrant*",   prefix: "ERG" },
+              { pattern: "ErStore*",   prefix: "ERS" },
+              { pattern: "ErSlice*",   prefix: "ERSL" },
+              { pattern: "ErShield*",  prefix: "ERSH" },
+              { pattern: "ErShowcase*",prefix: "ERSC" },
+              { pattern: "ErProphet*", prefix: "ERP" },
+              { pattern: "*",          prefix: "ER" }
+            ],
+            colorRules: [
+              { pattern: "ErCore*",    color: "#ff6b6b" },
+              { pattern: "ErAI*",      color: "#845ef7" },
+              { pattern: "ErAid-Ecosystem*", color: "#fd7e14" },
+              { pattern: "ErForge*",   color: "#6f42c1" },
+              { pattern: "ErTidy*",    color: "#20c997" },
+              { pattern: "ErGrant*",   color: "#e83e8c" },
+              { pattern: "ErStore*",   color: "#007bff" },
+              { pattern: "ErSlice*",   color: "#dc3545" },
+              { pattern: "ErShield*",  color: "#343a40" },
+              { pattern: "ErShowcase*",color: "#ffc107" },
+              { pattern: "ErProphet*", color: "#6610f2" },
+              { pattern: "*",          color: "#17a2b8" }
+            ]
+          }
+        ];
+
+        class GitHubAPI {
+          constructor(token) {
+            this.token = token;
+            this.baseUrl = 'https://api.github.com';
+            this.headers = {
+              'Accept': 'application/vnd.github.v3+json',
+              'User-Agent': 'Project-Dashboard'
+            };
+            if (this.token) {
+              this.headers['Authorization'] = `token ${this.token}`;
             }
+          }
 
-            async request(endpoint) {
-              return new Promise((resolve, reject) => {
-                const options = {
-                  headers: {
-                    'Authorization': `token ${this.token}`,
-                    'User-Agent': 'GitHub-Actions-Collector',
-                    'Accept': 'application/vnd.github.v3+json'
+          async getRepository(owner, repo) {
+            const response = await axios.get(`${this.baseUrl}/repos/${owner}/${repo}`, {
+              headers: this.headers
+            });
+            return response.data;
+          }
+
+          async getAllIssues(owner, repo) {
+            let allIssues = [];
+            let page = 1;
+            const perPage = 100;
+
+            while (true) {
+              try {
+                const response = await axios.get(`${this.baseUrl}/repos/${owner}/${repo}/issues`, {
+                  headers: this.headers,
+                  params: {
+                    state: 'all',
+                    per_page: perPage,
+                    page: page
                   }
-                };
-                https.get(`${this.baseUrl}${endpoint}`, options, (res) => {
-                  let data = '';
-                  res.on('data', chunk => data += chunk);
-                  res.on('end', () => {
-                    try {
-                      resolve(JSON.parse(data));
-                    } catch (e) {
-                      reject(e);
-                    }
-                  });
-                }).on('error', reject);
-              });
-            }
+                });
 
-            async list(path) {
-              return new Promise((resolve, reject) => {
-                const options = { headers: { 'Authorization': `token ${this.token}`, 'User-Agent': 'GitHub-Actions-Collector', 'Accept': 'application/vnd.github.v3+json' } };
-                https.get(`${this.baseUrl}${path}`, options, (res) => {
-                  let data = '';
-                  res.on('data', c => data += c);
-                  res.on('end', () => { try { resolve(JSON.parse(data)); } catch(e){ reject(e); } });
-                }).on('error', reject);
-              });
-            }
-
-            async listOwnerReposAll(owner) {
-              const perPage = 100; let page = 1; const all = [];
-              const paged = async (base) => {
-                page = 1;
-                while (true) {
-                  const batch = await this.list(`${base}?per_page=${perPage}&page=${page}`);
-                  if (!Array.isArray(batch) || batch.length === 0) break;
-                  all.push(...batch);
-                  if (batch.length < perPage) break;
-                  page += 1;
-                }
-              };
-              try { await paged(`/users/${owner}/repos`); }
-              catch(e) { /* ignore */ }
-              if (all.length === 0) {
-                await paged(`/orgs/${owner}/repos`);
+                if (response.data.length === 0) break;
+                allIssues = allIssues.concat(response.data);
+                page++;
+              } catch (error) {
+                console.error(`取得 ${owner}/${repo} issues 時發生錯誤:`, error.message);
+                break;
               }
-              return all;
             }
 
-            filterByPattern(repos, pattern) {
-              const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
-              const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
-              return repos.filter(r => regex.test(r.name));
-            }
+            return allIssues;
+          }
 
-            async fetchAllIssues(owner, repo, state = 'all') {
-              const perPage = 100;
-              let page = 1;
-              const all = [];
-              while (true) {
-                const batch = await this.request(`/repos/${owner}/${repo}/issues?state=${state}&per_page=${perPage}&page=${page}`);
-                if (!Array.isArray(batch) || batch.length === 0) break;
-                all.push(...batch);
-                if (batch.length < perPage) break;
-                page += 1;
+          async listOwnerReposAll(owner) {
+            let allRepos = [];
+            let page = 1;
+            const perPage = 100;
+
+            while (true) {
+              try {
+                const response = await axios.get(`${this.baseUrl}/users/${owner}/repos`, {
+                  headers: this.headers,
+                  params: {
+                    per_page: perPage,
+                    page: page,
+                    sort: 'updated',
+                    direction: 'desc'
+                  }
+                });
+
+                if (response.data.length === 0) break;
+                allRepos = allRepos.concat(response.data);
+                page++;
+              } catch (error) {
+                console.error(`取得 ${owner} 的 repositories 時發生錯誤:`, error.message);
+                break;
               }
-              return all;
             }
 
-            analyzeFeatures(issues, prefix) {
-              const features = {};
-              const regex = new RegExp(`${prefix}\\\d{4}`, 'gi');
-              issues.forEach(issue => {
-                const matches = issue.title.match(regex);
-                if (matches) {
-                  const featureCode = matches[0].toUpperCase();
-                  features[featureCode] = {
-                    title: issue.title.replace(regex, '').trim(),
+            return allRepos;
+          }
+
+          filterReposByPattern(repos, pattern) {
+            const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
+            return repos.filter(repo => regex.test(repo.name));
+          }
+
+          getPrefixForRepo(repoName, prefixRules) {
+            for (const rule of prefixRules) {
+              const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+              if (regex.test(repoName)) {
+                return rule.prefix;
+              }
+            }
+            return 'ER'; // 預設前綴
+          }
+
+          getColorForRepo(repoName, colorRules) {
+            for (const rule of colorRules) {
+              const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+              if (regex.test(repoName)) {
+                return rule.color;
+              }
+            }
+            return '#17a2b8'; // 預設顏色
+          }
+
+          analyzeFeatureProgress(issues, featurePrefix) {
+            const features = [];
+            const prefixPattern = new RegExp(`\\[${featurePrefix}\\d{4}\\]`, 'i');
+
+            issues.forEach(issue => {
+              if (prefixPattern.test(issue.title)) {
+                const match = issue.title.match(new RegExp(`\\[(${featurePrefix}\\d{4})\\]`, 'i'));
+                if (match) {
+                  const featureCode = match[1];
+                  features.push({
+                    code: featureCode,
+                    title: issue.title.replace(new RegExp(`\\[${featurePrefix}\\d{4}\\]`, 'gi'), '').trim(),
                     status: issue.state,
-                    number: issue.number,
                     url: issue.html_url,
                     created: issue.created_at,
                     updated: issue.updated_at,
                     assignee: issue.assignee ? issue.assignee.login : null
-                  };
+                  });
                 }
-              });
-              return features;
-            }
+              }
+            });
 
-            async collectAllData() {
-              const projects = [];
-              const allActivity = [];
-              // 先解析 repoPattern + 規則
-              const resolved = [];
-              const match = (name, pattern) => {
-                const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
-                const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
-                return regex.test(name);
-              };
-              for (const item of CONFIG.repositories) {
-                if (item.repoPattern && item.owner) {
+            return features;
+          }
+
+          calculateProjectStats(features) {
+            const total = features.length;
+            const completed = features.filter(f => f.status === 'closed').length;
+            const inProgress = features.filter(f => f.status === 'open').length;
+            const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            return {
+              total,
+              completed,
+              inProgress,
+              progress
+            };
+          }
+        }
+
+        async function collectData() {
+          const token = process.env.GITHUB_TOKEN || process.env.PAT;
+          const github = new GitHubAPI(token);
+
+          const data = {
+            lastUpdate: new Date().toISOString(),
+            projects: [],
+            recentActivity: []
+          };
+
+          for (const repoConfig of repositories) {
+            try {
+              if (repoConfig.repoPattern) {
+                // 處理萬用字元匹配
+                console.log(`處理 ${repoConfig.owner} 的 ${repoConfig.repoPattern} 模式...`);
+                
+                const allRepos = await github.listOwnerReposAll(repoConfig.owner);
+                const matchedRepos = github.filterReposByPattern(allRepos, repoConfig.repoPattern);
+                
+                console.log(`找到 ${matchedRepos.length} 個匹配的 repositories`);
+
+                for (const repo of matchedRepos) {
                   try {
-                    const list = await this.listOwnerReposAll(item.owner);
-                    const matched = this.filterByPattern(list, item.repoPattern);
-                    matched.forEach(r => {
-                      let prefix = item.featurePrefix || 'ER';
-                      if (Array.isArray(item.prefixRules)) {
-                        for (const rule of item.prefixRules) {
-                          if (match(r.name, rule.pattern)) { prefix = rule.prefix; break; }
-                        }
-                      }
-                      let color = item.color || '#36b9cc';
-                      if (Array.isArray(item.colorRules)) {
-                        for (const rule of item.colorRules) {
-                          if (match(r.name, rule.pattern)) { color = rule.color; break; }
-                        }
-                      }
-                      resolved.push({
-                        name: item.name ? `${item.name} - ${r.name}` : r.name,
-                        owner: item.owner,
-                        repo: r.name,
-                        description: item.description || r.description || '',
-                        featurePrefix: prefix,
-                        color: color,
-                        priority: item.priority || 999
+                    console.log(`處理 ${repoConfig.owner}/${repo.name}...`);
+                    
+                    const issues = await github.getAllIssues(repoConfig.owner, repo.name);
+                    
+                    // 根據規則決定前綴與顏色
+                    const featurePrefix = github.getPrefixForRepo(repo.name, repoConfig.prefixRules);
+                    const color = github.getColorForRepo(repo.name, repoConfig.colorRules);
+                    
+                    const features = github.analyzeFeatureProgress(issues, featurePrefix);
+                    const stats = github.calculateProjectStats(features);
+
+                    data.projects.push({
+                      name: repo.name,
+                      owner: repoConfig.owner,
+                      repo: repo.name,
+                      description: repo.description || '',
+                      url: repo.html_url,
+                      color: color,
+                      stats: stats,
+                      features: features.slice(0, 10) // 只保留前 10 個功能
+                    });
+
+                    // 收集最近活動
+                    issues.slice(0, 5).forEach(issue => {
+                      data.recentActivity.push({
+                        project: repo.name,
+                        title: issue.title,
+                        action: issue.state === 'closed' ? '完成' : '更新',
+                        url: issue.html_url,
+                        updated: issue.updated_at,
+                        assignee: issue.assignee ? issue.assignee.login : null
                       });
                     });
-                  } catch (e) { console.error('解析 repoPattern 失敗:', e.message); }
-                } else {
-                  resolved.push(item);
-                }
-              }
 
-              for (const repo of resolved) {
-                try {
-                  console.log(`收集 ${repo.name} 資料...`);
-                  const [repoInfo, issues] = await Promise.all([
-                    this.request(`/repos/${repo.owner}/${repo.repo}`),
-                    this.fetchAllIssues(repo.owner, repo.repo, 'all')
-                  ]);
-                  const features = this.analyzeFeatures(issues, repo.featurePrefix);
-                  const total = Object.keys(features).length;
-                  const completed = Object.values(features).filter(f => f.status === 'closed').length;
-                  const inProgress = Object.values(features).filter(f => f.status === 'open').length;
-                  projects.push({
-                    config: repo,
-                    info: {
-                      name: repoInfo.name,
-                      description: repoInfo.description,
-                      stars: repoInfo.stargazers_count,
-                      forks: repoInfo.forks_count
-                    },
-                    features: features,
-                    stats: {
-                      total,
-                      completed,
-                      inProgress,
-                      progress: total > 0 ? Math.round((completed / total) * 100) : 0
-                    }
+                  } catch (error) {
+                    console.error(`處理 ${repoConfig.owner}/${repo.name} 時發生錯誤:`, error.message);
+                  }
+                }
+              } else if (repoConfig.repo) {
+                // 處理單一 repository
+                console.log(`處理 ${repoConfig.owner}/${repoConfig.repo}...`);
+                
+                const [repoInfo, issues] = await Promise.all([
+                  github.getRepository(repoConfig.owner, repoConfig.repo),
+                  github.getAllIssues(repoConfig.owner, repoConfig.repo)
+                ]);
+
+                const features = github.analyzeFeatureProgress(issues, repoConfig.featurePrefix);
+                const stats = github.calculateProjectStats(features);
+
+                data.projects.push({
+                  name: repoConfig.name || repoInfo.name,
+                  owner: repoConfig.owner,
+                  repo: repoConfig.repo,
+                  description: repoInfo.description || '',
+                  url: repoInfo.html_url,
+                  color: repoConfig.color || '#007bff',
+                  stats: stats,
+                  features: features.slice(0, 10) // 只保留前 10 個功能
+                });
+
+                // 收集最近活動
+                issues.slice(0, 5).forEach(issue => {
+                  data.recentActivity.push({
+                    project: repoConfig.name || repoInfo.name,
+                    title: issue.title,
+                    action: issue.state === 'closed' ? '完成' : '更新',
+                    url: issue.html_url,
+                    updated: issue.updated_at,
+                    assignee: issue.assignee ? issue.assignee.login : null
                   });
-                } catch (error) {
-                  console.error(`收集 ${repo.name} 失敗:`, error.message);
-                }
+                });
               }
-
-              const totalProjects = projects.length;
-              const totalFeatures = projects.reduce((sum, p) => sum + p.stats.total, 0);
-              const completedFeatures = projects.reduce((sum, p) => sum + p.stats.completed, 0);
-              const inProgressFeatures = projects.reduce((sum, p) => sum + p.stats.inProgress, 0);
-              const data = {
-                lastUpdate: new Date().toISOString(),
-                projects: projects,
-                summary: {
-                  totalProjects,
-                  totalFeatures,
-                  completedFeatures,
-                  inProgressFeatures,
-                  overallProgress: totalFeatures > 0 ? Math.round((completedFeatures / totalFeatures) * 100) : 0
-                },
-                recentActivity: allActivity.slice(0, 10)
-              };
-              fs.writeFileSync('data/progress.json', JSON.stringify(data, null, 2));
-              console.log('✅ 資料收集完成');
+            } catch (error) {
+              console.error(`處理 ${repoConfig.owner} 時發生錯誤:`, error.message);
             }
           }
 
-          const token = process.env.PAT || process.env.GITHUB_TOKEN;
-          const collector = new GitHubDataCollector(token);
-          collector.collectAllData().catch(console.error);
-          EOF
+          // 按更新時間排序最近活動
+          data.recentActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+          data.recentActivity = data.recentActivity.slice(0, 20); // 只保留最近 20 個活動
 
-          node collect-data.js
+          return data;
+        }
 
-      - name: 提交資料更新
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add data/progress.json
-          if git diff --staged --quiet; then
-            echo "沒有變更需要提交"
-          else
-            git commit -m "🤖 自動更新專案進度資料 $(date '+%Y-%m-%d %H:%M:%S')"
-            git push
-          fi
+        // 執行資料收集
+        collectData().then(data => {
+          console.log(`收集到 ${data.projects.length} 個專案`);
+          console.log(`收集到 ${data.recentActivity.length} 個活動記錄`);
+          
+          // 確保 data 目錄存在
+          if (!fs.existsSync('./data')) {
+            fs.mkdirSync('./data', { recursive: true });
+          }
+          
+          fs.writeFileSync('./data/progress.json', JSON.stringify(data, null, 2));
+          console.log('資料收集完成，已寫入 data/progress.json');
+        }).catch(error => {
+          console.error('資料收集失敗:', error);
+          console.error('錯誤堆疊:', error.stack);
+          process.exit(1);
+        });
+        EOF
+
+    - name: Collect project data
+      env:
+        GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
+      run: |
+        echo "開始收集專案資料..."
+        node collect-data.js
+        echo "資料收集完成"
+
+    - name: Commit and push changes
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add data/progress.json
+        if git diff --staged --quiet; then
+          echo "沒有變更需要提交"
+        else
+          git commit -m "自動更新專案進度資料 [skip ci]"
+          git push
+          echo "已提交並推送更新"
+        fi
+
+    - name: Verify update
+      run: |
+        if [ -f "data/progress.json" ]; then
+          echo "✅ progress.json 檔案存在"
+          echo "檔案大小: $(wc -c < data/progress.json) bytes"
+          echo "最後更新時間: $(jq -r '.lastUpdate' data/progress.json)"
+        else
+          echo "❌ progress.json 檔案不存在"
+          exit 1
+        fi
