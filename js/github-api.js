@@ -61,6 +61,57 @@ class GitHubAPI {
         return await this.request(endpoint);
     }
 
+    // 列出使用者 repos（自動分頁）
+    async listUserReposAll(owner) {
+        const perPage = 100;
+        let page = 1;
+        const all = [];
+        while (true) {
+            const batch = await this.request(`/users/${owner}/repos?per_page=${perPage}&page=${page}`);
+            if (!Array.isArray(batch) || batch.length === 0) break;
+            all.push(...batch);
+            if (batch.length < perPage) break;
+            page += 1;
+        }
+        return all;
+    }
+
+    // 列出組織 repos（自動分頁）
+    async listOrgReposAll(owner) {
+        const perPage = 100;
+        let page = 1;
+        const all = [];
+        while (true) {
+            const batch = await this.request(`/orgs/${owner}/repos?per_page=${perPage}&page=${page}`);
+            if (!Array.isArray(batch) || batch.length === 0) break;
+            all.push(...batch);
+            if (batch.length < perPage) break;
+            page += 1;
+        }
+        return all;
+    }
+
+    // 嘗試使用者/組織兩種路徑列出 repos
+    async listOwnerReposAll(owner) {
+        try {
+            return await this.listUserReposAll(owner);
+        } catch (e) {
+            // fallthrough to org
+        }
+        try {
+            return await this.listOrgReposAll(owner);
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    // 依萬用字元樣式（*）過濾 repo 名稱
+    filterReposByPattern(repos, pattern) {
+        const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
+        const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+        return repos.filter(r => regex.test(r.name));
+    }
+
     // 分析功能進度
     analyzeFeatureProgress(issues, featurePrefix) {
         const features = {};
