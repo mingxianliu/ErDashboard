@@ -2,16 +2,16 @@
 const CONFIG = {
     // 要監控的專案清單
     repositories: [
-        // 範例：使用萬用字元（會自動展開）
-        // {
-        //     name: "Er 專案群",
-        //     owner: "mingxianliu",
-        //     repoPattern: "Er*",      // 使用 * 做前綴匹配
-        //     description: "自動匹配所有以 Er 開頭的 repo",
-        //     featurePrefix: "ER",     // 套用統一的功能代碼前綴
-        //     color: "#17a2b8",
-        //     priority: 1
-        // },
+        // 使用萬用字元（自動展開為多個 repo）
+        {
+            name: "Er 專案群",
+            owner: "mingxianliu",
+            repoPattern: "Er*",      // 使用 * 做前綴匹配
+            description: "自動匹配所有以 Er 開頭的 repo",
+            featurePrefix: "ER",     // 套用統一的功能代碼前綴
+            color: "#17a2b8",
+            priority: 1
+        },
         {
             name: "裝備管理系統",
             owner: "your-org",
