@@ -26,6 +26,7 @@ jobs:
       - name: 收集專案資料
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PAT: ${{ secrets.PAT }}
         run: |
           mkdir -p data
           cat > collect-data.js << 'EOF'
@@ -140,21 +141,38 @@ jobs:
             async collectAllData() {
               const projects = [];
               const allActivity = [];
-              // 先解析 repoPattern
+              // 先解析 repoPattern + 規則
               const resolved = [];
+              const match = (name, pattern) => {
+                const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
+                const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+                return regex.test(name);
+              };
               for (const item of CONFIG.repositories) {
                 if (item.repoPattern && item.owner) {
                   try {
                     const list = await this.listOwnerReposAll(item.owner);
                     const matched = this.filterByPattern(list, item.repoPattern);
                     matched.forEach(r => {
+                      let prefix = item.featurePrefix || 'ER';
+                      if (Array.isArray(item.prefixRules)) {
+                        for (const rule of item.prefixRules) {
+                          if (match(r.name, rule.pattern)) { prefix = rule.prefix; break; }
+                        }
+                      }
+                      let color = item.color || '#36b9cc';
+                      if (Array.isArray(item.colorRules)) {
+                        for (const rule of item.colorRules) {
+                          if (match(r.name, rule.pattern)) { color = rule.color; break; }
+                        }
+                      }
                       resolved.push({
                         name: item.name ? `${item.name} - ${r.name}` : r.name,
                         owner: item.owner,
                         repo: r.name,
                         description: item.description || r.description || '',
-                        featurePrefix: item.featurePrefix,
-                        color: item.color || '#36b9cc',
+                        featurePrefix: prefix,
+                        color: color,
                         priority: item.priority || 999
                       });
                     });
@@ -217,7 +235,8 @@ jobs:
             }
           }
 
-          const collector = new GitHubDataCollector(process.env.GITHUB_TOKEN);
+          const token = process.env.PAT || process.env.GITHUB_TOKEN;
+          const collector = new GitHubDataCollector(token);
           collector.collectAllData().catch(console.error);
           EOF
 

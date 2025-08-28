@@ -133,19 +133,39 @@ class ProjectDashboard {
 
     async resolveRepositories(repos) {
         const resolved = [];
+        // 萬用字元匹配工具
+        const match = (name, pattern) => {
+            const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
+            const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
+            return regex.test(name);
+        };
+
         for (const item of repos) {
             if (item.repoPattern && item.owner) {
                 try {
                     const allRepos = await this.github.listOwnerReposAll(item.owner);
                     const matched = this.github.filterReposByPattern(allRepos, item.repoPattern);
                     matched.forEach(r => {
+                        // 依規則決定前綴與顏色
+                        let prefix = item.featurePrefix || 'ER';
+                        if (Array.isArray(item.prefixRules)) {
+                            for (const rule of item.prefixRules) {
+                                if (match(r.name, rule.pattern)) { prefix = rule.prefix; break; }
+                            }
+                        }
+                        let color = item.color || '#36b9cc';
+                        if (Array.isArray(item.colorRules)) {
+                            for (const rule of item.colorRules) {
+                                if (match(r.name, rule.pattern)) { color = rule.color; break; }
+                            }
+                        }
                         resolved.push({
                             name: item.name ? `${item.name} - ${r.name}` : r.name,
                             owner: item.owner,
                             repo: r.name,
                             description: item.description || r.description || '',
-                            featurePrefix: item.featurePrefix, // 套用通用前綴
-                            color: item.color || '#36b9cc',
+                            featurePrefix: prefix,
+                            color: color,
                             priority: item.priority || 999
                         });
                     });
