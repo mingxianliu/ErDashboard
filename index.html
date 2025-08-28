@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多專案進度監控中心</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="css/dashboard.css" rel="stylesheet">
+    <meta name="description" content="多 GitHub Repository 進度監控儀表板，純靜態網站，支援 GitHub Pages 與 GitHub Actions 自動更新。">
+    <meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-tachometer-alt me-2"></i>
+                多專案進度監控中心
+            </span>
+            <div class="d-flex align-items-center">
+                <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
+                <button class="btn btn-outline-light btn-sm" id="refreshBtn">
+                    <i class="fas fa-sync-alt"></i> 重新載入
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- 載入狀態 -->
+        <div id="loadingSpinner" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">載入中...</span>
+            </div>
+            <p class="mt-2">正在收集專案資料...</p>
+        </div>
+
+        <!-- 總覽統計卡片 -->
+        <div id="summaryCards" class="row mb-4" style="display: none;">
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-primary shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                    監控專案
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalProjects">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-folder fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-success shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                    已完成功能
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="completedFeatures">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-warning shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                    進行中功能
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="inProgressFeatures">0</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-clock fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6 mb-4">
+                <div class="card border-left-info shadow h-100 py-2">
+                    <div class="card-body">
+                        <div class="row no-gutters align-items-center">
+                            <div class="col mr-2">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    整體進度
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="overallProgress">0%</div>
+                            </div>
+                            <div class="col-auto">
+                                <i class="fas fa-percentage fa-2x text-gray-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 專案清單 -->
+        <div id="projectsList" class="row" style="display: none;"></div>
+
+        <!-- 最近活動 -->
+        <div id="recentActivity" class="card shadow mb-4" style="display: none;">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>最近活動
+                </h6>
+            </div>
+            <div class="card-body">
+                <div id="activityList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/github-api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+<script>
+// 若需要，可用 localStorage 覆寫 token：localStorage.setItem('PD_TOKEN', 'ghp_...')
+</script>
+</html>
+

@@ -1,0 +1,175 @@
+name: 更新專案進度資料
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'  # 每2小時執行一次
+  workflow_dispatch:        # 手動觸發
+  push:
+    branches: [main]
+    paths: ['js/config.js']  # 當配置改變時觸發
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: 收集專案資料
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p data
+          cat > collect-data.js << 'EOF'
+          const fs = require('fs');
+          const https = require('https');
+
+          // 從 config.js 讀取配置
+          const configContent = fs.readFileSync('js/config.js', 'utf8');
+          const CONFIG = eval(configContent.replace('const CONFIG = ', ''));
+
+          class GitHubDataCollector {
+            constructor(token) {
+              this.token = token;
+              this.baseUrl = 'https://api.github.com';
+            }
+
+            async request(endpoint) {
+              return new Promise((resolve, reject) => {
+                const options = {
+                  headers: {
+                    'Authorization': `token ${this.token}`,
+                    'User-Agent': 'GitHub-Actions-Collector',
+                    'Accept': 'application/vnd.github.v3+json'
+                  }
+                };
+                https.get(`${this.baseUrl}${endpoint}`, options, (res) => {
+                  let data = '';
+                  res.on('data', chunk => data += chunk);
+                  res.on('end', () => {
+                    try {
+                      resolve(JSON.parse(data));
+                    } catch (e) {
+                      reject(e);
+                    }
+                  });
+                }).on('error', reject);
+              });
+            }
+
+            async fetchAllIssues(owner, repo, state = 'all') {
+              const perPage = 100;
+              let page = 1;
+              const all = [];
+              while (true) {
+                const batch = await this.request(`/repos/${owner}/${repo}/issues?state=${state}&per_page=${perPage}&page=${page}`);
+                if (!Array.isArray(batch) || batch.length === 0) break;
+                all.push(...batch);
+                if (batch.length < perPage) break;
+                page += 1;
+              }
+              return all;
+            }
+
+            analyzeFeatures(issues, prefix) {
+              const features = {};
+              const regex = new RegExp(`${prefix}\\\d{4}`, 'gi');
+              issues.forEach(issue => {
+                const matches = issue.title.match(regex);
+                if (matches) {
+                  const featureCode = matches[0].toUpperCase();
+                  features[featureCode] = {
+                    title: issue.title.replace(regex, '').trim(),
+                    status: issue.state,
+                    number: issue.number,
+                    url: issue.html_url,
+                    created: issue.created_at,
+                    updated: issue.updated_at,
+                    assignee: issue.assignee ? issue.assignee.login : null
+                  };
+                }
+              });
+              return features;
+            }
+
+            async collectAllData() {
+              const projects = [];
+              const allActivity = [];
+              for (const repo of CONFIG.repositories) {
+                try {
+                  console.log(`收集 ${repo.name} 資料...`);
+                  const [repoInfo, issues] = await Promise.all([
+                    this.request(`/repos/${repo.owner}/${repo.repo}`),
+                    this.fetchAllIssues(repo.owner, repo.repo, 'all')
+                  ]);
+                  const features = this.analyzeFeatures(issues, repo.featurePrefix);
+                  const total = Object.keys(features).length;
+                  const completed = Object.values(features).filter(f => f.status === 'closed').length;
+                  const inProgress = Object.values(features).filter(f => f.status === 'open').length;
+                  projects.push({
+                    config: repo,
+                    info: {
+                      name: repoInfo.name,
+                      description: repoInfo.description,
+                      stars: repoInfo.stargazers_count,
+                      forks: repoInfo.forks_count
+                    },
+                    features: features,
+                    stats: {
+                      total,
+                      completed,
+                      inProgress,
+                      progress: total > 0 ? Math.round((completed / total) * 100) : 0
+                    }
+                  });
+                } catch (error) {
+                  console.error(`收集 ${repo.name} 失敗:`, error.message);
+                }
+              }
+
+              const totalProjects = projects.length;
+              const totalFeatures = projects.reduce((sum, p) => sum + p.stats.total, 0);
+              const completedFeatures = projects.reduce((sum, p) => sum + p.stats.completed, 0);
+              const inProgressFeatures = projects.reduce((sum, p) => sum + p.stats.inProgress, 0);
+              const data = {
+                lastUpdate: new Date().toISOString(),
+                projects: projects,
+                summary: {
+                  totalProjects,
+                  totalFeatures,
+                  completedFeatures,
+                  inProgressFeatures,
+                  overallProgress: totalFeatures > 0 ? Math.round((completedFeatures / totalFeatures) * 100) : 0
+                },
+                recentActivity: allActivity.slice(0, 10)
+              };
+              fs.writeFileSync('data/progress.json', JSON.stringify(data, null, 2));
+              console.log('✅ 資料收集完成');
+            }
+          }
+
+          const collector = new GitHubDataCollector(process.env.GITHUB_TOKEN);
+          collector.collectAllData().catch(console.error);
+          EOF
+
+          node collect-data.js
+
+      - name: 提交資料更新
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add data/progress.json
+          if git diff --staged --quiet; then
+            echo "沒有變更需要提交"
+          else
+            git commit -m "🤖 自動更新專案進度資料 $(date '+%Y-%m-%d %H:%M:%S')"
+            git push
+          fi
