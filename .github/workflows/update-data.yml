@@ -13,7 +13,6 @@ on:
 permissions:
   contents: write
   issues: read
-  metadata: read
 
 jobs:
   update-progress-data:
