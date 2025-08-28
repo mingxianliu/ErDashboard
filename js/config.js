@@ -8,9 +8,36 @@ const CONFIG = {
             owner: "mingxianliu",
             repoPattern: "Er*",      // 使用 * 做前綴匹配
             description: "自動匹配所有以 Er 開頭的 repo",
-            featurePrefix: "ER",     // 套用統一的功能代碼前綴
             color: "#17a2b8",
-            priority: 1
+            priority: 1,
+            prefixRules: [
+                { pattern: "ErCore*",    prefix: "ERC" },
+                { pattern: "ErAI*",      prefix: "ERA" },
+                { pattern: "ErAid-Ecosystem*", prefix: "ERAI" },
+                { pattern: "ErForge*",   prefix: "ERF" },
+                { pattern: "ErTidy*",    prefix: "ERT" },
+                { pattern: "ErGrant*",   prefix: "ERG" },
+                { pattern: "ErStore*",   prefix: "ERS" },
+                { pattern: "ErSlice*",   prefix: "ERSL" },
+                { pattern: "ErShield*",  prefix: "ERSH" },
+                { pattern: "ErShowcase*",prefix: "ERSC" },
+                { pattern: "ErProphet*", prefix: "ERP" },
+                { pattern: "*",          prefix: "ER" }
+            ],
+            colorRules: [
+                { pattern: "ErCore*",    color: "#ff6b6b" },
+                { pattern: "ErAI*",      color: "#845ef7" },
+                { pattern: "ErAid-Ecosystem*", color: "#fd7e14" },
+                { pattern: "ErForge*",   color: "#6f42c1" },
+                { pattern: "ErTidy*",    color: "#20c997" },
+                { pattern: "ErGrant*",   color: "#e83e8c" },
+                { pattern: "ErStore*",   color: "#007bff" },
+                { pattern: "ErSlice*",   color: "#dc3545" },
+                { pattern: "ErShield*",  color: "#343a40" },
+                { pattern: "ErShowcase*",color: "#ffc107" },
+                { pattern: "ErProphet*", color: "#6610f2" },
+                { pattern: "*",          color: "#17a2b8" }
+            ]
         },
         {
             name: "裝備管理系統",
