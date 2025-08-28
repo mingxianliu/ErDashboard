@@ -42,7 +42,7 @@ jobs:
         const fs = require('fs');
         const axios = require('axios');
 
-        // 直接定義配置，避免讀取 JavaScript 檔案
+        // 配置
         const repositories = [
           {
             name: "Er 專案群",
@@ -91,12 +91,12 @@ jobs:
               'User-Agent': 'Project-Dashboard'
             };
             if (this.token) {
-              this.headers['Authorization'] = `token ${this.token}`;
+              this.headers['Authorization'] = \`token \${this.token}\`;
             }
           }
 
           async getRepository(owner, repo) {
-            const response = await axios.get(`${this.baseUrl}/repos/${owner}/${repo}`, {
+            const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}\`, {
               headers: this.headers
             });
             return response.data;
@@ -109,7 +109,7 @@ jobs:
 
             while (true) {
               try {
-                const response = await axios.get(`${this.baseUrl}/repos/${owner}/${repo}/issues`, {
+                const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}/issues\`, {
                   headers: this.headers,
                   params: {
                     state: 'all',
@@ -122,7 +122,7 @@ jobs:
                 allIssues = allIssues.concat(response.data);
                 page++;
               } catch (error) {
-                console.error(`取得 ${owner}/${repo} issues 時發生錯誤:`, error.message);
+                console.error(\`取得 \${owner}/\${repo} issues 時發生錯誤:\`, error.message);
                 break;
               }
             }
@@ -137,7 +137,7 @@ jobs:
 
             while (true) {
               try {
-                const response = await axios.get(`${this.baseUrl}/users/${owner}/repos`, {
+                const response = await axios.get(\`\${this.baseUrl}/users/\${owner}/repos\`, {
                   headers: this.headers,
                   params: {
                     per_page: perPage,
@@ -151,7 +151,7 @@ jobs:
                 allRepos = allRepos.concat(response.data);
                 page++;
               } catch (error) {
-                console.error(`取得 ${owner} 的 repositories 時發生錯誤:`, error.message);
+                console.error(\`取得 \${owner} 的 repositories 時發生錯誤:\`, error.message);
                 break;
               }
             }
@@ -160,42 +160,42 @@ jobs:
           }
 
           filterReposByPattern(repos, pattern) {
-            const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
+            const regex = new RegExp(pattern.replace(/\\*/g, '.*'), 'i');
             return repos.filter(repo => regex.test(repo.name));
           }
 
           getPrefixForRepo(repoName, prefixRules) {
             for (const rule of prefixRules) {
-              const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+              const regex = new RegExp(rule.pattern.replace(/\\*/g, '.*'), 'i');
               if (regex.test(repoName)) {
                 return rule.prefix;
               }
             }
-            return 'ER'; // 預設前綴
+            return 'ER';
           }
 
           getColorForRepo(repoName, colorRules) {
             for (const rule of colorRules) {
-              const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+              const regex = new RegExp(rule.pattern.replace(/\\*/g, '.*'), 'i');
               if (regex.test(repoName)) {
                 return rule.color;
               }
             }
-            return '#17a2b8'; // 預設顏色
+            return '#17a2b8';
           }
 
           analyzeFeatureProgress(issues, featurePrefix) {
             const features = [];
-            const prefixPattern = new RegExp(`\\[${featurePrefix}\\d{4}\\]`, 'i');
+            const prefixPattern = new RegExp(\`\\\\[\${featurePrefix}\\\\d{4}\\\\]\`, 'i');
 
             issues.forEach(issue => {
               if (prefixPattern.test(issue.title)) {
-                const match = issue.title.match(new RegExp(`\\[(${featurePrefix}\\d{4})\\]`, 'i'));
+                const match = issue.title.match(new RegExp(\`\\\\[(\${featurePrefix}\\\\d{4})\\\\]\`, 'i'));
                 if (match) {
                   const featureCode = match[1];
                   features.push({
                     code: featureCode,
-                    title: issue.title.replace(new RegExp(`\\[${featurePrefix}\\d{4}\\]`, 'gi'), '').trim(),
+                    title: issue.title.replace(new RegExp(\`\\\\[\${featurePrefix}\\\\d{4}\\\\]\`, 'gi'), '').trim(),
                     status: issue.state,
                     url: issue.html_url,
                     created: issue.created_at,
@@ -237,21 +237,19 @@ jobs:
           for (const repoConfig of repositories) {
             try {
               if (repoConfig.repoPattern) {
-                // 處理萬用字元匹配
-                console.log(`處理 ${repoConfig.owner} 的 ${repoConfig.repoPattern} 模式...`);
+                console.log(\`處理 \${repoConfig.owner} 的 \${repoConfig.repoPattern} 模式...\`);
                 
                 const allRepos = await github.listOwnerReposAll(repoConfig.owner);
                 const matchedRepos = github.filterReposByPattern(allRepos, repoConfig.repoPattern);
                 
-                console.log(`找到 ${matchedRepos.length} 個匹配的 repositories`);
+                console.log(\`找到 \${matchedRepos.length} 個匹配的 repositories\`);
 
                 for (const repo of matchedRepos) {
                   try {
-                    console.log(`處理 ${repoConfig.owner}/${repo.name}...`);
+                    console.log(\`處理 \${repoConfig.owner}/\${repo.name}...\`);
                     
                     const issues = await github.getAllIssues(repoConfig.owner, repo.name);
                     
-                    // 根據規則決定前綴與顏色
                     const featurePrefix = github.getPrefixForRepo(repo.name, repoConfig.prefixRules);
                     const color = github.getColorForRepo(repo.name, repoConfig.colorRules);
                     
@@ -266,10 +264,9 @@ jobs:
                       url: repo.html_url,
                       color: color,
                       stats: stats,
-                      features: features.slice(0, 10) // 只保留前 10 個功能
+                      features: features.slice(0, 10)
                     });
 
-                    // 收集最近活動
                     issues.slice(0, 5).forEach(issue => {
                       data.recentActivity.push({
                         project: repo.name,
@@ -282,62 +279,25 @@ jobs:
                     });
 
                   } catch (error) {
-                    console.error(`處理 ${repoConfig.owner}/${repo.name} 時發生錯誤:`, error.message);
+                    console.error(\`處理 \${repoConfig.owner}/\${repo.name} 時發生錯誤:\`, error.message);
                   }
                 }
-              } else if (repoConfig.repo) {
-                // 處理單一 repository
-                console.log(`處理 ${repoConfig.owner}/${repoConfig.repo}...`);
-                
-                const [repoInfo, issues] = await Promise.all([
-                  github.getRepository(repoConfig.owner, repoConfig.repo),
-                  github.getAllIssues(repoConfig.owner, repoConfig.repo)
-                ]);
-
-                const features = github.analyzeFeatureProgress(issues, repoConfig.featurePrefix);
-                const stats = github.calculateProjectStats(features);
-
-                data.projects.push({
-                  name: repoConfig.name || repoInfo.name,
-                  owner: repoConfig.owner,
-                  repo: repoConfig.repo,
-                  description: repoInfo.description || '',
-                  url: repoInfo.html_url,
-                  color: repoConfig.color || '#007bff',
-                  stats: stats,
-                  features: features.slice(0, 10) // 只保留前 10 個功能
-                });
-
-                // 收集最近活動
-                issues.slice(0, 5).forEach(issue => {
-                  data.recentActivity.push({
-                    project: repoConfig.name || repoInfo.name,
-                    title: issue.title,
-                    action: issue.state === 'closed' ? '完成' : '更新',
-                    url: issue.html_url,
-                    updated: issue.updated_at,
-                    assignee: issue.assignee ? issue.assignee.login : null
-                  });
-                });
               }
             } catch (error) {
-              console.error(`處理 ${repoConfig.owner} 時發生錯誤:`, error.message);
+              console.error(\`處理 \${repoConfig.owner} 時發生錯誤:\`, error.message);
             }
           }
 
-          // 按更新時間排序最近活動
           data.recentActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
-          data.recentActivity = data.recentActivity.slice(0, 20); // 只保留最近 20 個活動
+          data.recentActivity = data.recentActivity.slice(0, 20);
 
           return data;
         }
 
-        // 執行資料收集
         collectData().then(data => {
-          console.log(`收集到 ${data.projects.length} 個專案`);
-          console.log(`收集到 ${data.recentActivity.length} 個活動記錄`);
+          console.log(\`收集到 \${data.projects.length} 個專案\`);
+          console.log(\`收集到 \${data.recentActivity.length} 個活動記錄\`);
           
-          // 確保 data 目錄存在
           if (!fs.existsSync('./data')) {
             fs.mkdirSync('./data', { recursive: true });
           }
