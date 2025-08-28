@@ -94,38 +94,74 @@ jobs:
             }
           }
 
+          async sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+          }
+
+          async fetchWithRetry(apiCall, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+              try {
+                return await apiCall();
+              } catch (error) {
+                console.log(\`API 呼叫失敗，重試 \${i + 1}/\${retries}: \${error.message}\`);
+                if (i < retries - 1) {
+                  await this.sleep(1000 * (i + 1)); // 遞增延遲
+                } else {
+                  throw error;
+                }
+              }
+            }
+          }
+
           async getRepository(owner, repo) {
-            const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}\`, {
-              headers: this.headers
+            return await this.fetchWithRetry(async () => {
+              const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}\`, {
+                headers: this.headers
+              });
+              return response.data;
             });
-            return response.data;
           }
 
           async getAllIssues(owner, repo) {
             let allIssues = [];
             let page = 1;
             const perPage = 100;
+            let hasMorePages = true;
 
-            while (true) {
+            while (hasMorePages) {
               try {
-                const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}/issues\`, {
-                  headers: this.headers,
-                  params: {
-                    state: 'all',
-                    per_page: perPage,
-                    page: page
-                  }
+                const response = await this.fetchWithRetry(async () => {
+                  return await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}/issues\`, {
+                    headers: this.headers,
+                    params: {
+                      state: 'all',
+                      per_page: perPage,
+                      page: page
+                    }
+                  });
                 });
 
-                if (response.data.length === 0) break;
-                allIssues = allIssues.concat(response.data);
-                page++;
+                if (response.data.length === 0) {
+                  hasMorePages = false;
+                } else {
+                  allIssues = allIssues.concat(response.data);
+                  page++;
+                  // 避免過於頻繁的 API 呼叫
+                  await this.sleep(100);
+                }
               } catch (error) {
-                console.error(\`取得 \${owner}/\${repo} issues 時發生錯誤:\`, error.message);
-                break;
+                console.error(\`取得 \${owner}/\${repo} issues 第 \${page} 頁時發生錯誤:\`, error.message);
+                // 如果是權限問題或 repository 不存在，直接返回已收集的資料
+                if (error.response && (error.response.status === 403 || error.response.status === 404)) {
+                  console.log(\`跳過 \${owner}/\${repo}，可能是權限問題或 repository 不存在\`);
+                  break;
+                }
+                // 其他錯誤也跳過，但記錄下來
+                hasMorePages = false;
               }
             }
 
+            console.log(\`從 \${owner}/\${repo} 收集到 \${allIssues.length} 個 issues\`);
             return allIssues;
           }
 
@@ -133,28 +169,42 @@ jobs:
             let allRepos = [];
             let page = 1;
             const perPage = 100;
+            let hasMorePages = true;
 
-            while (true) {
+            while (hasMorePages) {
               try {
-                const response = await axios.get(\`\${this.baseUrl}/users/\${owner}/repos\`, {
-                  headers: this.headers,
-                  params: {
-                    per_page: perPage,
-                    page: page,
-                    sort: 'updated',
-                    direction: 'desc'
-                  }
+                const response = await this.fetchWithRetry(async () => {
+                  return await axios.get(\`\${this.baseUrl}/users/\${owner}/repos\`, {
+                    headers: this.headers,
+                    params: {
+                      per_page: perPage,
+                      page: page,
+                      sort: 'updated',
+                      direction: 'desc'
+                    }
+                  });
                 });
 
-                if (response.data.length === 0) break;
-                allRepos = allRepos.concat(response.data);
-                page++;
+                if (response.data.length === 0) {
+                  hasMorePages = false;
+                } else {
+                  allRepos = allRepos.concat(response.data);
+                  page++;
+                  // 避免過於頻繁的 API 呼叫
+                  await this.sleep(100);
+                }
               } catch (error) {
-                console.error(\`取得 \${owner} 的 repositories 時發生錯誤:\`, error.message);
-                break;
+                console.error(\`取得 \${owner} 的 repositories 第 \${page} 頁時發生錯誤:\`, error.message);
+                // 如果是權限問題，直接返回已收集的資料
+                if (error.response && (error.response.status === 403 || error.response.status === 404)) {
+                  console.log(\`跳過 \${owner}，可能是權限問題或使用者不存在\`);
+                  break;
+                }
+                hasMorePages = false;
               }
             }
 
+            console.log(\`從 \${owner} 收集到 \${allRepos.length} 個 repositories\`);
             return allRepos;
           }
 
@@ -233,6 +283,9 @@ jobs:
             recentActivity: []
           };
 
+          let successCount = 0;
+          let errorCount = 0;
+
           for (const repoConfig of repositories) {
             try {
               if (repoConfig.repoPattern) {
@@ -277,19 +330,29 @@ jobs:
                       });
                     });
 
+                    successCount++;
+                    console.log(\`✅ 成功處理 \${repoConfig.owner}/\${repo.name}\`);
+
                   } catch (error) {
-                    console.error(\`處理 \${repoConfig.owner}/\${repo.name} 時發生錯誤:\`, error.message);
+                    errorCount++;
+                    console.error(\`❌ 處理 \${repoConfig.owner}/\${repo.name} 時發生錯誤:\`, error.message);
+                    // 繼續處理下一個 repository
+                    continue;
                   }
                 }
               }
             } catch (error) {
-              console.error(\`處理 \${repoConfig.owner} 時發生錯誤:\`, error.message);
+              errorCount++;
+              console.error(\`❌ 處理 \${repoConfig.owner} 時發生錯誤:\`, error.message);
+              // 繼續處理下一個配置
+              continue;
             }
           }
 
           data.recentActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
           data.recentActivity = data.recentActivity.slice(0, 20);
 
+          console.log(\`📊 資料收集完成: 成功 \${successCount} 個，失敗 \${errorCount} 個\`);
           return data;
         }
 
@@ -302,11 +365,32 @@ jobs:
           }
           
           fs.writeFileSync('./data/progress.json', JSON.stringify(data, null, 2));
-          console.log('資料收集完成，已寫入 data/progress.json');
+          console.log('✅ 資料收集完成，已寫入 data/progress.json');
+          
+          // 即使部分失敗，也寫入部分資料
+          if (data.projects.length === 0) {
+            console.log('⚠️ 警告: 沒有收集到任何專案資料');
+          }
         }).catch(error => {
-          console.error('資料收集失敗:', error);
+          console.error('❌ 資料收集失敗:', error);
           console.error('錯誤堆疊:', error.stack);
-          process.exit(1);
+          
+          // 寫入空的資料檔案，避免完全失敗
+          const emptyData = {
+            lastUpdate: new Date().toISOString(),
+            projects: [],
+            recentActivity: [],
+            error: error.message
+          };
+          
+          if (!fs.existsSync('./data')) {
+            fs.mkdirSync('./data', { recursive: true });
+          }
+          
+          fs.writeFileSync('./data/progress.json', JSON.stringify(emptyData, null, 2));
+          console.log('⚠️ 已寫入空的資料檔案');
+          
+          // 不要退出，讓工作流程繼續
         });
         EOF
 
