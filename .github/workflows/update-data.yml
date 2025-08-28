@@ -40,7 +40,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
       run: |
         echo "開始收集專案資料..."
-        node collect-data.js
+        node simple-collect.js
         echo "資料收集完成"
 
     - name: Commit and push changes
