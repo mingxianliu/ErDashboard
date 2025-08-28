@@ -90,7 +90,7 @@ jobs:
               'User-Agent': 'Project-Dashboard'
             };
             if (this.token) {
-              this.headers['Authorization'] = \`token \${this.token}\`;
+              this.headers['Authorization'] = 'token ' + this.token;
             }
           }
 
@@ -103,7 +103,7 @@ jobs:
               try {
                 return await apiCall();
               } catch (error) {
-                console.log(\`API 呼叫失敗，重試 \${i + 1}/\${retries}: \${error.message}\`);
+                console.log('API 呼叫失敗，重試 ' + (i + 1) + '/' + retries + ': ' + error.message);
                 if (i < retries - 1) {
                   await this.sleep(1000 * (i + 1)); // 遞增延遲
                 } else {
@@ -115,7 +115,7 @@ jobs:
 
           async getRepository(owner, repo) {
             return await this.fetchWithRetry(async () => {
-              const response = await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}\`, {
+              const response = await axios.get(this.baseUrl + '/repos/' + owner + '/' + repo, {
                 headers: this.headers
               });
               return response.data;
@@ -131,7 +131,7 @@ jobs:
             while (hasMorePages) {
               try {
                 const response = await this.fetchWithRetry(async () => {
-                  return await axios.get(\`\${this.baseUrl}/repos/\${owner}/\${repo}/issues\`, {
+                  return await axios.get(this.baseUrl + '/repos/' + owner + '/' + repo + '/issues', {
                     headers: this.headers,
                     params: {
                       state: 'all',
@@ -150,10 +150,10 @@ jobs:
                   await this.sleep(100);
                 }
               } catch (error) {
-                console.error(\`取得 \${owner}/\${repo} issues 第 \${page} 頁時發生錯誤:\`, error.message);
+                console.error('取得 ' + owner + '/' + repo + ' issues 第 ' + page + ' 頁時發生錯誤:', error.message);
                 // 如果是權限問題或 repository 不存在，直接返回已收集的資料
                 if (error.response && (error.response.status === 403 || error.response.status === 404)) {
-                  console.log(\`跳過 \${owner}/\${repo}，可能是權限問題或 repository 不存在\`);
+                  console.log('跳過 ' + owner + '/' + repo + '，可能是權限問題或 repository 不存在');
                   break;
                 }
                 // 其他錯誤也跳過，但記錄下來
@@ -161,7 +161,7 @@ jobs:
               }
             }
 
-            console.log(\`從 \${owner}/\${repo} 收集到 \${allIssues.length} 個 issues\`);
+            console.log('從 ' + owner + '/' + repo + ' 收集到 ' + allIssues.length + ' 個 issues');
             return allIssues;
           }
 
@@ -174,7 +174,7 @@ jobs:
             while (hasMorePages) {
               try {
                 const response = await this.fetchWithRetry(async () => {
-                  return await axios.get(\`\${this.baseUrl}/users/\${owner}/repos\`, {
+                  return await axios.get(this.baseUrl + '/users/' + owner + '/repos', {
                     headers: this.headers,
                     params: {
                       per_page: perPage,
@@ -194,17 +194,17 @@ jobs:
                   await this.sleep(100);
                 }
               } catch (error) {
-                console.error(\`取得 \${owner} 的 repositories 第 \${page} 頁時發生錯誤:\`, error.message);
+                console.error('取得 ' + owner + ' 的 repositories 第 ' + page + ' 頁時發生錯誤:', error.message);
                 // 如果是權限問題，直接返回已收集的資料
                 if (error.response && (error.response.status === 403 || error.response.status === 404)) {
-                  console.log(\`跳過 \${owner}，可能是權限問題或使用者不存在\`);
+                  console.log('跳過 ' + owner + '，可能是權限問題或使用者不存在');
                   break;
                 }
                 hasMorePages = false;
               }
             }
 
-            console.log(\`從 \${owner} 收集到 \${allRepos.length} 個 repositories\`);
+            console.log('從 ' + owner + ' 收集到 ' + allRepos.length + ' 個 repositories');
             return allRepos;
           }
 
@@ -235,16 +235,16 @@ jobs:
 
           analyzeFeatureProgress(issues, featurePrefix) {
             const features = [];
-            const prefixPattern = new RegExp(\`\\\\[\${featurePrefix}\\\\d{4}\\\\]\`, 'i');
+            const prefixPattern = new RegExp('\\[' + featurePrefix + '\\d{4}\\]', 'i');
 
             issues.forEach(issue => {
               if (prefixPattern.test(issue.title)) {
-                const match = issue.title.match(new RegExp(\`\\\\[(\${featurePrefix}\\\\d{4})\\\\]\`, 'i'));
+                const match = issue.title.match(new RegExp('\\[(' + featurePrefix + '\\d{4})\\]', 'i'));
                 if (match) {
                   const featureCode = match[1];
                   features.push({
                     code: featureCode,
-                    title: issue.title.replace(new RegExp(\`\\\\[\${featurePrefix}\\\\d{4}\\\\]\`, 'gi'), '').trim(),
+                    title: issue.title.replace(new RegExp('\\[' + featurePrefix + '\\d{4}\\]', 'gi'), '').trim(),
                     status: issue.state,
                     url: issue.html_url,
                     created: issue.created_at,
@@ -289,16 +289,16 @@ jobs:
           for (const repoConfig of repositories) {
             try {
               if (repoConfig.repoPattern) {
-                console.log(\`處理 \${repoConfig.owner} 的 \${repoConfig.repoPattern} 模式...\`);
+                console.log('處理 ' + repoConfig.owner + ' 的 ' + repoConfig.repoPattern + ' 模式...');
                 
                 const allRepos = await github.listOwnerReposAll(repoConfig.owner);
                 const matchedRepos = github.filterReposByPattern(allRepos, repoConfig.repoPattern);
                 
-                console.log(\`找到 \${matchedRepos.length} 個匹配的 repositories\`);
+                console.log('找到 ' + matchedRepos.length + ' 個匹配的 repositories');
 
                 for (const repo of matchedRepos) {
                   try {
-                    console.log(\`處理 \${repoConfig.owner}/\${repo.name}...\`);
+                    console.log('處理 ' + repoConfig.owner + '/' + repo.name + '...');
                     
                     const issues = await github.getAllIssues(repoConfig.owner, repo.name);
                     
@@ -331,11 +331,11 @@ jobs:
                     });
 
                     successCount++;
-                    console.log(\`✅ 成功處理 \${repoConfig.owner}/\${repo.name}\`);
+                    console.log('✅ 成功處理 ' + repoConfig.owner + '/' + repo.name);
 
                   } catch (error) {
                     errorCount++;
-                    console.error(\`❌ 處理 \${repoConfig.owner}/\${repo.name} 時發生錯誤:\`, error.message);
+                    console.error('❌ 處理 ' + repoConfig.owner + '/' + repo.name + ' 時發生錯誤:', error.message);
                     // 繼續處理下一個 repository
                     continue;
                   }
@@ -343,7 +343,7 @@ jobs:
               }
             } catch (error) {
               errorCount++;
-              console.error(\`❌ 處理 \${repoConfig.owner} 時發生錯誤:\`, error.message);
+              console.error('❌ 處理 ' + repoConfig.owner + ' 時發生錯誤:', error.message);
               // 繼續處理下一個配置
               continue;
             }
@@ -352,13 +352,13 @@ jobs:
           data.recentActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
           data.recentActivity = data.recentActivity.slice(0, 20);
 
-          console.log(\`📊 資料收集完成: 成功 \${successCount} 個，失敗 \${errorCount} 個\`);
+          console.log('📊 資料收集完成: 成功 ' + successCount + ' 個，失敗 ' + errorCount + ' 個');
           return data;
         }
 
         collectData().then(data => {
-          console.log(\`收集到 \${data.projects.length} 個專案\`);
-          console.log(\`收集到 \${data.recentActivity.length} 個活動記錄\`);
+          console.log('收集到 ' + data.projects.length + ' 個專案');
+          console.log('收集到 ' + data.recentActivity.length + ' 個活動記錄');
           
           if (!fs.existsSync('./data')) {
             fs.mkdirSync('./data', { recursive: true });
