@@ -38,33 +38,6 @@ const CONFIG = {
                 { pattern: "ErProphet*", color: "#6610f2" },
                 { pattern: "*",          color: "#17a2b8" }
             ]
-        },
-        {
-            name: "裝備管理系統",
-            owner: "your-org",
-            repo: "equipment-management",
-            description: "消防裝備管理與維護系統",
-            featurePrefix: "EMSB",
-            color: "#28a745",
-            priority: 1
-        },
-        {
-            name: "證照管理系統",
-            owner: "your-org",
-            repo: "license-management",
-            description: "人員證照追蹤與管理系統",
-            featurePrefix: "EMST",
-            color: "#007bff",
-            priority: 2
-        },
-        {
-            name: "人員管理系統",
-            owner: "your-org",
-            repo: "personnel-management",
-            description: "人員資料與排班管理系統",
-            featurePrefix: "EMSP",
-            color: "#ffc107",
-            priority: 3
         }
     ],
 
