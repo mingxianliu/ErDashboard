@@ -271,14 +271,22 @@ async function collectData() {
             const stats = github.calculateProjectStats(features);
 
             data.projects.push({
-              name: repo.name,
-              owner: repoConfig.owner,
-              repo: repo.name,
-              description: repo.description || '',
-              url: repo.html_url,
-              color: color,
-              stats: stats,
-              features: features.slice(0, 10)
+              config: {
+                name: repo.name,
+                owner: repoConfig.owner,
+                repo: repo.name,
+                description: repo.description || '',
+                url: repo.html_url,
+                color: color
+              },
+              info: {
+                name: repo.name,
+                description: repo.description || '',
+                language: repo.language,
+                lastPush: repo.pushed_at
+              },
+              features: features.slice(0, 10),
+              stats: stats
             });
 
             issues.slice(0, 5).forEach(issue => {
