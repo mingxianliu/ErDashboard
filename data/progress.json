@@ -92,5 +92,12 @@
       "features": []
     }
   ],
-  "recentActivity": []
+  "recentActivity": [],
+  "summary": {
+    "totalProjects": 6,
+    "totalFeatures": 0,
+    "completedFeatures": 0,
+    "inProgressFeatures": 0,
+    "overallProgress": 0
+  }
 }
