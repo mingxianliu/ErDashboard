@@ -1,5 +1,5 @@
 {
-  "lastUpdate": "2025-08-29T08:06:35.281Z",
+  "lastUpdate": "2025-08-29T10:05:25.219Z",
   "projects": [
     {
       "config": {
@@ -14,30 +14,7 @@
         "name": "ErDashboard",
         "description": "ErDashboard",
         "language": "JavaScript",
-        "lastPush": "2025-08-29T06:07:21Z"
-      },
-      "features": [],
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
-      }
-    },
-    {
-      "config": {
-        "name": "ErSlice",
-        "owner": "mingxianliu",
-        "repo": "ErSlice",
-        "description": "ErSlice",
-        "url": "https://github.com/mingxianliu/ErSlice",
-        "color": "#dc3545"
-      },
-      "info": {
-        "name": "ErSlice",
-        "description": "ErSlice",
-        "language": "TypeScript",
-        "lastPush": "2025-08-27T12:39:01Z"
+        "lastPush": "2025-08-29T08:06:36Z"
       },
       "features": [],
       "stats": {
@@ -50,7 +27,7 @@
   ],
   "recentActivity": [],
   "summary": {
-    "totalProjects": 2,
+    "totalProjects": 1,
     "totalFeatures": 0,
     "completedFeatures": 0,
     "inProgressFeatures": 0,
