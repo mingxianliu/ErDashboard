@@ -164,7 +164,8 @@ class GitHubAPI {
   }
 
   filterReposByPattern(repos, pattern) {
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
+    // 修正正則表達式，確保只匹配以指定前綴開頭的專案
+    const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$', 'i');
     return repos.filter(repo => regex.test(repo.name));
   }
 
