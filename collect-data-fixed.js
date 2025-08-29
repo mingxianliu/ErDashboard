@@ -235,7 +235,14 @@ async function collectData() {
   const data = {
     lastUpdate: new Date().toISOString(),
     projects: [],
-    recentActivity: []
+    recentActivity: [],
+    summary: {
+      totalProjects: 0,
+      totalFeatures: 0,
+      completedFeatures: 0,
+      inProgressFeatures: 0,
+      overallProgress: 0
+    }
   };
 
   let successCount = 0;
@@ -305,7 +312,15 @@ async function collectData() {
   data.recentActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
   data.recentActivity = data.recentActivity.slice(0, 20);
 
+  // 計算 summary
+  data.summary.totalProjects = data.projects.length;
+  data.summary.totalFeatures = data.projects.reduce((total, project) => total + (project.stats ? project.stats.total : 0), 0);
+  data.summary.completedFeatures = data.projects.reduce((total, project) => total + (project.stats ? project.stats.completed : 0), 0);
+  data.summary.inProgressFeatures = data.projects.reduce((total, project) => total + (project.stats ? project.stats.inProgress : 0), 0);
+  data.summary.overallProgress = data.summary.totalFeatures > 0 ? Math.round((data.summary.completedFeatures / data.summary.totalFeatures) * 100) : 0;
+
   console.log('📊 資料收集完成: 成功 ' + successCount + ' 個，失敗 ' + errorCount + ' 個');
+  console.log('📈 統計: ' + data.summary.totalProjects + ' 個專案, ' + data.summary.totalFeatures + ' 個功能, ' + data.summary.overallProgress + '% 完成');
   return data;
 }
 
@@ -331,6 +346,13 @@ collectData().then(data => {
     lastUpdate: new Date().toISOString(),
     projects: [],
     recentActivity: [],
+    summary: {
+      totalProjects: 0,
+      totalFeatures: 0,
+      completedFeatures: 0,
+      inProgressFeatures: 0,
+      overallProgress: 0
+    },
     error: error.message
   };
   
