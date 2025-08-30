@@ -19,6 +19,9 @@
             </span>
             <div class="d-flex align-items-center">
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
+                <button class="btn btn-warning btn-sm me-2" id="quickTokenBtn">
+                    <i class="fas fa-key"></i> 快速設定 Token
+                </button>
                 <button class="btn btn-outline-light btn-sm" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
@@ -126,12 +129,162 @@
         </div>
     </div>
 
+    <!-- 快速 Token 設定 Modal -->
+    <div class="modal fade" id="tokenModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fas fa-key me-2"></i>設定 GitHub Personal Access Token
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>為什麼需要 Token？</strong><br>
+                        如果您要監控私有 Repository 或避免 GitHub API 速率限制，需要設定 Personal Access Token。
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">步驟 1：建立 Token</label>
+                        <ol>
+                            <li>點擊下方按鈕前往 GitHub</li>
+                            <li>選擇 "Generate new token (classic)"</li>
+                            <li>勾選 <code>repo</code> 權限（用於存取私有 repo）</li>
+                            <li>點擊頁面底部的 "Generate token"</li>
+                            <li>複製產生的 token（格式：ghp_xxxxx）</li>
+                        </ol>
+                        <a href="https://github.com/settings/tokens/new?description=ErDashboard&scopes=repo" 
+                           target="_blank" class="btn btn-primary">
+                            <i class="fas fa-external-link-alt me-2"></i>前往 GitHub 建立 Token
+                        </a>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">步驟 2：貼上您的 Token</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="modalTokenInput" 
+                                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            <button class="btn btn-outline-secondary" type="button" id="modalToggleToken">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <small class="text-muted">Token 僅儲存在您的瀏覽器中，不會傳送到任何伺服器</small>
+                    </div>
+                    
+                    <div class="alert alert-success d-none" id="modalSuccess">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span id="modalSuccessText"></span>
+                    </div>
+                    
+                    <div class="alert alert-danger d-none" id="modalError">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="modalErrorText"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-warning" id="modalTestToken">
+                        <i class="fas fa-check me-2"></i>測試連線
+                    </button>
+                    <button type="button" class="btn btn-success" id="modalSaveToken">
+                        <i class="fas fa-save me-2"></i>儲存並重新載入
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
+    <script>
+        // 快速 Token 設定功能
+        document.getElementById('quickTokenBtn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('tokenModal'));
+            modal.show();
+            
+            // 載入現有 token
+            const existingToken = localStorage.getItem('PD_TOKEN');
+            if (existingToken) {
+                document.getElementById('modalTokenInput').value = existingToken;
+            }
+        });
+        
+        // 切換顯示/隱藏 token
+        document.getElementById('modalToggleToken').addEventListener('click', function() {
+            const input = document.getElementById('modalTokenInput');
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+        
+        // 測試 Token
+        document.getElementById('modalTestToken').addEventListener('click', async function() {
+            const token = document.getElementById('modalTokenInput').value.trim();
+            const successDiv = document.getElementById('modalSuccess');
+            const errorDiv = document.getElementById('modalError');
+            
+            if (!token) {
+                document.getElementById('modalErrorText').textContent = '請輸入 Token';
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>測試中...';
+            
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('modalSuccessText').textContent = `連線成功！已驗證身份：${user.login}`;
+                    successDiv.classList.remove('d-none');
+                    errorDiv.classList.add('d-none');
+                } else {
+                    document.getElementById('modalErrorText').textContent = `連線失敗：${response.status} ${response.statusText}`;
+                    errorDiv.classList.remove('d-none');
+                    successDiv.classList.add('d-none');
+                }
+            } catch (error) {
+                document.getElementById('modalErrorText').textContent = `連線失敗：${error.message}`;
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check me-2"></i>測試連線';
+            }
+        });
+        
+        // 儲存 Token 並重新載入
+        document.getElementById('modalSaveToken').addEventListener('click', function() {
+            const token = document.getElementById('modalTokenInput').value.trim();
+            
+            if (!token) {
+                document.getElementById('modalErrorText').textContent = '請輸入 Token';
+                document.getElementById('modalError').classList.remove('d-none');
+                return;
+            }
+            
+            localStorage.setItem('PD_TOKEN', token);
+            location.reload();
+        });
+    </script>
 </body>
-<script>
-// 若需要，可用 localStorage 覆寫 token：localStorage.setItem('PD_TOKEN', 'ghp_...')
-</script>
 </html>
 

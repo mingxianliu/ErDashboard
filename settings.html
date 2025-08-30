@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard 設定</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fc;
+        }
+        .settings-container {
+            max-width: 800px;
+            margin: 50px auto;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, .15);
+        }
+        .token-input {
+            font-family: monospace;
+        }
+        .success-message {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container settings-container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-cog me-2"></i>Dashboard 設定
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">GitHub Personal Access Token</h6>
+                    <p class="text-muted">
+                        若要監控私有 Repository，請設定您的 GitHub Personal Access Token。
+                        <a href="https://github.com/settings/tokens/new" target="_blank" class="text-decoration-none">
+                            <i class="fas fa-external-link-alt"></i> 建立新 Token
+                        </a>
+                    </p>
+                    
+                    <div class="mb-3">
+                        <label for="tokenInput" class="form-label">Personal Access Token</label>
+                        <div class="input-group">
+                            <input type="password" class="form-control token-input" id="tokenInput" 
+                                   placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx">
+                            <button class="btn btn-outline-secondary" type="button" id="toggleToken">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Token 將安全地儲存在瀏覽器的 localStorage 中，不會傳送到任何伺服器。
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <button class="btn btn-primary" id="saveToken">
+                            <i class="fas fa-save me-2"></i>儲存 Token
+                        </button>
+                        <button class="btn btn-danger ms-2" id="clearToken">
+                            <i class="fas fa-trash me-2"></i>清除 Token
+                        </button>
+                        <button class="btn btn-secondary ms-2" id="testToken">
+                            <i class="fas fa-check-circle me-2"></i>測試連線
+                        </button>
+                    </div>
+
+                    <div class="alert alert-success success-message" id="successMessage" role="alert">
+                        <i class="fas fa-check-circle me-2"></i>
+                        <span id="successText">Token 已成功儲存！</span>
+                    </div>
+
+                    <div class="alert alert-danger d-none" id="errorMessage" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="errorText">發生錯誤</span>
+                    </div>
+                </div>
+
+                <hr>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3">Token 權限要求</h6>
+                    <p class="text-muted">請確保您的 Token 具有以下權限：</p>
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>repo</strong> - 存取私有 repositories
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>read:user</strong> - 讀取使用者資訊
+                        </li>
+                        <li class="list-group-item">
+                            <i class="fas fa-check text-success me-2"></i>
+                            <strong>read:org</strong> - 讀取組織資訊（如果監控組織 repos）
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="text-center">
+                    <a href="index.html" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left me-2"></i>返回 Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>監控的 Repository
+                </h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">目前設定監控以下 Repository Pattern：</p>
+                <div id="repoList" class="list-group">
+                    <!-- 動態載入 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 載入現有的 token
+        document.addEventListener('DOMContentLoaded', function() {
+            const existingToken = localStorage.getItem('PD_TOKEN');
+            if (existingToken) {
+                document.getElementById('tokenInput').value = existingToken;
+            }
+
+            // 載入 repository 設定
+            loadRepoConfig();
+        });
+
+        // 切換顯示/隱藏 token
+        document.getElementById('toggleToken').addEventListener('click', function() {
+            const input = document.getElementById('tokenInput');
+            const icon = this.querySelector('i');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        });
+
+        // 儲存 token
+        document.getElementById('saveToken').addEventListener('click', function() {
+            const token = document.getElementById('tokenInput').value.trim();
+            
+            if (!token) {
+                showError('請輸入有效的 Token');
+                return;
+            }
+
+            if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+                showError('Token 格式不正確，應以 ghp_ 或 github_pat_ 開頭');
+                return;
+            }
+
+            localStorage.setItem('PD_TOKEN', token);
+            showSuccess('Token 已成功儲存！');
+        });
+
+        // 清除 token
+        document.getElementById('clearToken').addEventListener('click', function() {
+            if (confirm('確定要清除儲存的 Token 嗎？')) {
+                localStorage.removeItem('PD_TOKEN');
+                document.getElementById('tokenInput').value = '';
+                showSuccess('Token 已清除！');
+            }
+        });
+
+        // 測試 token
+        document.getElementById('testToken').addEventListener('click', async function() {
+            const token = document.getElementById('tokenInput').value.trim();
+            
+            if (!token) {
+                showError('請先輸入 Token');
+                return;
+            }
+
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>測試中...';
+
+            try {
+                const response = await fetch('https://api.github.com/user', {
+                    headers: {
+                        'Authorization': `token ${token}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    showSuccess(`連線成功！已驗證身份：${user.login}`);
+                } else {
+                    showError(`連線失敗：${response.status} ${response.statusText}`);
+                }
+            } catch (error) {
+                showError(`連線失敗：${error.message}`);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-check-circle me-2"></i>測試連線';
+            }
+        });
+
+        // 載入 repository 設定
+        async function loadRepoConfig() {
+            try {
+                const response = await fetch('js/config.js');
+                const text = await response.text();
+                
+                // 簡單解析 CONFIG 物件
+                const match = text.match(/repositories:\s*\[([\s\S]*?)\]/);
+                if (match) {
+                    const repoList = document.getElementById('repoList');
+                    repoList.innerHTML = `
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">Er 專案群</h6>
+                                    <small class="text-muted">Owner: mingxianliu | Pattern: Er*</small>
+                                </div>
+                                <span class="badge bg-primary">自動展開</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('載入設定失敗:', error);
+            }
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            document.getElementById('successText').textContent = message;
+            successDiv.style.display = 'block';
+            errorDiv.classList.add('d-none');
+            
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const successDiv = document.getElementById('successMessage');
+            const errorDiv = document.getElementById('errorMessage');
+            
+            document.getElementById('errorText').textContent = message;
+            errorDiv.classList.remove('d-none');
+            successDiv.style.display = 'none';
+            
+            setTimeout(() => {
+                errorDiv.classList.add('d-none');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
