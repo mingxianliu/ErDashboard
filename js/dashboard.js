@@ -25,6 +25,12 @@ class ProjectDashboard {
     }
 
     async init() {
+        // 檢查密碼保護
+        if (!this.checkPasswordProtection()) {
+            this.setupEventListeners();
+            return;
+        }
+        
         // 先嘗試載入本地資料
         const hasLocalData = await this.loadLocalData();
 
@@ -48,6 +54,13 @@ class ProjectDashboard {
         this.render();
         this.setupEventListeners();
         this.startAutoRefresh();
+    }
+    
+    checkPasswordProtection() {
+        if (typeof checkPasswordProtection === 'function') {
+            return checkPasswordProtection();
+        }
+        return true;
     }
 
     async loadLocalData() {
@@ -255,6 +268,12 @@ class ProjectDashboard {
                         if (filterConfig.includePublic === false && !repo.private) return false;
                         if (filterConfig.includePrivate === false && repo.private) return false;
                         if (filterConfig.includeForks === false && repo.fork) return false;
+                        
+                        // 如果有選定特定 repositories，只顯示選定的
+                        if (filterConfig.selectedRepos && filterConfig.selectedRepos.length > 0) {
+                            return filterConfig.selectedRepos.includes(repo.name);
+                        }
+                        
                         return true;
                     });
                     
