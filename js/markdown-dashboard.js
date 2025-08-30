@@ -108,8 +108,20 @@ class MarkdownProjectDashboard {
         const databaseBottom = getBottomProjects('database');
         const deploymentBottom = getBottomProjects('deployment');
         const validationBottom = getBottomProjects('validation');
+        const totalProjects = projects.length;
         
         summaryCards.innerHTML = `
+            <div class="col-md-2">
+                <div class="card border-dark" style="height: 140px;">
+                    <div class="card-header bg-dark text-white py-2">
+                        <small class="fw-bold">專案總數</small>
+                    </div>
+                    <div class="card-body p-2 text-center">
+                        <h2 class="mb-0">${totalProjects}</h2>
+                        <small class="text-muted">個專案</small>
+                    </div>
+                </div>
+            </div>
             <div class="col-md-2">
                 <div class="card border-info" style="height: 140px;">
                     <div class="card-header bg-info text-white py-2">
@@ -158,7 +170,7 @@ class MarkdownProjectDashboard {
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card border-primary" style="height: 140px;">
                     <div class="card-header bg-primary text-white py-2">
                         <small class="fw-bold">部署進度最落後</small>
@@ -174,7 +186,7 @@ class MarkdownProjectDashboard {
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <div class="card border-danger" style="height: 140px;">
                     <div class="card-header bg-danger text-white py-2">
                         <small class="fw-bold">驗證進度最落後</small>
