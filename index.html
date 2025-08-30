@@ -397,14 +397,15 @@
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
-        // 密碼保護功能
-        const DASHBOARD_PASSWORD = 'Er2024!'; // 設定您的密碼
+        // 密碼保護功能 - 從環境或本地設定讀取
+        const DASHBOARD_PASSWORD = localStorage.getItem('DASHBOARD_PWD') || 
+                                   prompt('首次設定：請輸入您的 Dashboard 密碼（建議複雜密碼）');
         
         function checkPasswordProtection() {
-            const hasPrivateRepos = localStorage.getItem('PD_TOKEN') !== null;
             const isUnlocked = sessionStorage.getItem('DASHBOARD_UNLOCKED') === 'true';
             
-            if (hasPrivateRepos && !isUnlocked) {
+            // 一進入就要求密碼（不管有沒有 token）
+            if (!isUnlocked) {
                 document.getElementById('passwordProtection').style.display = 'block';
                 document.getElementById('loadingSpinner').style.display = 'none';
                 return false;
@@ -412,12 +413,20 @@
             return true;
         }
         
+        // 儲存首次設定的密碼
+        if (DASHBOARD_PASSWORD && !localStorage.getItem('DASHBOARD_PWD')) {
+            localStorage.setItem('DASHBOARD_PWD', DASHBOARD_PASSWORD);
+        }
+
         document.getElementById('unlockBtn').addEventListener('click', function() {
             const password = document.getElementById('dashboardPassword').value;
-            if (password === DASHBOARD_PASSWORD) {
+            const storedPassword = localStorage.getItem('DASHBOARD_PWD');
+            
+            if (password === storedPassword) {
                 sessionStorage.setItem('DASHBOARD_UNLOCKED', 'true');
                 document.getElementById('passwordProtection').style.display = 'none';
-                location.reload();
+                // 不要 reload，直接啟動 Dashboard
+                window.dashboardInstance = window.initDashboard();
             } else {
                 document.getElementById('passwordError').classList.remove('d-none');
                 document.getElementById('dashboardPassword').value = '';

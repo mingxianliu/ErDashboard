@@ -571,11 +571,11 @@ class ProjectDashboard {
     }
 }
 
-// 啟動 Dashboard
-document.addEventListener('DOMContentLoaded', () => {
+// Dashboard 初始化函數 - 改為手動調用
+window.initDashboard = function() {
     try {
         console.log('開始初始化 Dashboard...');
-        new ProjectDashboard();
+        return new ProjectDashboard();
     } catch (error) {
         console.error('Dashboard 初始化失敗:', error);
         
@@ -597,5 +597,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             container.style.display = 'flex';
         }
+        return null;
+    }
+};
+
+// 檢查是否已解鎖，如果是則自動啟動
+document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('DASHBOARD_UNLOCKED') === 'true') {
+        window.dashboardInstance = window.initDashboard();
     }
 });
