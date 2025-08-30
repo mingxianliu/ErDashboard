@@ -247,7 +247,18 @@ class ProjectDashboard {
             if (item.repoPattern && item.owner) {
                 try {
                     const allRepos = await this.github.listOwnerReposAll(item.owner);
-                    const matched = this.github.filterReposByPattern(allRepos, item.repoPattern);
+                    let matched = this.github.filterReposByPattern(allRepos, item.repoPattern);
+                    
+                    // 套用過濾設定
+                    const filterConfig = JSON.parse(localStorage.getItem('REPO_FILTER') || '{}');
+                    matched = matched.filter(repo => {
+                        if (filterConfig.includePublic === false && !repo.private) return false;
+                        if (filterConfig.includePrivate === false && repo.private) return false;
+                        if (filterConfig.includeForks === false && repo.fork) return false;
+                        return true;
+                    });
+                    
+                    console.log(`過濾後剩餘 ${matched.length} 個 repositories`);
                     matched.forEach(r => {
                         // 依規則決定前綴與顏色
                         let prefix = item.featurePrefix || 'ER';

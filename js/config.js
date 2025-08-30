@@ -1,15 +1,21 @@
 // 專案監控配置（依需求調整 repositories）
 const CONFIG = {
-    // 要監控的專案清單
-    repositories: [
-        // 使用萬用字元（自動展開為多個 repo）
-        {
-            name: "Er 專案群",
-            owner: "mingxianliu",
-            repoPattern: "Er*",      // 使用 * 做前綴匹配
-            description: "自動匹配所有以 Er 開頭的 repo",
-            color: "#17a2b8",
-            priority: 1,
+    // 要監控的專案清單 - 支援動態過濾設定
+    repositories: (function() {
+        // 從 localStorage 讀取過濾設定
+        const filterConfig = JSON.parse(localStorage.getItem('REPO_FILTER') || '{}');
+        const pattern = filterConfig.pattern || "Er*";
+        const name = filterConfig.name || "Er 專案群";
+        
+        return [
+            // 使用萬用字元（自動展開為多個 repo）
+            {
+                name: name,
+                owner: "mingxianliu",
+                repoPattern: pattern,      // 使用動態 pattern
+                description: `自動匹配所有符合 ${pattern} 模式的 repo`,
+                color: "#17a2b8",
+                priority: 1,
             prefixRules: [
                 { pattern: "ErCore*",    prefix: "ERC" },
                 { pattern: "ErAI*",      prefix: "ERA" },
@@ -38,8 +44,9 @@ const CONFIG = {
                 { pattern: "ErProphet*", color: "#6610f2" },
                 { pattern: "*",          color: "#17a2b8" }
             ]
-        }
-    ],
+            }
+        ];
+    })(),
 
     // 功能狀態對應
     statusMapping: {
