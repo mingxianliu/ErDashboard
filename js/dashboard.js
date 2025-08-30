@@ -13,7 +13,15 @@ class ProjectDashboard {
             },
             recentActivity: []
         };
+        // 一開始就隱藏所有內容區域
+        this.hideAllSections();
         this.init();
+    }
+    
+    hideAllSections() {
+        document.getElementById('summaryCards').style.display = 'none';
+        document.getElementById('projectsList').style.display = 'none';
+        document.getElementById('recentActivity').style.display = 'none';
     }
 
     async init() {
@@ -28,7 +36,12 @@ class ProjectDashboard {
                 this.setupEventListeners();
                 return; // 停在這裡，不執行 render
             } else {
-                await this.collectData();
+                const success = await this.collectData();
+                if (!success) {
+                    // collectData 已經顯示錯誤訊息
+                    this.setupEventListeners();
+                    return;
+                }
             }
         }
 
@@ -85,6 +98,7 @@ class ProjectDashboard {
 
     async collectData() {
         console.log('開始收集專案資料...');
+        console.log('Token 狀態:', CONFIG.github.token ? '已設定' : '未設定');
         this.showLoading(true);
 
         const projects = [];
@@ -97,10 +111,13 @@ class ProjectDashboard {
             );
             
             // 先解析萬用字元（repoPattern）成具體 repo 清單
+            console.log('正在解析 repository pattern...');
             const resolvedRepos = await Promise.race([
                 this.resolveRepositories(CONFIG.repositories),
                 timeout
             ]);
+            
+            console.log(`找到 ${resolvedRepos.length} 個符合的 repository`);
 
         for (const repoConfig of resolvedRepos) {
             try {
@@ -179,6 +196,7 @@ class ProjectDashboard {
 
             this.showLoading(false);
             console.log('資料收集完成');
+            return true; // 成功
         } catch (error) {
             console.error('資料收集失敗:', error);
             this.showLoading(false);
@@ -212,6 +230,7 @@ class ProjectDashboard {
             document.getElementById('summaryCards').style.display = 'none';
             document.getElementById('recentActivity').style.display = 'none';
             document.getElementById('projectsList').style.display = 'flex';
+            return false; // 失敗
         }
     }
 
