@@ -543,5 +543,29 @@ class ProjectDashboard {
 
 // 啟動 Dashboard
 document.addEventListener('DOMContentLoaded', () => {
-    new ProjectDashboard();
+    try {
+        console.log('開始初始化 Dashboard...');
+        new ProjectDashboard();
+    } catch (error) {
+        console.error('Dashboard 初始化失敗:', error);
+        
+        // 強制停止 loading
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) spinner.style.display = 'none';
+        
+        // 顯示錯誤
+        const container = document.getElementById('projectsList');
+        if (container) {
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-bug me-2"></i>初始化錯誤</h5>
+                        <p>Dashboard 初始化失敗：${error.message}</p>
+                        <button class="btn btn-primary" onclick="location.reload()">重新載入</button>
+                    </div>
+                </div>
+            `;
+            container.style.display = 'flex';
+        }
+    }
 });

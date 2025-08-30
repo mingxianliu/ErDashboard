@@ -197,6 +197,44 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 立即停止 loading spinner 並顯示錯誤訊息，防止無限轉圈
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const spinner = document.getElementById('loadingSpinner');
+                const projectsList = document.getElementById('projectsList');
+                
+                // 如果 5 秒後還在轉圈，就強制停止並顯示錯誤
+                if (spinner && spinner.style.display !== 'none') {
+                    console.log('強制停止 loading spinner');
+                    spinner.style.display = 'none';
+                    
+                    if (projectsList) {
+                        projectsList.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-danger" role="alert">
+                                    <h5 class="alert-heading">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        載入逾時
+                                    </h5>
+                                    <p>JavaScript 執行可能發生錯誤，請：</p>
+                                    <ol>
+                                        <li>檢查瀏覽器 Console (F12) 是否有錯誤訊息</li>
+                                        <li>重新整理頁面 (F5)</li>
+                                        <li>確認網路連線正常</li>
+                                    </ol>
+                                    <button class="btn btn-primary" onclick="location.reload()">
+                                        <i class="fas fa-redo"></i> 重新載入
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        projectsList.style.display = 'flex';
+                    }
+                }
+            }, 5000);
+        });
+    </script>
     <script src="js/config.js"></script>
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
