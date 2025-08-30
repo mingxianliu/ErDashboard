@@ -100,21 +100,15 @@
     <script src="js/markdown-reader.js"></script>
     <script src="js/markdown-dashboard.js"></script>
     <script>
-        // 簡化的認證檢查 - 開發模式
+        // 嚴格的認證檢查 - 無繞過機制
         function checkAuthentication() {
-            // 開發模式：自動認證
-            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
-            if (isDev) {
-                sessionStorage.setItem('KEY_AUTHENTICATED', 'true');
-                sessionStorage.setItem('LOGIN_TIME', Date.now().toString());
-                showMainDashboard();
-                return true;
-            }
-            
             const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
             if (!isAuthenticated) {
+                // 確保未認證時完全隱藏所有資料
                 document.getElementById('keyAuthentication').style.display = 'block';
                 document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('summaryCards').style.display = 'none';
+                document.getElementById('projectsList').style.display = 'none';
                 return false;
             }
             // 如果已認證，顯示登出按鈕
