@@ -15,6 +15,13 @@ class MarkdownProjectReader {
             lastUpdate: '',
             startDate: '',
             completeDate: '',
+            coreMetrics: {
+                frontend: { progress: 0, status: '', tasks: [] },
+                backend: { progress: 0, status: '', tasks: [] },
+                database: { progress: 0, status: '', tasks: [] },
+                deployment: { progress: 0, status: '', tasks: [] },
+                validation: { progress: 0, status: '', tasks: [] }
+            },
             features: {
                 completed: [],
                 inProgress: [],
@@ -27,6 +34,7 @@ class MarkdownProjectReader {
 
         let currentSection = '';
         let currentFeatureType = '';
+        let currentMetric = '';
 
         for (let line of lines) {
             line = line.trim();
@@ -44,9 +52,15 @@ class MarkdownProjectReader {
                 continue;
             }
 
-            if (line.startsWith('**完成度：**')) {
+            if (line.startsWith('**整體完成度：**') || line.startsWith('**完成度：**')) {
                 const match = line.match(/(\d+)%/);
-                project.progress = match ? parseInt(match[1]) : 0;
+                if (currentMetric && project.coreMetrics[currentMetric]) {
+                    // 如果在核心指標區段內，更新對應指標的進度
+                    project.coreMetrics[currentMetric].progress = match ? parseInt(match[1]) : 0;
+                } else {
+                    // 否則更新整體進度
+                    project.progress = match ? parseInt(match[1]) : 0;
+                }
                 continue;
             }
 
@@ -65,19 +79,71 @@ class MarkdownProjectReader {
                 continue;
             }
 
+            // 解析核心完整度指標區塊
+            if (line.includes('🎨 前端開發')) {
+                currentSection = 'coreMetrics';
+                currentMetric = 'frontend';
+                continue;
+            }
+            if (line.includes('⚙️ 後端開發')) {
+                currentSection = 'coreMetrics';
+                currentMetric = 'backend';
+                continue;
+            }
+            if (line.includes('🗃️ 資料庫')) {
+                currentSection = 'coreMetrics';
+                currentMetric = 'database';
+                continue;
+            }
+            if (line.includes('🚀 部署')) {
+                currentSection = 'coreMetrics';
+                currentMetric = 'deployment';
+                continue;
+            }
+            if (line.includes('✅ 驗證')) {
+                currentSection = 'coreMetrics';
+                currentMetric = 'validation';
+                continue;
+            }
+
+            // 解析核心指標的狀態
+            if (line.startsWith('**狀態：**') && currentMetric && project.coreMetrics[currentMetric]) {
+                project.coreMetrics[currentMetric].status = line.split('：')[1]?.trim() || '';
+                continue;
+            }
+
+            // 解析核心指標的任務項目
+            if (line.startsWith('- [ ]') || line.startsWith('- [x]')) {
+                if (currentMetric && project.coreMetrics[currentMetric]) {
+                    const completed = line.startsWith('- [x]');
+                    const taskText = line.replace(/^- \[[x ]\] /, '');
+                    project.coreMetrics[currentMetric].tasks.push({
+                        text: taskText,
+                        completed: completed
+                    });
+                }
+                continue;
+            }
+
             // 解析功能區塊
             if (line.includes('已完成功能')) {
+                currentSection = 'features';
                 currentFeatureType = 'completed';
+                currentMetric = '';
                 continue;
             }
 
             if (line.includes('進行中功能')) {
+                currentSection = 'features';
                 currentFeatureType = 'inProgress';
+                currentMetric = '';
                 continue;
             }
 
             if (line.includes('待開發功能')) {
+                currentSection = 'features';
                 currentFeatureType = 'planned';
+                currentMetric = '';
                 continue;
             }
 
@@ -146,6 +212,15 @@ class MarkdownProjectReader {
             if (line.startsWith('**目標') && currentSection === 'milestone') {
                 project.milestone += line + '\n';
                 continue;
+            }
+        }
+
+        // 計算每個核心指標的完成度
+        for (const metricKey in project.coreMetrics) {
+            const metric = project.coreMetrics[metricKey];
+            if (metric.tasks.length > 0) {
+                const completedTasks = metric.tasks.filter(task => task.completed).length;
+                metric.progress = Math.round((completedTasks / metric.tasks.length) * 100);
             }
         }
 

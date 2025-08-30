@@ -177,20 +177,38 @@ class MarkdownProjectDashboard {
                                 </div>
                             </div>
                             
-                            <div class="row text-center mb-3">
-                                <div class="col-4">
-                                    <small class="text-muted">總功能</small>
-                                    <div class="fw-bold">${stats.totalFeatures}</div>
+                            <!-- 5個核心完整度指標 -->
+                            ${project.coreMetrics ? Object.entries(project.coreMetrics).map(([key, metric]) => {
+                                const icons = {
+                                    frontend: '🎨',
+                                    backend: '⚙️', 
+                                    database: '🗃️',
+                                    deployment: '🚀',
+                                    validation: '✅'
+                                };
+                                const names = {
+                                    frontend: '前端',
+                                    backend: '後端',
+                                    database: '資料庫', 
+                                    deployment: '部署',
+                                    validation: '驗證'
+                                };
+                                const progressColor = metric.progress === 100 ? 'bg-success' : 
+                                                    metric.progress >= 50 ? 'bg-warning' : 'bg-info';
+                                return `
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted">${icons[key]} ${names[key]}</small>
+                                        <small class="fw-bold">${metric.progress}%</small>
+                                    </div>
+                                    <div class="progress mb-2" style="height: 6px;">
+                                        <div class="progress-bar ${progressColor}" style="width: ${metric.progress}%"></div>
+                                    </div>
+                                `;
+                            }).join('') : `
+                                <div class="text-center text-muted py-3">
+                                    <small>尚未配置核心指標</small>
                                 </div>
-                                <div class="col-4">
-                                    <small class="text-muted">已完成</small>
-                                    <div class="fw-bold text-success">${stats.completedFeatures}</div>
-                                </div>
-                                <div class="col-4">
-                                    <small class="text-muted">進行中</small>
-                                    <div class="fw-bold text-warning">${stats.inProgressFeatures}</div>
-                                </div>
-                            </div>
+                            `}
                             
                             ${project.lastUpdate ? `
                                 <small class="text-muted">
