@@ -25,12 +25,6 @@ class ProjectDashboard {
     }
 
     async init() {
-        // 檢查密碼保護
-        if (!this.checkPasswordProtection()) {
-            this.setupEventListeners();
-            return;
-        }
-        
         // 先嘗試載入本地資料
         const hasLocalData = await this.loadLocalData();
 
@@ -56,12 +50,6 @@ class ProjectDashboard {
         this.startAutoRefresh();
     }
     
-    checkPasswordProtection() {
-        if (typeof checkPasswordProtection === 'function') {
-            return checkPasswordProtection();
-        }
-        return true;
-    }
 
     async loadLocalData() {
         try {
@@ -571,11 +559,11 @@ class ProjectDashboard {
     }
 }
 
-// Dashboard 初始化函數 - 改為手動調用
-window.initDashboard = function() {
+// 啟動 Dashboard
+document.addEventListener('DOMContentLoaded', () => {
     try {
         console.log('開始初始化 Dashboard...');
-        return new ProjectDashboard();
+        new ProjectDashboard();
     } catch (error) {
         console.error('Dashboard 初始化失敗:', error);
         
@@ -597,13 +585,5 @@ window.initDashboard = function() {
             `;
             container.style.display = 'flex';
         }
-        return null;
-    }
-};
-
-// 檢查是否已解鎖，如果是則自動啟動
-document.addEventListener('DOMContentLoaded', () => {
-    if (sessionStorage.getItem('DASHBOARD_UNLOCKED') === 'true') {
-        window.dashboardInstance = window.initDashboard();
     }
 });

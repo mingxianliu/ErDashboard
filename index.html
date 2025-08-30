@@ -33,27 +33,12 @@
     </nav>
 
     <div class="container-fluid mt-4">
-        <!-- 密碼保護 -->
-        <div id="passwordProtection" class="text-center py-5" style="display: none;">
-            <div class="card mx-auto" style="max-width: 400px;">
-                <div class="card-header bg-warning">
-                    <h5 class="mb-0">
-                        <i class="fas fa-shield-alt me-2"></i>私有 Dashboard
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">此 Dashboard 包含私有資料，請輸入密碼：</p>
-                    <div class="mb-3">
-                        <input type="password" class="form-control" id="dashboardPassword" placeholder="請輸入密碼">
-                    </div>
-                    <button class="btn btn-primary" id="unlockBtn">
-                        <i class="fas fa-unlock"></i> 解鎖
-                    </button>
-                    <div class="alert alert-danger mt-3 d-none" id="passwordError">
-                        <i class="fas fa-exclamation-triangle me-2"></i>密碼錯誤
-                    </div>
-                </div>
-            </div>
+        <!-- 隱私提醒 -->
+        <div id="privacyNotice" class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>隱私提醒：</strong>
+            此為公開的 Dashboard 範例。如需查看私有 Repository，請設定您的 GitHub Token，Token 僅存在您的瀏覽器中。
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
         <!-- 載入狀態 -->
@@ -397,48 +382,6 @@
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
-        // 密碼保護功能 - 從環境或本地設定讀取
-        const DASHBOARD_PASSWORD = localStorage.getItem('DASHBOARD_PWD') || 
-                                   prompt('首次設定：請輸入您的 Dashboard 密碼（建議複雜密碼）');
-        
-        function checkPasswordProtection() {
-            const isUnlocked = sessionStorage.getItem('DASHBOARD_UNLOCKED') === 'true';
-            
-            // 一進入就要求密碼（不管有沒有 token）
-            if (!isUnlocked) {
-                document.getElementById('passwordProtection').style.display = 'block';
-                document.getElementById('loadingSpinner').style.display = 'none';
-                return false;
-            }
-            return true;
-        }
-        
-        // 儲存首次設定的密碼
-        if (DASHBOARD_PASSWORD && !localStorage.getItem('DASHBOARD_PWD')) {
-            localStorage.setItem('DASHBOARD_PWD', DASHBOARD_PASSWORD);
-        }
-
-        document.getElementById('unlockBtn').addEventListener('click', function() {
-            const password = document.getElementById('dashboardPassword').value;
-            const storedPassword = localStorage.getItem('DASHBOARD_PWD');
-            
-            if (password === storedPassword) {
-                sessionStorage.setItem('DASHBOARD_UNLOCKED', 'true');
-                document.getElementById('passwordProtection').style.display = 'none';
-                // 不要 reload，直接啟動 Dashboard
-                window.dashboardInstance = window.initDashboard();
-            } else {
-                document.getElementById('passwordError').classList.remove('d-none');
-                document.getElementById('dashboardPassword').value = '';
-            }
-        });
-        
-        // Enter 鍵支援
-        document.getElementById('dashboardPassword').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                document.getElementById('unlockBtn').click();
-            }
-        });
 
         // Repository 過濾設定功能
         document.getElementById('filterBtn').addEventListener('click', function() {
