@@ -235,8 +235,6 @@ class MarkdownProjectReader {
                 'ErAid-Ecosystem.md',
                 'ErTidy.md',
                 'ErAI.md',
-                'ErAPI.md',
-                'ErStarters.md',
                 'ErSlice.md',
                 'ErForge.md',
                 'ErProphet.md',
@@ -244,7 +242,6 @@ class MarkdownProjectReader {
                 'ErGrant.md',
                 'ErShield.md',
                 'ErStore.md',
-                'ErUI.md',
                 'ErCore.md'
                 // 未來可以動態獲取 projects/ 目錄下的所有 .md 檔案
             ];
