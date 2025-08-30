@@ -157,10 +157,6 @@ class MarkdownProjectReader {
         try {
             // 獲取專案檔案列表
             const projectFiles = [
-                'ErProject1.md',
-                'ErProject2.md', 
-                'ErAI-Assistant.md',
-                'ErNewProject.md',
                 'ErAid-Ecosystem.md',
                 'ErTidy.md',
                 'ErAI.md',
