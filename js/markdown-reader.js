@@ -80,27 +80,27 @@ class MarkdownProjectReader {
             }
 
             // 解析核心完整度指標區塊
-            if (line.includes('🎨 前端開發')) {
+            if (line.includes('🎨 前端開發') || line.includes('前端開發')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'frontend';
                 continue;
             }
-            if (line.includes('⚙️ 後端開發')) {
+            if (line.includes('⚙️ 後端開發') || line.includes('後端開發')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'backend';
                 continue;
             }
-            if (line.includes('🗃️ 資料庫')) {
+            if (line.includes('🗃️ 資料庫') || line.includes('資料庫')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'database';
                 continue;
             }
-            if (line.includes('🚀 部署')) {
+            if (line.includes('🚀 部署') || line.includes('部署')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'deployment';
                 continue;
             }
-            if (line.includes('✅ 驗證')) {
+            if (line.includes('✅ 驗證') || line.includes('驗證')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'validation';
                 continue;
