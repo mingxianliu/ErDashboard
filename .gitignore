@@ -6,3 +6,9 @@ node_modules/
 dist/
 build/
 data/progress.json
+
+# 私鑰檔案 - 絕對不能 commit！
+private-key.pem
+*.pem
+*.key
+private-*

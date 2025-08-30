@@ -41,6 +41,51 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
+        <!-- 私鑰驗證 -->
+        <div id="keyAuthentication" class="text-center py-5" style="display: none;">
+            <div class="card mx-auto" style="max-width: 600px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>私鑰驗證
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">此 Dashboard 需要私鑰驗證才能查看完整資料。請匯入您的私鑰：</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">匯入私鑰 (PEM 格式)</label>
+                        <textarea class="form-control" id="privateKeyInput" rows="8" 
+                                  placeholder="-----BEGIN PRIVATE KEY-----
+...
+-----END PRIVATE KEY-----"></textarea>
+                        <small class="text-muted">私鑰僅在瀏覽器中使用，不會傳送到任何伺服器</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" id="verifyKeyBtn">
+                                <i class="fas fa-shield-alt me-2"></i>驗證並進入
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm" id="uploadKeyBtn">
+                                <i class="fas fa-upload me-2"></i>從檔案匯入
+                            </button>
+                        </div>
+                        <input type="file" id="keyFileInput" accept=".pem,.key" style="display: none;">
+                    </div>
+                    
+                    <div class="alert alert-danger mt-3 d-none" id="keyError">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <span id="keyErrorText">私鑰驗證失敗</span>
+                    </div>
+                    
+                    <div class="alert alert-success mt-3 d-none" id="keySuccess">
+                        <i class="fas fa-check-circle me-2"></i>
+                        私鑰驗證成功！正在載入 Dashboard...
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 載入狀態 -->
         <div id="loadingSpinner" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -334,7 +379,81 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/crypto-auth.js"></script>
     <script>
+        // 檢查是否需要私鑰驗證
+        function checkAuthentication() {
+            const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
+            if (!isAuthenticated) {
+                document.getElementById('keyAuthentication').style.display = 'block';
+                document.getElementById('loadingSpinner').style.display = 'none';
+                return false;
+            }
+            return true;
+        }
+        
+        // 私鑰驗證功能
+        document.getElementById('verifyKeyBtn').addEventListener('click', async function() {
+            const privateKeyPEM = document.getElementById('privateKeyInput').value.trim();
+            const errorDiv = document.getElementById('keyError');
+            const successDiv = document.getElementById('keySuccess');
+            
+            if (!privateKeyPEM) {
+                document.getElementById('keyErrorText').textContent = '請輸入私鑰';
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>驗證中...';
+            
+            try {
+                // 使用 Web Crypto API 驗證私鑰
+                const isValid = await verifyPrivateKeyWebCrypto(privateKeyPEM);
+                
+                if (isValid) {
+                    sessionStorage.setItem('KEY_AUTHENTICATED', 'true');
+                    successDiv.classList.remove('d-none');
+                    errorDiv.classList.add('d-none');
+                    
+                    setTimeout(() => {
+                        document.getElementById('keyAuthentication').style.display = 'none';
+                        // 啟動 Dashboard
+                        window.dashboardInstance = new ProjectDashboard();
+                    }, 1000);
+                } else {
+                    document.getElementById('keyErrorText').textContent = '私鑰驗證失敗，請確認私鑰正確';
+                    errorDiv.classList.remove('d-none');
+                    successDiv.classList.add('d-none');
+                }
+            } catch (error) {
+                console.error('Key verification error:', error);
+                document.getElementById('keyErrorText').textContent = `驗證錯誤：${error.message}`;
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-shield-alt me-2"></i>驗證並進入';
+            }
+        });
+        
+        // 從檔案匯入私鑰
+        document.getElementById('uploadKeyBtn').addEventListener('click', function() {
+            document.getElementById('keyFileInput').click();
+        });
+        
+        document.getElementById('keyFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('privateKeyInput').value = event.target.result;
+                };
+                reader.readAsText(file);
+            }
+        });
+
         // 延長超時檢查到 30 秒，給 API 呼叫更多時間
         window.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {

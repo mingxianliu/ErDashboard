@@ -561,6 +561,11 @@ class ProjectDashboard {
 
 // 啟動 Dashboard
 document.addEventListener('DOMContentLoaded', () => {
+    // 檢查是否已通過私鑰驗證
+    if (!checkAuthentication()) {
+        return;
+    }
+    
     try {
         console.log('開始初始化 Dashboard...');
         new ProjectDashboard();
