@@ -22,7 +22,12 @@ class ProjectDashboard {
 
         // 如果沒有本地資料，即時收集
         if (!this.data.projects.length) {
-            await this.collectData();
+            // 檢查是否有 token
+            if (!CONFIG.github.token) {
+                this.showNoDataMessage();
+            } else {
+                await this.collectData();
+            }
         }
 
         this.render();
@@ -36,10 +41,44 @@ class ProjectDashboard {
             if (response.ok) {
                 this.data = await response.json();
                 console.log('載入本地資料成功');
+                return true;
             }
         } catch (error) {
-            console.log('本地資料載入失敗，將即時收集資料');
+            console.log('本地資料載入失敗');
         }
+        return false;
+    }
+    
+    showNoDataMessage() {
+        this.showLoading(false);
+        const container = document.getElementById('projectsList');
+        container.innerHTML = `
+            <div class="col-12">
+                <div class="alert alert-warning" role="alert">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        尚無資料
+                    </h5>
+                    <p>Dashboard 資料尚未產生，請：</p>
+                    <ol>
+                        <li>等待 GitHub Actions 自動執行（每小時一次）</li>
+                        <li>或手動觸發 Actions：<a href="https://github.com/mingxianliu/ErDashboard/actions" target="_blank">前往 Actions 頁面</a></li>
+                        <li>如要即時載入資料，請設定 GitHub Token：
+                            <button class="btn btn-warning btn-sm ms-2" onclick="document.getElementById('quickTokenBtn').click()">
+                                <i class="fas fa-key"></i> 設定 Token
+                            </button>
+                        </li>
+                    </ol>
+                    <hr>
+                    <p class="mb-0">
+                        <small>提示：設定 Token 後可立即從 GitHub API 載入資料，無需等待 Actions。</small>
+                    </p>
+                </div>
+            </div>
+        `;
+        document.getElementById('summaryCards').style.display = 'none';
+        document.getElementById('recentActivity').style.display = 'none';
+        document.getElementById('projectsList').style.display = 'flex';
     }
 
     async collectData() {
@@ -49,8 +88,17 @@ class ProjectDashboard {
         const projects = [];
         const allActivity = [];
 
-        // 先解析萬用字元（repoPattern）成具體 repo 清單
-        const resolvedRepos = await this.resolveRepositories(CONFIG.repositories);
+        try {
+            // 添加超時機制
+            const timeout = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('請求超時')), 30000)
+            );
+            
+            // 先解析萬用字元（repoPattern）成具體 repo 清單
+            const resolvedRepos = await Promise.race([
+                this.resolveRepositories(CONFIG.repositories),
+                timeout
+            ]);
 
         for (const repoConfig of resolvedRepos) {
             try {
@@ -127,8 +175,42 @@ class ProjectDashboard {
             recentActivity: allActivity.slice(0, 10)
         };
 
-        this.showLoading(false);
-        console.log('資料收集完成');
+            this.showLoading(false);
+            console.log('資料收集完成');
+        } catch (error) {
+            console.error('資料收集失敗:', error);
+            this.showLoading(false);
+            
+            // 顯示錯誤訊息
+            const container = document.getElementById('projectsList');
+            container.innerHTML = `
+                <div class="col-12">
+                    <div class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading">
+                            <i class="fas fa-times-circle me-2"></i>
+                            資料載入失敗
+                        </h5>
+                        <p>無法從 GitHub API 載入資料，可能原因：</p>
+                        <ul>
+                            <li>API 速率限制（未認證：60次/小時）</li>
+                            <li>網路連線問題</li>
+                            <li>Token 無效或權限不足</li>
+                        </ul>
+                        <div class="mt-3">
+                            <button class="btn btn-warning" onclick="document.getElementById('quickTokenBtn').click()">
+                                <i class="fas fa-key"></i> 設定有效的 Token
+                            </button>
+                            <button class="btn btn-secondary ms-2" onclick="location.reload()">
+                                <i class="fas fa-redo"></i> 重試
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('summaryCards').style.display = 'none';
+            document.getElementById('recentActivity').style.display = 'none';
+            document.getElementById('projectsList').style.display = 'flex';
+        }
     }
 
     async resolveRepositories(repos) {
