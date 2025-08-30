@@ -93,15 +93,25 @@ class GitHubAPI {
 
     // 嘗試使用者/組織兩種路徑列出 repos
     async listOwnerReposAll(owner) {
+        console.log(`正在列出 ${owner} 的所有 repositories...`);
+        
         try {
-            return await this.listUserReposAll(owner);
-        } catch (e) {
-            // fallthrough to org
-        }
-        try {
-            return await this.listOrgReposAll(owner);
-        } catch (e) {
-            throw e;
+            // 先嘗試用戶 repos (包含私有的)
+            const userRepos = await this.listUserReposAll(owner);
+            console.log(`找到 ${userRepos.length} 個用戶 repositories`);
+            return userRepos;
+        } catch (userError) {
+            console.log(`用戶 API 失敗: ${userError.message}`);
+            
+            try {
+                // 再試組織 repos
+                const orgRepos = await this.listOrgReposAll(owner);
+                console.log(`找到 ${orgRepos.length} 個組織 repositories`);
+                return orgRepos;
+            } catch (orgError) {
+                console.error(`組織 API 也失敗: ${orgError.message}`);
+                throw new Error(`無法列出 ${owner} 的 repositories: 用戶API(${userError.message}), 組織API(${orgError.message})`);
+            }
         }
     }
 
