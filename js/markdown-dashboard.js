@@ -1,6 +1,25 @@
 // 基於 Markdown 檔案的專案 Dashboard
 class MarkdownProjectDashboard {
     constructor() {
+        // 嚴格驗證：未通過 session 驗證時禁止載入任何資料
+        const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
+        if (!isAuthenticated) {
+            console.warn('未通過私鑰驗證，禁止載入專案資料');
+            // 清空資料，並不執行 init
+            this.reader = null;
+            this.data = {
+                lastUpdate: null,
+                projects: [],
+                summary: {
+                    totalProjects: 0,
+                    totalFeatures: 0,
+                    completedFeatures: 0,
+                    inProgressFeatures: 0,
+                    overallProgress: 0
+                }
+            };
+            return;
+        }
         this.reader = new MarkdownProjectReader();
         this.data = {
             lastUpdate: new Date().toISOString(),
