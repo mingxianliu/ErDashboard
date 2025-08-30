@@ -19,6 +19,9 @@
             </span>
             <div class="d-flex align-items-center">
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
+                <button class="btn btn-info btn-sm me-2" id="filterBtn">
+                    <i class="fas fa-filter"></i> 過濾設定
+                </button>
                 <button class="btn btn-warning btn-sm me-2" id="quickTokenBtn">
                     <i class="fas fa-key"></i> 快速設定 Token
                 </button>
@@ -125,6 +128,112 @@
             </div>
             <div class="card-body">
                 <div id="activityList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repository 過濾設定 Modal -->
+    <div class="modal fade" id="filterModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-filter me-2"></i>Repository 過濾設定
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        設定要監控的 Repository 模式。支援萬用字元（*）匹配。
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">預設模式</h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <button class="btn btn-outline-primary btn-sm me-2" onclick="setQuickFilter('*')">
+                                    <i class="fas fa-globe"></i> 所有 Repository
+                                </button>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <button class="btn btn-outline-success btn-sm" onclick="setQuickFilter('Er*')">
+                                    <i class="fas fa-code-branch"></i> Er* 開頭
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">自訂過濾規則</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label">Repository 模式</label>
+                                <input type="text" class="form-control" id="repoPattern" placeholder="例如: Er*, *Dashboard, MyProject*">
+                                <small class="text-muted">使用 * 作為萬用字元</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">顯示名稱</label>
+                                <input type="text" class="form-control" id="groupName" placeholder="例如: Er 專案群">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">Repository 類型</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="includePublic" checked>
+                                    <label class="form-check-label" for="includePublic">
+                                        <i class="fas fa-unlock text-success"></i> 公開 Repository
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="includePrivate" checked>
+                                    <label class="form-check-label" for="includePrivate">
+                                        <i class="fas fa-lock text-warning"></i> 私有 Repository
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="includeForks">
+                                    <label class="form-check-label" for="includeForks">
+                                        <i class="fas fa-code-branch text-info"></i> Fork Repository
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <h6 class="fw-bold mb-3">當前過濾設定</h6>
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>模式:</strong> <span id="currentPattern">Er*</span>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>群組:</strong> <span id="currentGroup">Er 專案群</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-success" id="previewFilter">
+                        <i class="fas fa-eye me-2"></i>預覽結果
+                    </button>
+                    <button type="button" class="btn btn-primary" id="applyFilter">
+                        <i class="fas fa-save me-2"></i>套用並重新載入
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -245,6 +354,113 @@
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
+        // Repository 過濾設定功能
+        document.getElementById('filterBtn').addEventListener('click', function() {
+            const modal = new bootstrap.Modal(document.getElementById('filterModal'));
+            
+            // 載入當前設定
+            const currentConfig = JSON.parse(localStorage.getItem('REPO_FILTER') || '{}');
+            document.getElementById('repoPattern').value = currentConfig.pattern || 'Er*';
+            document.getElementById('groupName').value = currentConfig.name || 'Er 專案群';
+            document.getElementById('includePublic').checked = currentConfig.includePublic !== false;
+            document.getElementById('includePrivate').checked = currentConfig.includePrivate !== false;
+            document.getElementById('includeForks').checked = currentConfig.includeForks || false;
+            
+            updateCurrentFilterDisplay();
+            modal.show();
+        });
+
+        function setQuickFilter(pattern) {
+            document.getElementById('repoPattern').value = pattern;
+            document.getElementById('groupName').value = pattern === '*' ? '所有專案' : 'Er 專案群';
+            updateCurrentFilterDisplay();
+        }
+
+        function updateCurrentFilterDisplay() {
+            document.getElementById('currentPattern').textContent = document.getElementById('repoPattern').value || 'Er*';
+            document.getElementById('currentGroup').textContent = document.getElementById('groupName').value || 'Er 專案群';
+        }
+
+        document.getElementById('repoPattern').addEventListener('input', updateCurrentFilterDisplay);
+        document.getElementById('groupName').addEventListener('input', updateCurrentFilterDisplay);
+
+        // 預覽過濾結果
+        document.getElementById('previewFilter').addEventListener('click', async function() {
+            const pattern = document.getElementById('repoPattern').value || 'Er*';
+            const includePublic = document.getElementById('includePublic').checked;
+            const includePrivate = document.getElementById('includePrivate').checked;
+            const includeForks = document.getElementById('includeForks').checked;
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>預覽中...';
+            
+            try {
+                // 使用現有的 GitHub API 實例
+                const token = localStorage.getItem('PD_TOKEN');
+                if (!token) {
+                    alert('請先設定 GitHub Token 才能預覽結果');
+                    return;
+                }
+                
+                const github = new GitHubAPI(token);
+                const allRepos = await github.listOwnerReposAll('mingxianliu');
+                const filteredRepos = github.filterReposByPattern(allRepos, pattern)
+                    .filter(repo => {
+                        if (!includePublic && !repo.private) return false;
+                        if (!includePrivate && repo.private) return false;
+                        if (!includeForks && repo.fork) return false;
+                        return true;
+                    });
+                
+                const previewHtml = `
+                    <div class="alert alert-success mt-3">
+                        <h6><i class="fas fa-eye me-2"></i>預覽結果</h6>
+                        <p><strong>找到 ${filteredRepos.length} 個符合的 Repository：</strong></p>
+                        <div class="row">
+                            ${filteredRepos.map(repo => `
+                                <div class="col-md-6 col-lg-4 mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-${repo.private ? 'lock text-warning' : 'unlock text-success'} me-2"></i>
+                                        ${repo.fork ? '<i class="fas fa-code-branch text-info me-1"></i>' : ''}
+                                        <span class="text-truncate">${repo.name}</span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                // 插入預覽結果
+                const existingPreview = document.querySelector('.filter-preview');
+                if (existingPreview) existingPreview.remove();
+                
+                const previewDiv = document.createElement('div');
+                previewDiv.className = 'filter-preview';
+                previewDiv.innerHTML = previewHtml;
+                document.querySelector('#filterModal .modal-body').appendChild(previewDiv);
+                
+            } catch (error) {
+                alert(`預覽失敗: ${error.message}`);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-eye me-2"></i>預覽結果';
+            }
+        });
+
+        // 套用過濾設定
+        document.getElementById('applyFilter').addEventListener('click', function() {
+            const filterConfig = {
+                pattern: document.getElementById('repoPattern').value || 'Er*',
+                name: document.getElementById('groupName').value || 'Er 專案群',
+                includePublic: document.getElementById('includePublic').checked,
+                includePrivate: document.getElementById('includePrivate').checked,
+                includeForks: document.getElementById('includeForks').checked
+            };
+            
+            localStorage.setItem('REPO_FILTER', JSON.stringify(filterConfig));
+            location.reload();
+        });
+
         // 快速 Token 設定功能
         document.getElementById('quickTokenBtn').addEventListener('click', function() {
             const modal = new bootstrap.Modal(document.getElementById('tokenModal'));
