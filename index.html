@@ -100,8 +100,17 @@
     <script src="js/markdown-reader.js"></script>
     <script src="js/markdown-dashboard.js"></script>
     <script>
-        // 簡化的認證檢查
+        // 簡化的認證檢查 - 開發模式
         function checkAuthentication() {
+            // 開發模式：自動認證
+            const isDev = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
+            if (isDev) {
+                sessionStorage.setItem('KEY_AUTHENTICATED', 'true');
+                sessionStorage.setItem('LOGIN_TIME', Date.now().toString());
+                showMainDashboard();
+                return true;
+            }
+            
             const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
             if (!isAuthenticated) {
                 document.getElementById('keyAuthentication').style.display = 'block';
