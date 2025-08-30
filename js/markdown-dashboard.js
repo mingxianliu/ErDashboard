@@ -229,7 +229,7 @@ class MarkdownProjectDashboard {
             const statusIcon = this.reader.getStatusIcon(project.status);
             
             html += `
-                <div class="col-md-4 col-lg-2 mb-4">
+                <div class="col mb-4" style="flex: 0 0 14.28%;">
                     <div class="card h-100 project-card" data-project-id="${project.id}">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
@@ -290,8 +290,8 @@ class MarkdownProjectDashboard {
             `;
         }
 
-        projectsList.innerHTML = html;
-        projectsList.style.display = 'flex';
+        projectsList.innerHTML = `<div class="row">${html}</div>`;
+        projectsList.style.display = 'block';
     }
 
     updateLastUpdateTime() {
