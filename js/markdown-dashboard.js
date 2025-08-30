@@ -107,52 +107,79 @@ class MarkdownProjectDashboard {
         const backendBottom = getBottomProjects('backend');
         const databaseBottom = getBottomProjects('database');
 
+        const totalProjects = projects.length;
+        
         summaryCards.innerHTML = `
-            <div class="col-md-4">
-                <div class="card border-info">
-                    <div class="card-header bg-info text-white">
-                        <i class="fas fa-paint-brush me-2"></i>🎨 前端進度最落後
+            <div class="col-md-2">
+                <div class="card border-primary" style="height: 140px;">
+                    <div class="card-header bg-primary text-white py-2">
+                        <small class="fw-bold">總專案數</small>
                     </div>
-                    <div class="card-body p-2">
+                    <div class="card-body p-2 text-center">
+                        <h2 class="mb-0">${totalProjects}</h2>
+                        <small class="text-muted">個專案</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="card border-info" style="height: 140px;">
+                    <div class="card-header bg-info text-white py-2">
+                        <small class="fw-bold">前端進度最落後</small>
+                    </div>
+                    <div class="card-body p-1">
                         ${frontendBottom.map(p => `
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <small class="text-muted">${p.name.split(' - ')[0]}</small>
-                                <span class="badge bg-secondary">${p.coreMetrics.frontend.progress}%</span>
+                                <span class="badge bg-secondary small">${p.coreMetrics.frontend.progress}%</span>
                             </div>
                         `).join('')}
                         ${frontendBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-warning">
-                    <div class="card-header bg-warning text-white">
-                        <i class="fas fa-cog me-2"></i>⚙️ 後端進度最落後
+            <div class="col-md-2">
+                <div class="card border-warning" style="height: 140px;">
+                    <div class="card-header bg-warning text-white py-2">
+                        <small class="fw-bold">後端進度最落後</small>
                     </div>
-                    <div class="card-body p-2">
+                    <div class="card-body p-1">
                         ${backendBottom.map(p => `
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <small class="text-muted">${p.name.split(' - ')[0]}</small>
-                                <span class="badge bg-secondary">${p.coreMetrics.backend.progress}%</span>
+                                <span class="badge bg-secondary small">${p.coreMetrics.backend.progress}%</span>
                             </div>
                         `).join('')}
                         ${backendBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-success">
-                    <div class="card-header bg-success text-white">
-                        <i class="fas fa-database me-2"></i>🗃️ 資料庫進度最落後
+            <div class="col-md-2">
+                <div class="card border-success" style="height: 140px;">
+                    <div class="card-header bg-success text-white py-2">
+                        <small class="fw-bold">資料庫進度最落後</small>
                     </div>
-                    <div class="card-body p-2">
+                    <div class="card-body p-1">
                         ${databaseBottom.map(p => `
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <small class="text-muted">${p.name.split(' - ')[0]}</small>
-                                <span class="badge bg-secondary">${p.coreMetrics.database.progress}%</span>
+                                <span class="badge bg-secondary small">${p.coreMetrics.database.progress}%</span>
                             </div>
                         `).join('')}
                         ${databaseBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-secondary" style="height: 140px;">
+                    <div class="card-header bg-secondary text-white py-2">
+                        <small class="fw-bold">系統狀態</small>
+                    </div>
+                    <div class="card-body p-2">
+                        <small class="text-muted">
+                            最後更新：${new Date().toLocaleDateString('zh-TW')}<br>
+                            活躍專案：${projects.filter(p => p.status.includes('進行中')).length} 個<br>
+                            完成專案：${projects.filter(p => p.status.includes('已完成')).length} 個
+                        </small>
                     </div>
                 </div>
             </div>
@@ -203,13 +230,6 @@ class MarkdownProjectDashboard {
                             
                             <!-- 5個核心完整度指標 -->
                             ${project.coreMetrics ? Object.entries(project.coreMetrics).map(([key, metric]) => {
-                                const icons = {
-                                    frontend: '🎨',
-                                    backend: '⚙️', 
-                                    database: '🗃️',
-                                    deployment: '🚀',
-                                    validation: '✅'
-                                };
                                 const names = {
                                     frontend: '前端',
                                     backend: '後端',
@@ -221,7 +241,7 @@ class MarkdownProjectDashboard {
                                                     metric.progress >= 50 ? 'bg-warning' : 'bg-info';
                                 return `
                                     <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <small class="text-muted">${icons[key]} ${names[key]}</small>
+                                        <small class="text-muted">${names[key]}</small>
                                         <small class="fw-bold">${metric.progress}%</small>
                                     </div>
                                     <div class="progress mb-2" style="height: 6px;">
