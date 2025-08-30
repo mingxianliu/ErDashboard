@@ -1,0 +1,13 @@
+{
+  "name": "erdashboard",
+  "version": "1.0.0",
+  "description": "Multi-project progress monitoring dashboard for GitHub",
+  "scripts": {
+    "collect": "node scripts/collect-data.js",
+    "serve": "python3 -m http.server 8000"
+  },
+  "dependencies": {
+    "axios": "^1.11.0",
+    "@octokit/rest": "^20.0.2"
+  }
+}

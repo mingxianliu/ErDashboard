@@ -1,53 +1,96 @@
-# 多專案監控 Dashboard（簡化版、可部署 GitHub Pages）
+# ErDashboard - 多專案進度監控中心
 
-此專案是一個純靜態的 GitHub Repository 監控儀表板，集中呈現多個專案的功能進度、整體統計與近期活動。資料來源由 GitHub Actions 定期收集並寫入 `data/progress.json`，頁面由 GitHub Pages 提供。
+自動監控 GitHub 上所有 Er* 開頭專案的進度儀表板。
 
-## 結構
+## 功能特色
 
+- 自動收集所有 Er* 開頭的 Repository 資訊
+- 透過 Issue/PR 編號（如 ERC0001）追蹤功能進度
+- GitHub Actions 每小時自動更新數據
+- 支援私有 Repository（需設定 Token）
+- 純前端應用，可部署在 GitHub Pages
+
+## 快速部署
+
+### 1. Fork 此專案
+
+### 2. 啟用 GitHub Pages
+- 進入 Settings > Pages
+- Source 選擇 "Deploy from a branch"
+- Branch 選擇 "main" / "(root)"
+- 點擊 Save
+
+### 3. 啟用 GitHub Actions
+- 進入 Actions 標籤
+- 點擊 "I understand my workflows, go ahead and enable them"
+
+### 4. 訪問您的 Dashboard
+- 網址：`https://[您的用戶名].github.io/ErDashboard`
+
+## 設定 Token（監控私有 Repo）
+
+如果要監控私有 Repository：
+
+1. 點擊頁面上的黃色「快速設定 Token」按鈕
+2. 按照彈出視窗的指示：
+   - 點擊「前往 GitHub 建立 Token」
+   - 勾選 `repo` 權限
+   - 產生並複製 Token
+3. 將 Token 貼入輸入框
+4. 點擊「測試連線」確認 Token 有效
+5. 點擊「儲存並重新載入」
+
+**注意**：Token 僅儲存在瀏覽器 localStorage，不會傳送到任何伺服器。
+
+## 自訂監控範圍
+
+編輯 `js/config.js` 調整監控設定：
+
+```javascript
+repositories: [
+    {
+        name: "Er 專案群",
+        owner: "mingxianliu",  // 改為您的 GitHub 用戶名
+        repoPattern: "Er*",     // 改為您要監控的 pattern
+        // ...
+    }
+]
 ```
-project-dashboard/
-├── index.html
-├── css/
-│   └── dashboard.css
-├── js/
-│   ├── config.js
-│   ├── github-api.js
-│   └── dashboard.js
-├── data/
-│   └── progress.json
-└── .github/workflows/
-    └── update-data.yml
-```
 
-## 設定步驟
+## 功能代碼規範
 
-1) 編輯 `js/config.js`
-- 在 `repositories` 陣列中新增或調整要監控的專案。
-- 每個專案請設定 `owner`, `repo`, `featurePrefix`（功能代碼前綴），與 `color`。
+Dashboard 會自動識別 Issue/PR 標題中的功能代碼：
 
-2) 啟用 GitHub Pages
-- Repository Settings → Pages → Branch 選擇 `main` 與 `/(root)`，儲存。
+- ErCore 專案：`ERC0001`
+- ErAI 專案：`ERA0001`
+- ErForge 專案：`ERF0001`
+- 其他規則見 `js/config.js`
 
-3) 啟用 GitHub Actions
-- 檢查 `.github/workflows/update-data.yml` 已存在，首次合併到 main 後將自動排程執行（每 2 小時、可手動觸發）。
-- Workflow 使用 `GITHUB_TOKEN` 呼叫 GitHub API 並提交更新檔案。
+## 技術架構
 
-4) 首次本地預覽
-- 直接開啟 `index.html`。
-- 若 `data/progress.json` 尚未由 Actions 產出，頁面會嘗試即時呼叫 GitHub API（可能受限於 API rate limit）。
+- **前端**：純 HTML/JS/CSS + Bootstrap
+- **資料更新**：GitHub Actions + Node.js
+- **部署**：GitHub Pages
+- **API**：GitHub REST API v3
 
-## 功能代碼規範（範例）
+## 資料更新頻率
 
-- Issue 標題包含 `[PREFIX+4位數]`：例如 `EMSB0101 使用者登入功能`。
-- 以 Issue 狀態判斷進度：`open=進行中`、`closed=完成`。
+- GitHub Actions 每小時自動執行
+- 可手動觸發：Actions > Update Dashboard Data > Run workflow
+- 頁面上點擊「重新載入」可立即從 GitHub API 取得最新資料（需 Token）
 
-## 常見問題
+## 疑難排解
 
-- 工作流程無法提交：請確認 repo 允許 Actions 使用 `GITHUB_TOKEN` 進行寫入。此專案已於 workflow 設定 `permissions: contents: write`。
-- 私有 Repo：前端頁面可於瀏覽器 `localStorage` 設定 token：`localStorage.setItem('PD_TOKEN', 'ghp_xxx')`。
-- 頁面無法載入資料：先確認 `data/progress.json` 是否存在，或查看 Actions 執行紀錄。
+### 沒有看到資料？
+1. 確認 GitHub Actions 已執行過（查看 Actions 標籤）
+2. 確認 `data/progress.json` 檔案已產生
+3. 如果是私有 repo，需設定 Token
 
-## 授權
+### API 速率限制？
+- 未認證：60 次/小時
+- 已設定 Token：5000 次/小時
 
-此專案範本僅供示範，可自由調整使用。
-
+### Actions 執行失敗？
+檢查 Actions 標籤的錯誤訊息，常見原因：
+- Repository 名稱或 owner 錯誤
+- API 速率限制（等待下個小時）

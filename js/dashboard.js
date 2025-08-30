@@ -377,6 +377,54 @@ class ProjectDashboard {
             await this.collectData();
             this.render();
         });
+        
+        // 添加鍵盤快捷鍵支援
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + E: 導出數據
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                this.exportData();
+            }
+            // Ctrl/Cmd + R: 重新載入
+            if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                e.preventDefault();
+                this.collectData().then(() => this.render());
+            }
+        });
+    }
+    
+    exportData() {
+        const exportData = {
+            exportTime: new Date().toISOString(),
+            ...this.data
+        };
+        
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `dashboard-export-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        // 顯示導出成功提示
+        this.showNotification('數據已成功導出！', 'success');
+    }
+    
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `alert alert-${type} position-fixed top-0 start-50 translate-middle-x mt-3`;
+        notification.style.zIndex = '9999';
+        notification.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+            ${message}
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 
     startAutoRefresh() {
