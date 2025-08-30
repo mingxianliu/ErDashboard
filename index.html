@@ -33,6 +33,29 @@
     </nav>
 
     <div class="container-fluid mt-4">
+        <!-- 密碼保護 -->
+        <div id="passwordProtection" class="text-center py-5" style="display: none;">
+            <div class="card mx-auto" style="max-width: 400px;">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i>私有 Dashboard
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">此 Dashboard 包含私有資料，請輸入密碼：</p>
+                    <div class="mb-3">
+                        <input type="password" class="form-control" id="dashboardPassword" placeholder="請輸入密碼">
+                    </div>
+                    <button class="btn btn-primary" id="unlockBtn">
+                        <i class="fas fa-unlock"></i> 解鎖
+                    </button>
+                    <div class="alert alert-danger mt-3 d-none" id="passwordError">
+                        <i class="fas fa-exclamation-triangle me-2"></i>密碼錯誤
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 載入狀態 -->
         <div id="loadingSpinner" class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
@@ -210,6 +233,26 @@
                     </div>
 
                     <div class="mb-4">
+                        <h6 class="fw-bold mb-3">選擇特定 Repositories</h6>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            點擊「載入清單」來取得符合模式的 repositories，然後選擇要監控的項目
+                        </div>
+                        <div class="mb-3">
+                            <button class="btn btn-outline-primary btn-sm" id="loadRepoList">
+                                <i class="fas fa-download"></i> 載入 Repository 清單
+                            </button>
+                            <div class="d-inline-block ms-3">
+                                <button class="btn btn-outline-success btn-sm me-2" id="selectAll">全選</button>
+                                <button class="btn btn-outline-secondary btn-sm" id="selectNone">全不選</button>
+                            </div>
+                        </div>
+                        <div id="repoCheckboxList" class="border rounded p-3" style="max-height: 300px; overflow-y: auto; display: none;">
+                            <!-- 動態載入 checkbox 清單 -->
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
                         <h6 class="fw-bold mb-3">當前過濾設定</h6>
                         <div class="card bg-light">
                             <div class="card-body">
@@ -354,6 +397,40 @@
     <script src="js/github-api.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
+        // 密碼保護功能
+        const DASHBOARD_PASSWORD = 'Er2024!'; // 設定您的密碼
+        
+        function checkPasswordProtection() {
+            const hasPrivateRepos = localStorage.getItem('PD_TOKEN') !== null;
+            const isUnlocked = sessionStorage.getItem('DASHBOARD_UNLOCKED') === 'true';
+            
+            if (hasPrivateRepos && !isUnlocked) {
+                document.getElementById('passwordProtection').style.display = 'block';
+                document.getElementById('loadingSpinner').style.display = 'none';
+                return false;
+            }
+            return true;
+        }
+        
+        document.getElementById('unlockBtn').addEventListener('click', function() {
+            const password = document.getElementById('dashboardPassword').value;
+            if (password === DASHBOARD_PASSWORD) {
+                sessionStorage.setItem('DASHBOARD_UNLOCKED', 'true');
+                document.getElementById('passwordProtection').style.display = 'none';
+                location.reload();
+            } else {
+                document.getElementById('passwordError').classList.remove('d-none');
+                document.getElementById('dashboardPassword').value = '';
+            }
+        });
+        
+        // Enter 鍵支援
+        document.getElementById('dashboardPassword').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('unlockBtn').click();
+            }
+        });
+
         // Repository 過濾設定功能
         document.getElementById('filterBtn').addEventListener('click', function() {
             const modal = new bootstrap.Modal(document.getElementById('filterModal'));
@@ -447,17 +524,77 @@
             }
         });
 
+        // 載入 Repository 清單
+        document.getElementById('loadRepoList').addEventListener('click', async function() {
+            const pattern = document.getElementById('repoPattern').value || 'Er*';
+            const token = localStorage.getItem('PD_TOKEN');
+            
+            if (!token) {
+                alert('請先設定 GitHub Token');
+                return;
+            }
+            
+            this.disabled = true;
+            this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>載入中...';
+            
+            try {
+                const github = new GitHubAPI(token);
+                const allRepos = await github.listOwnerReposAll('mingxianliu');
+                const matchedRepos = github.filterReposByPattern(allRepos, pattern);
+                
+                const checkboxList = document.getElementById('repoCheckboxList');
+                const savedSelection = JSON.parse(localStorage.getItem('SELECTED_REPOS') || '[]');
+                
+                checkboxList.innerHTML = matchedRepos.map(repo => `
+                    <div class="form-check mb-2">
+                        <input class="form-check-input repo-checkbox" type="checkbox" 
+                               value="${repo.name}" id="repo_${repo.name}"
+                               ${savedSelection.includes(repo.name) ? 'checked' : ''}>
+                        <label class="form-check-label" for="repo_${repo.name}">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-${repo.private ? 'lock text-warning' : 'unlock text-success'} me-2"></i>
+                                ${repo.fork ? '<i class="fas fa-code-branch text-info me-1"></i>' : ''}
+                                <span class="fw-bold">${repo.name}</span>
+                                ${repo.description ? `<small class="text-muted ms-2">- ${repo.description}</small>` : ''}
+                            </div>
+                        </label>
+                    </div>
+                `).join('');
+                
+                checkboxList.style.display = 'block';
+                
+                // 綁定全選/全不選功能
+                document.getElementById('selectAll').onclick = () => {
+                    document.querySelectorAll('.repo-checkbox').forEach(cb => cb.checked = true);
+                };
+                document.getElementById('selectNone').onclick = () => {
+                    document.querySelectorAll('.repo-checkbox').forEach(cb => cb.checked = false);
+                };
+                
+            } catch (error) {
+                alert(`載入失敗: ${error.message}`);
+            } finally {
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-download"></i> 載入 Repository 清單';
+            }
+        });
+
         // 套用過濾設定
         document.getElementById('applyFilter').addEventListener('click', function() {
+            const selectedRepos = Array.from(document.querySelectorAll('.repo-checkbox:checked'))
+                .map(cb => cb.value);
+            
             const filterConfig = {
                 pattern: document.getElementById('repoPattern').value || 'Er*',
                 name: document.getElementById('groupName').value || 'Er 專案群',
                 includePublic: document.getElementById('includePublic').checked,
                 includePrivate: document.getElementById('includePrivate').checked,
-                includeForks: document.getElementById('includeForks').checked
+                includeForks: document.getElementById('includeForks').checked,
+                selectedRepos: selectedRepos
             };
             
             localStorage.setItem('REPO_FILTER', JSON.stringify(filterConfig));
+            localStorage.setItem('SELECTED_REPOS', JSON.stringify(selectedRepos));
             location.reload();
         });
 
