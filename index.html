@@ -198,41 +198,47 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 立即停止 loading spinner 並顯示錯誤訊息，防止無限轉圈
+        // 延長超時檢查到 30 秒，給 API 呼叫更多時間
         window.addEventListener('DOMContentLoaded', function() {
             setTimeout(function() {
                 const spinner = document.getElementById('loadingSpinner');
                 const projectsList = document.getElementById('projectsList');
                 
-                // 如果 5 秒後還在轉圈，就強制停止並顯示錯誤
-                if (spinner && spinner.style.display !== 'none') {
-                    console.log('強制停止 loading spinner');
+                // 如果 30 秒後還在轉圈且沒有內容，才顯示錯誤
+                if (spinner && spinner.style.display !== 'none' && 
+                    (!projectsList.innerHTML || projectsList.style.display === 'none')) {
+                    console.log('30 秒後強制停止 loading spinner');
                     spinner.style.display = 'none';
                     
                     if (projectsList) {
                         projectsList.innerHTML = `
                             <div class="col-12">
-                                <div class="alert alert-danger" role="alert">
+                                <div class="alert alert-warning" role="alert">
                                     <h5 class="alert-heading">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                        載入逾時
+                                        <i class="fas fa-clock me-2"></i>
+                                        載入時間較長
                                     </h5>
-                                    <p>JavaScript 執行可能發生錯誤，請：</p>
-                                    <ol>
-                                        <li>檢查瀏覽器 Console (F12) 是否有錯誤訊息</li>
-                                        <li>重新整理頁面 (F5)</li>
-                                        <li>確認網路連線正常</li>
-                                    </ol>
-                                    <button class="btn btn-primary" onclick="location.reload()">
-                                        <i class="fas fa-redo"></i> 重新載入
-                                    </button>
+                                    <p>可能是因為：</p>
+                                    <ul>
+                                        <li>API 呼叫較慢（特別是有很多 repositories 時）</li>
+                                        <li>網路連線較慢</li>
+                                        <li>GitHub API 速率限制</li>
+                                    </ul>
+                                    <div class="mt-3">
+                                        <button class="btn btn-primary" onclick="location.reload()">
+                                            <i class="fas fa-redo"></i> 重試
+                                        </button>
+                                        <button class="btn btn-warning ms-2" onclick="document.getElementById('quickTokenBtn').click()">
+                                            <i class="fas fa-key"></i> 檢查 Token
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         `;
                         projectsList.style.display = 'flex';
                     }
                 }
-            }, 5000);
+            }, 30000); // 改為 30 秒
         });
     </script>
     <script src="js/config.js"></script>
