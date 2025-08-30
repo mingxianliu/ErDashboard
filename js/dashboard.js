@@ -18,13 +18,15 @@ class ProjectDashboard {
 
     async init() {
         // 先嘗試載入本地資料
-        await this.loadLocalData();
+        const hasLocalData = await this.loadLocalData();
 
         // 如果沒有本地資料，即時收集
-        if (!this.data.projects.length) {
+        if (!hasLocalData || !this.data.projects.length) {
             // 檢查是否有 token
             if (!CONFIG.github.token) {
                 this.showNoDataMessage();
+                this.setupEventListeners();
+                return; // 停在這裡，不執行 render
             } else {
                 await this.collectData();
             }
@@ -165,15 +167,15 @@ class ProjectDashboard {
             }
         }
 
-        // 排序活動按時間
-        allActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
+            // 排序活動按時間
+            allActivity.sort((a, b) => new Date(b.updated) - new Date(a.updated));
 
-        this.data = {
-            lastUpdate: new Date().toISOString(),
-            projects: projects,
-            summary: this.calculateOverallSummary(projects),
-            recentActivity: allActivity.slice(0, 10)
-        };
+            this.data = {
+                lastUpdate: new Date().toISOString(),
+                projects: projects,
+                summary: this.calculateOverallSummary(projects),
+                recentActivity: allActivity.slice(0, 10)
+            };
 
             this.showLoading(false);
             console.log('資料收集完成');
