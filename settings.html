@@ -36,13 +36,38 @@
             </div>
             <div class="card-body">
                 <div class="mb-4">
-                    <h6 class="fw-bold mb-3">GitHub Personal Access Token</h6>
-                    <p class="text-muted">
-                        若要監控私有 Repository，請設定您的 GitHub Personal Access Token。
-                        <a href="https://github.com/settings/tokens/new" target="_blank" class="text-decoration-none">
-                            <i class="fas fa-external-link-alt"></i> 建立新 Token
-                        </a>
-                    </p>
+                    <h6 class="fw-bold mb-3">監控範圍設定</h6>
+                    
+                    <div class="alert alert-success">
+                        <i class="fas fa-globe me-2"></i>
+                        <strong>最簡單選擇：只監控公開 Repositories</strong>
+                        <br><small>不需要設定任何 Token，完全沒有權限風險！</small>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="monitorScope" id="publicOnly" value="public" checked>
+                        <label class="form-check-label" for="publicOnly">
+                            <strong>只監控公開 repositories</strong>
+                            <br><small class="text-muted">✅ 不需要 Token ✅ 完全安全 ✅ 適合 README 追蹤</small>
+                        </label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="radio" name="monitorScope" id="includePrivate" value="private">
+                        <label class="form-check-label" for="includePrivate">
+                            <strong>包含私有 repositories</strong>
+                            <br><small class="text-muted">⚠️ 需要設定 GitHub Token</small>
+                        </label>
+                    </div>
+                    
+                    <div id="tokenSection" class="d-none">
+                        <h6 class="fw-bold mb-3">GitHub Personal Access Token</h6>
+                        <p class="text-muted">
+                            若要監控私有 Repository，請設定您的 GitHub Personal Access Token。
+                            <a href="https://github.com/settings/tokens/new" target="_blank" class="text-decoration-none">
+                                <i class="fas fa-external-link-alt"></i> 建立新 Token
+                            </a>
+                        </p>
                     
                     <div class="mb-3">
                         <label for="tokenInput" class="form-label">Personal Access Token</label>
@@ -90,16 +115,42 @@
                         <li class="list-group-item">
                             <i class="fas fa-check text-success me-2"></i>
                             <strong>repo</strong> - 存取私有 repositories
+                            <br><small class="text-muted">⚠️ 這會給予讀取所有私有 repo 的權限</small>
                         </li>
                         <li class="list-group-item">
-                            <i class="fas fa-check text-success me-2"></i>
-                            <strong>read:user</strong> - 讀取使用者資訊
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong class="text-decoration-line-through">read:user</strong> - 不需要
+                            <br><small class="text-muted">Dashboard 不需要使用者資訊</small>
                         </li>
                         <li class="list-group-item">
-                            <i class="fas fa-check text-success me-2"></i>
-                            <strong>read:org</strong> - 讀取組織資訊（如果監控組織 repos）
+                            <i class="fas fa-times text-danger me-2"></i>
+                            <strong class="text-decoration-line-through">read:org</strong> - 不需要（除非監控組織 repos）
+                            <br><small class="text-muted">只有監控組織專案時才需要</small>
                         </li>
                     </ul>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>最安全做法：</strong> 只勾選 <code>repo</code> 權限即可！
+                    </div>
+                    </div> <!-- 結束 tokenSection -->
+                </div>
+
+                <div class="mb-4">
+                    <h6 class="fw-bold mb-3 text-warning">
+                        <i class="fas fa-shield-alt me-2"></i>Token 安全建議
+                    </h6>
+                    <div class="alert alert-warning">
+                        <ul class="mb-0">
+                            <li><strong>設定 Token 過期時間</strong> - 建議 30-90 天</li>
+                            <li><strong>只給必要權限</strong> - 僅勾選 repo 權限</li>
+                            <li><strong>定期更換</strong> - 定期重新產生新 Token</li>
+                            <li><strong>私密保管</strong> - 不要分享或存放在不安全的地方</li>
+                        </ul>
+                    </div>
+                    <a href="https://github.com/settings/tokens" target="_blank" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-external-link-alt me-2"></i>管理現有 Tokens
+                    </a>
                 </div>
 
                 <div class="text-center">
@@ -128,9 +179,37 @@
     <script>
         // 載入現有的 token
         document.addEventListener('DOMContentLoaded', function() {
+            // 處理監控範圍選擇
+            const publicOnlyRadio = document.getElementById('publicOnly');
+            const includePrivateRadio = document.getElementById('includePrivate');
+            const tokenSection = document.getElementById('tokenSection');
+            
+            // 檢查現有設定
+            const hasToken = localStorage.getItem('PD_TOKEN');
+            if (hasToken) {
+                includePrivateRadio.checked = true;
+                tokenSection.classList.remove('d-none');
+            }
+            
+            // 切換事件
+            publicOnlyRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    tokenSection.classList.add('d-none');
+                    localStorage.removeItem('PD_TOKEN');
+                }
+            });
+            
+            includePrivateRadio.addEventListener('change', function() {
+                if (this.checked) {
+                    tokenSection.classList.remove('d-none');
+                }
+            });
+            
             const existingToken = localStorage.getItem('PD_TOKEN');
             if (existingToken) {
-                document.getElementById('tokenInput').value = existingToken;
+                // 顯示遮罩版本的 token
+                document.getElementById('tokenInput').value = '*'.repeat(Math.min(existingToken.length, 40));
+                document.getElementById('tokenInput').dataset.actualToken = existingToken;
             }
 
             // 載入 repository 設定
@@ -141,21 +220,34 @@
         document.getElementById('toggleToken').addEventListener('click', function() {
             const input = document.getElementById('tokenInput');
             const icon = this.querySelector('i');
+            const actualToken = input.dataset.actualToken;
             
             if (input.type === 'password') {
                 input.type = 'text';
+                if (actualToken) {
+                    input.value = actualToken;
+                }
                 icon.classList.replace('fa-eye', 'fa-eye-slash');
             } else {
                 input.type = 'password';
+                if (actualToken) {
+                    input.value = '*'.repeat(Math.min(actualToken.length, 40));
+                }
                 icon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         });
 
         // 儲存 token
         document.getElementById('saveToken').addEventListener('click', function() {
-            const token = document.getElementById('tokenInput').value.trim();
+            const input = document.getElementById('tokenInput');
+            let token = input.value.trim();
             
-            if (!token) {
+            // 如果是遮罩的 token，使用實際的 token
+            if (token.startsWith('*') && input.dataset.actualToken) {
+                token = input.dataset.actualToken;
+            }
+            
+            if (!token || token.startsWith('*')) {
                 showError('請輸入有效的 Token');
                 return;
             }
@@ -166,7 +258,14 @@
             }
 
             localStorage.setItem('PD_TOKEN', token);
-            showSuccess('Token 已成功儲存！');
+            
+            // 儲存後立即遮罩顯示
+            input.value = '*'.repeat(Math.min(token.length, 40));
+            input.dataset.actualToken = token;
+            input.type = 'password';
+            document.querySelector('#toggleToken i').classList.replace('fa-eye-slash', 'fa-eye');
+            
+            showSuccess('Token 已成功儲存並隱藏！');
         });
 
         // 清除 token
@@ -180,9 +279,15 @@
 
         // 測試 token
         document.getElementById('testToken').addEventListener('click', async function() {
-            const token = document.getElementById('tokenInput').value.trim();
+            const input = document.getElementById('tokenInput');
+            let token = input.value.trim();
             
-            if (!token) {
+            // 如果是遮罩的 token，使用實際的 token
+            if (token.startsWith('*') && input.dataset.actualToken) {
+                token = input.dataset.actualToken;
+            }
+            
+            if (!token || token.startsWith('*')) {
                 showError('請先輸入 Token');
                 return;
             }

@@ -12,3 +12,8 @@ private-key.pem
 *.pem
 *.key
 private-*
+
+# 腳本和指引 - 不推送到遠端
+scripts/update-dashboard.js
+scripts/PROJECT_ONBOARDING.md
+scripts/project-mapping.json
