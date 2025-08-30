@@ -66,13 +66,20 @@ class GitHubAPI {
         const perPage = 100;
         let page = 1;
         const all = [];
+        
+        // 如果有 token，使用 /user/repos 來取得包括私有 repo 的完整清單
+        const endpoint = this.token ? '/user/repos' : `/users/${owner}/repos`;
+        console.log(`使用 API endpoint: ${endpoint} (${this.token ? '包含私有 repo' : '僅公開 repo'})`);
+        
         while (true) {
-            const batch = await this.request(`/users/${owner}/repos?per_page=${perPage}&page=${page}`);
+            const batch = await this.request(`${endpoint}?per_page=${perPage}&page=${page}`);
             if (!Array.isArray(batch) || batch.length === 0) break;
             all.push(...batch);
             if (batch.length < perPage) break;
             page += 1;
         }
+        
+        console.log(`找到 ${all.length} 個 repositories (${all.filter(r => r.private).length} 個私有)`);
         return all;
     }
 
