@@ -106,21 +106,10 @@ class MarkdownProjectDashboard {
         const frontendBottom = getBottomProjects('frontend');
         const backendBottom = getBottomProjects('backend');
         const databaseBottom = getBottomProjects('database');
-
-        const totalProjects = projects.length;
+        const deploymentBottom = getBottomProjects('deployment');
+        const validationBottom = getBottomProjects('validation');
         
         summaryCards.innerHTML = `
-            <div class="col-md-2">
-                <div class="card border-primary" style="height: 140px;">
-                    <div class="card-header bg-primary text-white py-2">
-                        <small class="fw-bold">總專案數</small>
-                    </div>
-                    <div class="card-body p-2 text-center">
-                        <h2 class="mb-0">${totalProjects}</h2>
-                        <small class="text-muted">個專案</small>
-                    </div>
-                </div>
-            </div>
             <div class="col-md-2">
                 <div class="card border-info" style="height: 140px;">
                     <div class="card-header bg-info text-white py-2">
@@ -169,17 +158,35 @@ class MarkdownProjectDashboard {
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card border-secondary" style="height: 140px;">
-                    <div class="card-header bg-secondary text-white py-2">
-                        <small class="fw-bold">系統狀態</small>
+            <div class="col-md-3">
+                <div class="card border-primary" style="height: 140px;">
+                    <div class="card-header bg-primary text-white py-2">
+                        <small class="fw-bold">部署進度最落後</small>
                     </div>
-                    <div class="card-body p-2">
-                        <small class="text-muted">
-                            最後更新：${new Date().toLocaleDateString('zh-TW')}<br>
-                            活躍專案：${projects.filter(p => p.status.includes('進行中')).length} 個<br>
-                            完成專案：${projects.filter(p => p.status.includes('已完成')).length} 個
-                        </small>
+                    <div class="card-body p-1">
+                        ${deploymentBottom.map(p => `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">${p.name.split(' - ')[0]}</small>
+                                <span class="badge bg-secondary small">${p.coreMetrics.deployment.progress}%</span>
+                            </div>
+                        `).join('')}
+                        ${deploymentBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-danger" style="height: 140px;">
+                    <div class="card-header bg-danger text-white py-2">
+                        <small class="fw-bold">驗證進度最落後</small>
+                    </div>
+                    <div class="card-body p-1">
+                        ${validationBottom.map(p => `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">${p.name.split(' - ')[0]}</small>
+                                <span class="badge bg-secondary small">${p.coreMetrics.validation.progress}%</span>
+                            </div>
+                        `).join('')}
+                        ${validationBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
@@ -210,7 +217,7 @@ class MarkdownProjectDashboard {
             const statusIcon = this.reader.getStatusIcon(project.status);
             
             html += `
-                <div class="col-md-6 col-lg-3 mb-4">
+                <div class="col-md-4 col-lg-2 mb-4">
                     <div class="card h-100 project-card" data-project-id="${project.id}">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
