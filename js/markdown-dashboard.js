@@ -234,7 +234,7 @@ class MarkdownProjectDashboard {
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
                                 <i class="fas ${statusIcon} me-2"></i>
-                                ${project.name}
+                                ${project.name.split(' - ')[0]}
                             </h6>
                             <span class="badge bg-primary">${project.progress || stats.completionRate}%</span>
                         </div>
