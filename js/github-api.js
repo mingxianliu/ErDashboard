@@ -117,21 +117,9 @@ class GitHubAPI {
 
     // 依萬用字元樣式（*）過濾 repo 名稱
     filterReposByPattern(repos, pattern) {
-        console.log(`過濾條件：pattern="${pattern}"`);
-        console.log('所有 repo 名稱:', repos.map(r => r.name));
-        
         const escaped = pattern.replace(/[.+^${}()|\[\]\\]/g, '\\$&');
         const regex = new RegExp('^' + escaped.replace(/\*/g, '.*') + '$');
-        console.log(`生成的正規表達式: ${regex}`);
-        
-        const matched = repos.filter(r => {
-            const isMatch = regex.test(r.name);
-            console.log(`${r.name} -> ${isMatch ? '符合' : '不符合'}`);
-            return isMatch;
-        });
-        
-        console.log(`符合條件的 repo:`, matched.map(r => r.name));
-        return matched;
+        return repos.filter(r => regex.test(r.name));
     }
 
     // 分析功能進度
