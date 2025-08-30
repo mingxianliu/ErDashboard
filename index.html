@@ -109,6 +109,8 @@
                 document.getElementById('loadingSpinner').style.display = 'none';
                 document.getElementById('summaryCards').style.display = 'none';
                 document.getElementById('projectsList').style.display = 'none';
+                // 禁止初始化 Dashboard
+                window.markdownDashboard = null;
                 return false;
             }
             // 如果已認證，顯示登出按鈕
@@ -246,9 +248,10 @@
         document.addEventListener('DOMContentLoaded', () => {
             // 檢查是否已通過私鑰驗證
             if (!checkAuthentication()) {
+                // 未驗證禁止初始化 Dashboard
                 return;
             }
-            
+            // 僅在已驗證時初始化 Dashboard
             try {
                 console.log('開始初始化 Markdown Dashboard...');
                 window.markdownDashboard = new MarkdownProjectDashboard();
