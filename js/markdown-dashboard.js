@@ -93,42 +93,66 @@ class MarkdownProjectDashboard {
 
     renderSummaryCards() {
         const summaryCards = document.getElementById('summaryCards');
-        const summary = this.data.summary;
+        const projects = this.data.projects;
+
+        // 計算各領域進度最落後的3個專案
+        const getBottomProjects = (metricKey, count = 3) => {
+            return projects
+                .filter(p => p.coreMetrics && p.coreMetrics[metricKey])
+                .sort((a, b) => a.coreMetrics[metricKey].progress - b.coreMetrics[metricKey].progress)
+                .slice(0, count);
+        };
+
+        const frontendBottom = getBottomProjects('frontend');
+        const backendBottom = getBottomProjects('backend');
+        const databaseBottom = getBottomProjects('database');
 
         summaryCards.innerHTML = `
-            <div class="col-md-3">
-                <div class="card border-primary">
-                    <div class="card-body text-center">
-                        <i class="fas fa-project-diagram fa-2x text-primary mb-2"></i>
-                        <h3 class="card-title">${summary.totalProjects}</h3>
-                        <p class="card-text text-muted">總專案數</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-success">
-                    <div class="card-body text-center">
-                        <i class="fas fa-tasks fa-2x text-success mb-2"></i>
-                        <h3 class="card-title">${summary.totalFeatures}</h3>
-                        <p class="card-text text-muted">總功能數</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card border-info">
-                    <div class="card-body text-center">
-                        <i class="fas fa-check-circle fa-2x text-success mb-2"></i>
-                        <h3 class="card-title">${summary.completedFeatures}</h3>
-                        <p class="card-text text-muted">已完成</p>
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-paint-brush me-2"></i>🎨 前端進度最落後
+                    </div>
+                    <div class="card-body p-2">
+                        ${frontendBottom.map(p => `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">${p.name.split(' - ')[0]}</small>
+                                <span class="badge bg-secondary">${p.coreMetrics.frontend.progress}%</span>
+                            </div>
+                        `).join('')}
+                        ${frontendBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="card border-warning">
-                    <div class="card-body text-center">
-                        <i class="fas fa-clock fa-2x text-warning mb-2"></i>
-                        <h3 class="card-title">${summary.inProgressFeatures}</h3>
-                        <p class="card-text text-muted">進行中</p>
+                    <div class="card-header bg-warning text-white">
+                        <i class="fas fa-cog me-2"></i>⚙️ 後端進度最落後
+                    </div>
+                    <div class="card-body p-2">
+                        ${backendBottom.map(p => `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">${p.name.split(' - ')[0]}</small>
+                                <span class="badge bg-secondary">${p.coreMetrics.backend.progress}%</span>
+                            </div>
+                        `).join('')}
+                        ${backendBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success">
+                    <div class="card-header bg-success text-white">
+                        <i class="fas fa-database me-2"></i>🗃️ 資料庫進度最落後
+                    </div>
+                    <div class="card-body p-2">
+                        ${databaseBottom.map(p => `
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <small class="text-muted">${p.name.split(' - ')[0]}</small>
+                                <span class="badge bg-secondary">${p.coreMetrics.database.progress}%</span>
+                            </div>
+                        `).join('')}
+                        ${databaseBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
