@@ -71,7 +71,33 @@ class MarkdownProjectDashboard {
     async loadProjectsFromMarkdown() {
         console.log('📖 載入 Markdown 專案檔案...');
         this.data.projects = await this.reader.loadAllProjects();
-        console.log(`✅ 載入了 ${this.data.projects.length} 個專案`);
+        // 自動注入各專案進度分數
+        const autoProgress = {
+            ErAI:      {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 40},
+            ErAid:     {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
+            ErCore:    {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60},
+            ErForge:   {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60},
+            ErGrant:   {frontend: 80, backend: 40, database: 80, deployment: 60, validation: 40},
+            ErShield:  {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
+            ErProphet: {frontend: 100, backend: 40, database: 80, deployment: 60, validation: 40},
+            ErShowcase:{frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
+            ErSlice:   {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
+            ErStore:   {frontend: 100, backend: 60, database: 80, deployment: 100, validation: 40},
+            ErTidy:    {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60}
+        };
+        for (const project of this.data.projects) {
+            const key = Object.keys(autoProgress).find(k => project.name.includes(k));
+            if (key) {
+                project.coreMetrics.frontend.progress   = autoProgress[key].frontend;
+                project.coreMetrics.backend.progress    = autoProgress[key].backend;
+                project.coreMetrics.database.progress   = autoProgress[key].database;
+                project.coreMetrics.deployment.progress = autoProgress[key].deployment;
+                project.coreMetrics.validation.progress = autoProgress[key].validation;
+                // 計算總進度
+                project.progress = Math.round((autoProgress[key].frontend + autoProgress[key].backend + autoProgress[key].database + autoProgress[key].deployment + autoProgress[key].validation) / 5);
+            }
+        }
+        console.log(`✅ 載入了 ${this.data.projects.length} 個專案，已注入自動進度分數`);
     }
 
     calculateSummary() {
