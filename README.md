@@ -13,13 +13,22 @@
 ## 專案狀態更新
 
 ### 🎉 重要里程碑達成
+- **ErNexus v1.0.0**: 企業級統一服務平台已完成，整合 ErGrant、ErStore、ErCloud
+- **統一 UI 系統**: 完成完整的設計系統和響應式組件庫
 - **ErTidy v2.2.0**: 已達到完全獨立狀態，移除所有外部專案依賴
 - **ErCore**: 整合 ErBond 和 ErAid 功能，成為統一的 AI 研發平台
-- **ErAid-Ecosystem**: 功能已整合入 ErCore，不再作為獨立專案
 
 ### 當前專案架構
 ```
-ErCore (統一平台)
+ErNexus (企業統一平台) ✅ 已完成
+├── ErGrant (授權管理)
+├── ErStore (微服務平台)
+├── ErCloud (通訊服務)
+├── Admin Portal (管理後台)
+├── UI Components (統一設計系統)
+└── Demo Application (組件展示)
+
+ErCore (AI 研發平台)
 ├── AI 研發功能
 ├── ErBond 封裝功能
 └── ErAid 工作流功能
@@ -28,6 +37,11 @@ ErTidy (獨立產品)
 ├── 完全獨立的檔案管理
 ├── 內部 AI 引擎
 └── 專案審計功能
+
+ErDashboard (監控中心)
+├── 多專案進度監控
+├── GitHub 自動數據收集
+└── 實時狀態展示
 ```
 
 ## 快速部署
@@ -81,8 +95,10 @@ repositories: [
 
 Dashboard 會自動識別 Issue/PR 標題中的功能代碼：
 
+- ErNexus 專案：`ERN0001`
 - ErCore 專案：`ERC0001`
 - ErTidy 專案：`ERT0001`
+- ErDashboard 專案：`ERD0001`
 - 其他規則見 `js/config.js`
 
 ## 技術架構
@@ -116,6 +132,7 @@ Dashboard 會自動識別 Issue/PR 標題中的功能代碼：
 
 ---
 
-**最後更新**: 2025年1月27日  
-**版本**: v2.0.0  
-**狀態**: 監控 ErCore 和 ErTidy 兩個主要專案
+**最後更新**: 2025年9月4日  
+**版本**: v2.1.0  
+**狀態**: 監控 ErNexus、ErCore、ErTidy、ErDashboard 四個主要專案  
+**新功能**: 支援 ErNexus 專案監控，改進 Markdown 解析器
