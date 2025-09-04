@@ -17,8 +17,10 @@ const CONFIG = {
                 color: "#17a2b8",
                 priority: 1,
             prefixRules: [
+                { pattern: "ErNexus*",   prefix: "ERN" },
                 { pattern: "ErCore*",    prefix: "ERC" },
                 { pattern: "ErTidy*",    prefix: "ERT" },
+                { pattern: "ErDashboard*", prefix: "ERD" },
                 { pattern: "ErAI*",      prefix: "ERA" },
                 { pattern: "ErForge*",   prefix: "ERF" },
                 { pattern: "ErGrant*",   prefix: "ERG" },
@@ -30,8 +32,10 @@ const CONFIG = {
                 { pattern: "*",          prefix: "ER" }
             ],
             colorRules: [
+                { pattern: "ErNexus*",   color: "#0d6efd" },
                 { pattern: "ErCore*",    color: "#ff6b6b" },
                 { pattern: "ErTidy*",    color: "#20c997" },
+                { pattern: "ErDashboard*", color: "#fd7e14" },
                 { pattern: "ErAI*",      color: "#845ef7" },
                 { pattern: "ErForge*",   color: "#6f42c1" },
                 { pattern: "ErGrant*",   color: "#e83e8c" },

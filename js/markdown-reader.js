@@ -35,20 +35,30 @@ class MarkdownProjectReader {
         let currentSection = '';
         let currentFeatureType = '';
         let currentMetric = '';
+        let hasFoundTitle = false; // 標記是否已經找到專案標題
 
         for (let line of lines) {
             line = line.trim();
             
-            // 解析專案標題
-            if (line.startsWith('# ')) {
+            // 解析專案標題 - 只取第一個 # 標題
+            if (line.startsWith('# ') && !hasFoundTitle) {
                 project.name = line.substring(2);
+                hasFoundTitle = true;
+                continue;
+            }
+            
+            // 跳過其他 # 標題
+            if (line.startsWith('# ') && hasFoundTitle) {
                 continue;
             }
 
             // 解析專案狀態資訊
             if (line.startsWith('**專案狀態：**')) {
-                project.status = line.match(/\*\*(.*?)\*\*/g)?.[1]?.replace(/\*\*/g, '') || 
-                               line.split('：')[1]?.trim() || '';
+                // 提取 ✅ 完成 這樣的狀態文字
+                const statusMatch = line.match(/\*\*專案狀態：\*\*\s*(.+)/);
+                if (statusMatch) {
+                    project.status = statusMatch[1].trim();
+                }
                 continue;
             }
 
