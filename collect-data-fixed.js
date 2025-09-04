@@ -13,27 +13,17 @@ const repositories = [
     prefixRules: [
       { pattern: "ErCore*",    prefix: "ERC" },
       { pattern: "ErAI*",      prefix: "ERA" },
-      { pattern: "ErAid-Ecosystem*", prefix: "ERAI" },
       { pattern: "ErNexus*",   prefix: "ERN" },
-      { pattern: "ErForge*",   prefix: "ERF" },
       { pattern: "ErTidy*",    prefix: "ERT" },
-      { pattern: "ErSlice*",   prefix: "ERSL" },
       { pattern: "ErShield*",  prefix: "ERSH" },
-      { pattern: "ErShowcase*",prefix: "ERSC" },
-      { pattern: "ErProphet*", prefix: "ERP" },
       { pattern: "*",          prefix: "ER" }
     ],
     colorRules: [
       { pattern: "ErCore*",    color: "#ff6b6b" },
       { pattern: "ErAI*",      color: "#845ef7" },
-      { pattern: "ErAid-Ecosystem*", color: "#fd7e14" },
       { pattern: "ErNexus*",   color: "#28a745" },
-      { pattern: "ErForge*",   color: "#6f42c1" },
       { pattern: "ErTidy*",    color: "#20c997" },
-      { pattern: "ErSlice*",   color: "#dc3545" },
       { pattern: "ErShield*",  color: "#343a40" },
-      { pattern: "ErShowcase*",color: "#ffc107" },
-      { pattern: "ErProphet*", color: "#6610f2" },
       { pattern: "*",          color: "#17a2b8" }
     ]
   }
