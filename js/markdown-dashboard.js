@@ -74,16 +74,10 @@ class MarkdownProjectDashboard {
         // 自動注入各專案進度分數
         const autoProgress = {
             ErAI:      {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 40},
-            ErAid:     {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
             ErCore:    {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60},
-            ErForge:   {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60},
-            ErGrant:   {frontend: 80, backend: 40, database: 80, deployment: 60, validation: 40},
-            ErShield:  {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
-            ErProphet: {frontend: 100, backend: 40, database: 80, deployment: 60, validation: 40},
-            ErShowcase:{frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
-            ErSlice:   {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40},
-            ErStore:   {frontend: 100, backend: 60, database: 80, deployment: 100, validation: 40},
-            ErTidy:    {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60}
+            ErNexus:   {frontend: 90, backend: 99, database: 95, deployment: 75, validation: 70},
+            ErTidy:    {frontend: 100, backend: 80, database: 80, deployment: 100, validation: 60},
+            ErShield:  {frontend: 100, backend: 40, database: 80, deployment: 80, validation: 40}
         };
         for (const project of this.data.projects) {
             const key = Object.keys(autoProgress).find(k => project.name.includes(k));
