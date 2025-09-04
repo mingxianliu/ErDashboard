@@ -232,17 +232,11 @@ class MarkdownProjectReader {
         try {
             // 獲取專案檔案列表
             const projectFiles = [
-                'ErAid-Ecosystem.md',
-                'ErTidy.md',
+                'ErCore.md',
                 'ErAI.md',
-                'ErSlice.md',
-                'ErForge.md',
-                'ErProphet.md',
-                'ErShowcase.md',
-                'ErGrant.md',
-                'ErShield.md',
-                'ErStore.md',
-                'ErCore.md'
+                'ErNexus.md',
+                'ErTidy.md',
+                'ErShield.md'
                 // 未來可以動態獲取 projects/ 目錄下的所有 .md 檔案
             ];
 
