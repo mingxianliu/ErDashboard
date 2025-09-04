@@ -1,36 +1,81 @@
 {
-  "lastUpdate": "2025-08-30T07:11:54.524Z",
+  "lastUpdate": "2025-09-04T04:39:41.218Z",
   "projects": [
     {
-      "config": {
-        "name": "ErDashboard",
-        "owner": "mingxianliu",
-        "repo": "ErDashboard",
-        "description": "ErDashboard",
-        "url": "https://github.com/mingxianliu/ErDashboard",
-        "color": "#17a2b8"
-      },
-      "info": {
-        "name": "ErDashboard",
-        "description": "ErDashboard",
-        "language": "JavaScript",
-        "lastPush": "2025-08-30T07:11:44Z"
-      },
-      "features": [],
+      "name": "ErDashboard",
+      "owner": "mingxianliu",
+      "repo": "ErDashboard",
+      "description": "ErDashboard",
+      "url": "https://github.com/mingxianliu/ErDashboard",
+      "color": "#17a2b8",
       "stats": {
         "total": 0,
         "completed": 0,
         "inProgress": 0,
         "progress": 0
-      }
+      },
+      "features": []
+    },
+    {
+      "name": "flutter_curl",
+      "owner": "mingxianliu",
+      "repo": "flutter_curl",
+      "description": "Flutter plugin to use libcurl for HTTP calls",
+      "url": "https://github.com/mingxianliu/flutter_curl",
+      "color": "#17a2b8",
+      "stats": {
+        "total": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "progress": 0
+      },
+      "features": []
+    },
+    {
+      "name": "Keras.NET",
+      "owner": "mingxianliu",
+      "repo": "Keras.NET",
+      "description": "Keras.NET is a high-level neural networks API for C# and F#, with Python Binding and capable of running on top of TensorFlow, CNTK, or Theano. ",
+      "url": "https://github.com/mingxianliu/Keras.NET",
+      "color": "#17a2b8",
+      "stats": {
+        "total": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "progress": 0
+      },
+      "features": []
+    },
+    {
+      "name": "vscode-element-helper",
+      "owner": "mingxianliu",
+      "repo": "vscode-element-helper",
+      "description": " VSCode-Element-Helper is a VS Code package for Element-UI.",
+      "url": "https://github.com/mingxianliu/vscode-element-helper",
+      "color": "#17a2b8",
+      "stats": {
+        "total": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "progress": 0
+      },
+      "features": []
+    },
+    {
+      "name": "interactive-examples",
+      "owner": "mingxianliu",
+      "repo": "interactive-examples",
+      "description": "Home of the MDN live code editor interactive examples",
+      "url": "https://github.com/mingxianliu/interactive-examples",
+      "color": "#17a2b8",
+      "stats": {
+        "total": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "progress": 0
+      },
+      "features": []
     }
   ],
-  "recentActivity": [],
-  "summary": {
-    "totalProjects": 1,
-    "totalFeatures": 0,
-    "completedFeatures": 0,
-    "inProgressFeatures": 0,
-    "overallProgress": 0
-  }
+  "recentActivity": []
 }

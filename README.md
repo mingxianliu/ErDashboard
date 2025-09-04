@@ -10,6 +10,26 @@
 - 支援私有 Repository（需設定 Token）
 - 純前端應用，可部署在 GitHub Pages
 
+## 專案狀態更新
+
+### 🎉 重要里程碑達成
+- **ErTidy v2.2.0**: 已達到完全獨立狀態，移除所有外部專案依賴
+- **ErCore**: 整合 ErBond 和 ErAid 功能，成為統一的 AI 研發平台
+- **ErAid-Ecosystem**: 功能已整合入 ErCore，不再作為獨立專案
+
+### 當前專案架構
+```
+ErCore (統一平台)
+├── AI 研發功能
+├── ErBond 封裝功能
+└── ErAid 工作流功能
+
+ErTidy (獨立產品)
+├── 完全獨立的檔案管理
+├── 內部 AI 引擎
+└── 專案審計功能
+```
+
 ## 快速部署
 
 ### 1. Fork 此專案
@@ -62,8 +82,7 @@ repositories: [
 Dashboard 會自動識別 Issue/PR 標題中的功能代碼：
 
 - ErCore 專案：`ERC0001`
-- ErAI 專案：`ERA0001`
-- ErForge 專案：`ERF0001`
+- ErTidy 專案：`ERT0001`
 - 其他規則見 `js/config.js`
 
 ## 技術架構
@@ -94,3 +113,9 @@ Dashboard 會自動識別 Issue/PR 標題中的功能代碼：
 檢查 Actions 標籤的錯誤訊息，常見原因：
 - Repository 名稱或 owner 錯誤
 - API 速率限制（等待下個小時）
+
+---
+
+**最後更新**: 2025年1月27日  
+**版本**: v2.0.0  
+**狀態**: 監控 ErCore 和 ErTidy 兩個主要專案
