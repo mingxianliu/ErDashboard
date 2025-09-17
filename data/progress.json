@@ -1,81 +1,143 @@
 {
-  "lastUpdate": "2025-09-04T06:18:34.396Z",
+  "lastUpdate": "2025-09-17T10:00:00.000Z",
   "projects": [
     {
-      "name": "ErDashboard",
-      "owner": "mingxianliu",
-      "repo": "ErDashboard",
-      "description": "ErDashboard",
-      "url": "https://github.com/mingxianliu/ErDashboard",
-      "color": "#17a2b8",
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
+      "config": {
+        "name": "ErCore",
+        "owner": "erich",
+        "repo": "ErCore",
+        "description": "企業級 AI 統一平台",
+        "url": "https://github.com/erich/ErCore",
+        "color": "#28a745"
       },
-      "features": []
+      "info": {
+        "name": "ErCore",
+        "description": "企業級 AI 統一平台 - Phase 10 完成",
+        "language": "TypeScript",
+        "lastPush": "2025-09-17T10:00:00Z"
+      },
+      "features": [
+        "全球化部署系統",
+        "企業級服務體系", 
+        "開發者生態系統"
+      ],
+      "stats": {
+        "total": 15,
+        "completed": 15,
+        "inProgress": 0,
+        "progress": 98
+      }
     },
     {
-      "name": "flutter_curl",
-      "owner": "mingxianliu",
-      "repo": "flutter_curl",
-      "description": "Flutter plugin to use libcurl for HTTP calls",
-      "url": "https://github.com/mingxianliu/flutter_curl",
-      "color": "#17a2b8",
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
+      "config": {
+        "name": "ErNexus",
+        "owner": "erich",
+        "repo": "ErNexus",
+        "description": "企業級統一平台",
+        "url": "https://github.com/erich/ErNexus",
+        "color": "#007bff"
       },
-      "features": []
+      "info": {
+        "name": "ErNexus",
+        "description": "ErGrant + ErStore + ErCloud 整合平台",
+        "language": "TypeScript",
+        "lastPush": "2025-09-17T10:00:00Z"
+      },
+      "features": [
+        "統一認證系統",
+        "微服務管理引擎",
+        "WebRTC 通訊服務"
+      ],
+      "stats": {
+        "total": 16,
+        "completed": 15,
+        "inProgress": 1,
+        "progress": 99
+      }
     },
     {
-      "name": "Keras.NET",
-      "owner": "mingxianliu",
-      "repo": "Keras.NET",
-      "description": "Keras.NET is a high-level neural networks API for C# and F#, with Python Binding and capable of running on top of TensorFlow, CNTK, or Theano. ",
-      "url": "https://github.com/mingxianliu/Keras.NET",
-      "color": "#17a2b8",
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
+      "config": {
+        "name": "ErShield",
+        "owner": "erich",
+        "repo": "ErShield",
+        "description": "安全防護平台",
+        "url": "https://github.com/erich/ErShield",
+        "color": "#dc3545"
       },
-      "features": []
+      "info": {
+        "name": "ErShield",
+        "description": "v3.1.1 UI/UX 全面升級完成",
+        "language": "TypeScript",
+        "lastPush": "2025-09-17T10:00:00Z"
+      },
+      "features": [
+        "威脅偵測系統",
+        "防火牆管理介面",
+        "安全事件記錄"
+      ],
+      "stats": {
+        "total": 10,
+        "completed": 8,
+        "inProgress": 2,
+        "progress": 85
+      }
     },
     {
-      "name": "vscode-element-helper",
-      "owner": "mingxianliu",
-      "repo": "vscode-element-helper",
-      "description": " VSCode-Element-Helper is a VS Code package for Element-UI.",
-      "url": "https://github.com/mingxianliu/vscode-element-helper",
-      "color": "#17a2b8",
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
+      "config": {
+        "name": "ErTidy",
+        "owner": "erich",
+        "repo": "ErTidy",
+        "description": "企業級智能開發平台",
+        "url": "https://github.com/erich/ErTidy",
+        "color": "#ffc107"
       },
-      "features": []
-    },
-    {
-      "name": "interactive-examples",
-      "owner": "mingxianliu",
-      "repo": "interactive-examples",
-      "description": "Home of the MDN live code editor interactive examples",
-      "url": "https://github.com/mingxianliu/interactive-examples",
-      "color": "#17a2b8",
-      "stats": {
-        "total": 0,
-        "completed": 0,
-        "inProgress": 0,
-        "progress": 0
+      "info": {
+        "name": "ErTidy",
+        "description": "🚨 緊急功能缺失搶救階段",
+        "language": "TypeScript",
+        "lastPush": "2025-09-17T10:00:00Z"
       },
-      "features": []
+      "features": [
+        "ErCore AI 引擎",
+        "ErSlice 設計系統",
+        "ErShowcase 簡報系統",
+        "ErForge 測試系統"
+      ],
+      "stats": {
+        "total": 13,
+        "completed": 4,
+        "inProgress": 9,
+        "progress": 30
+      }
     }
   ],
-  "recentActivity": []
+  "recentActivity": [
+    {
+      "project": "ErShield",
+      "action": "UI/UX 全面升級完成",
+      "timestamp": "2025-09-17T10:00:00Z"
+    },
+    {
+      "project": "ErTidy", 
+      "action": "發現核心功能嚴重缺失",
+      "timestamp": "2025-09-17T10:00:00Z"
+    },
+    {
+      "project": "ErNexus",
+      "action": "三大應用完全整合",
+      "timestamp": "2025-09-17T10:00:00Z"
+    },
+    {
+      "project": "ErCore",
+      "action": "Phase 10 商業化完成",
+      "timestamp": "2025-09-17T10:00:00Z"
+    }
+  ],
+  "summary": {
+    "totalProjects": 4,
+    "totalFeatures": 54,
+    "completedFeatures": 42,
+    "inProgressFeatures": 12,
+    "overallProgress": 78
+  }
 }
