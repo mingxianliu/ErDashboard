@@ -366,6 +366,189 @@ class MarkdownProjectDashboard {
     getProject(projectId) {
         return this.data.projects.find(p => p.id === projectId);
     }
+
+    // 載入團隊成員分工
+    loadTeamAssignments(projectId) {
+        const section = document.getElementById('teamAssignmentSection');
+        if (!section || !window.teamManagement) return;
+
+        try {
+            const teamCard = window.teamManagement.renderProjectTeamCard(projectId);
+            section.innerHTML = teamCard;
+        } catch (error) {
+            console.error('載入團隊分工失敗:', error);
+            section.innerHTML = `
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            專案團隊
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">團隊資料載入中...</p>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // 載入驗測報告
+    loadTestingReports(projectId) {
+        const section = document.getElementById('testingReportsSection');
+        if (!section) return;
+
+        // 模擬驗測報告資料
+        const reports = this.generateMockTestingReports(projectId);
+
+        section.innerHTML = `
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clipboard-check me-2"></i>
+                        驗測報告 (${reports.length})
+                    </h6>
+                </div>
+                <div class="card-body">
+                    ${reports.length > 0 ? `
+                        <div class="row">
+                            ${reports.map(report => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <h6 class="mb-1">${report.title}</h6>
+                                            <span class="badge ${report.status === 'pass' ? 'bg-success' : report.status === 'fail' ? 'bg-danger' : 'bg-warning'}">${report.statusText}</span>
+                                        </div>
+                                        <div class="small text-muted mb-2">
+                                            <i class="fas fa-user me-1"></i>${report.tester} |
+                                            <i class="fas fa-calendar me-1"></i>${report.date}
+                                        </div>
+                                        <p class="mb-2 small">${report.description}</p>
+                                        ${report.issues.length > 0 ? `
+                                            <div class="small">
+                                                <strong>發現問題:</strong>
+                                                <ul class="mb-0 mt-1">
+                                                    ${report.issues.map(issue => `<li>${issue}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="text-muted">尚無驗測報告</p>'}
+                </div>
+            </div>
+        `;
+    }
+
+    // 載入詳細進度追蹤
+    loadDetailedProgress(projectId) {
+        const section = document.getElementById('detailedProgressSection');
+        if (!section) return;
+
+        // 模擬詳細進度資料
+        const progress = this.generateMockDetailedProgress(projectId);
+
+        section.innerHTML = `
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>
+                        詳細進度追蹤
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        ${Object.entries(progress).map(([role, data]) => `
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-center" style="color: ${data.color}">
+                                    <span class="me-1">${data.icon}</span>
+                                    ${data.name}
+                                </h6>
+                                <div class="progress mb-2" style="height: 10px;">
+                                    <div class="progress-bar" style="width: ${data.progress}%; background-color: ${data.color}"></div>
+                                </div>
+                                <div class="small text-center mb-2">${data.progress}% 完成</div>
+                                <div class="small">
+                                    <strong>負責人:</strong> ${data.assignee}<br>
+                                    <strong>任務:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        ${data.tasks.map(task => `<li>${task}</li>`).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 生成模擬驗測報告
+    generateMockTestingReports(projectId) {
+        if (!window.teamManagement) return [];
+
+        const assignment = window.teamManagement.getProjectAssignments(projectId);
+        if (!assignment) return [];
+
+        const testerAssignment = Object.values(assignment.members).find(m => m.role === 'testing');
+        const testerName = testerAssignment ? `成員${testerAssignment.memberId}` : '驗測A';
+
+        const reports = [
+            {
+                title: '功能測試報告',
+                status: 'pass',
+                statusText: '通過',
+                tester: testerName,
+                date: '2025-09-15',
+                description: '核心功能測試完成，所有主要功能運作正常',
+                issues: []
+            },
+            {
+                title: '整合測試報告',
+                status: 'pending',
+                statusText: '進行中',
+                tester: testerName,
+                date: '2025-09-17',
+                description: '正在進行各模組間的整合測試',
+                issues: ['API 回應時間偶爾超過預期', '部分邊界條件需要進一步驗證']
+            }
+        ];
+
+        return reports;
+    }
+
+    // 生成模擬詳細進度
+    generateMockDetailedProgress(projectId) {
+        if (!window.teamManagement) {
+            return {
+                frontend: { name: '前端開發', icon: '🎨', color: '#3b82f6', progress: 85, assignee: '前端A', tasks: ['UI 組件開發', '狀態管理', '響應式設計'] },
+                backend: { name: '後端開發', icon: '⚙️', color: '#ef4444', progress: 75, assignee: '後端A', tasks: ['API 開發', '資料庫設計', '服務架構'] },
+                testing: { name: '測試驗證', icon: '🧪', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] }
+            };
+        }
+
+        const assignment = window.teamManagement.getProjectAssignments(projectId);
+        const roles = window.teamManagement.roles;
+        const progress = {};
+
+        if (assignment) {
+            Object.entries(assignment.members).forEach(([memberId, memberData]) => {
+                const role = roles[memberData.role];
+                progress[memberData.role] = {
+                    name: role.name,
+                    icon: role.icon,
+                    color: role.color,
+                    progress: Math.floor(Math.random() * 30) + 70, // 70-99%
+                    assignee: `成員${memberId}`,
+                    tasks: memberData.tasks
+                };
+            });
+        }
+
+        return progress;
+    }
 }
 
 // 專案詳情顯示功能
@@ -463,6 +646,15 @@ function showProjectDetails(projectId) {
                                 ${project.milestone.split('\n').map(line => line ? `<div>${line}</div>` : '').join('')}
                             </div>
                         ` : ''}
+
+                        <!-- 團隊成員分工 -->
+                        <div id="teamAssignmentSection"></div>
+
+                        <!-- 驗測報告 -->
+                        <div id="testingReportsSection"></div>
+
+                        <!-- 詳細進度追蹤 -->
+                        <div id="detailedProgressSection"></div>
                     </div>
                     <div class="modal-footer">
                         <a href="projects/${project.id}.md" target="_blank" class="btn btn-outline-primary">
@@ -487,4 +679,13 @@ function showProjectDetails(projectId) {
     // 顯示模態視窗
     const modal = new bootstrap.Modal(document.getElementById('projectDetailModal'));
     modal.show();
+
+    // 載入團隊成員資料
+    if (window.teamManagement) {
+        setTimeout(() => {
+            dashboard.loadTeamAssignments(project.id);
+            dashboard.loadTestingReports(project.id);
+            dashboard.loadDetailedProgress(project.id);
+        }, 100);
+    }
 }
