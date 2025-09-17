@@ -249,7 +249,7 @@ class MarkdownProjectDashboard {
             const statusIcon = this.reader.getStatusIcon(project.status);
             
             html += `
-                <div class="col mb-4 project-card-4col">
+                <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
                     <div class="card h-100 project-card" data-project-id="${project.id}">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <h6 class="mb-0">
