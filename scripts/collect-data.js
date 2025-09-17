@@ -12,7 +12,6 @@ const CONFIG = {
     repoPattern: 'Er*',
     prefixRules: [
         { pattern: 'ErCore*', prefix: 'ERC' },
-        { pattern: 'ErAI*', prefix: 'ERA' },
         { pattern: 'ErAid-Ecosystem*', prefix: 'ERAI' },
         { pattern: 'ErForge*', prefix: 'ERF' },
         { pattern: 'ErTidy*', prefix: 'ERT' },
@@ -26,7 +25,6 @@ const CONFIG = {
     ],
     colorRules: [
         { pattern: 'ErCore*', color: '#ff6b6b' },
-        { pattern: 'ErAI*', color: '#845ef7' },
         { pattern: 'ErAid-Ecosystem*', color: '#fd7e14' },
         { pattern: 'ErForge*', color: '#6f42c1' },
         { pattern: 'ErTidy*', color: '#20c997' },

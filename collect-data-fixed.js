@@ -12,7 +12,6 @@ const repositories = [
     priority: 1,
     prefixRules: [
       { pattern: "ErCore*",    prefix: "ERC" },
-      { pattern: "ErAI*",      prefix: "ERA" },
       { pattern: "ErNexus*",   prefix: "ERN" },
       { pattern: "ErTidy*",    prefix: "ERT" },
       { pattern: "ErShield*",  prefix: "ERSH" },
@@ -20,7 +19,6 @@ const repositories = [
     ],
     colorRules: [
       { pattern: "ErCore*",    color: "#ff6b6b" },
-      { pattern: "ErAI*",      color: "#845ef7" },
       { pattern: "ErNexus*",   color: "#28a745" },
       { pattern: "ErTidy*",    color: "#20c997" },
       { pattern: "ErShield*",  color: "#343a40" },

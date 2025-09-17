@@ -47,7 +47,7 @@ node update-dashboard.js --help
   "mapping": {
     "MyApp": "ErProject1.md",
     "MyWebsite": "ErProject2.md",
-    "MyAPI": "ErAI-Assistant.md"
+    "MyAPI": "ErCore-Assistant.md"
   }
 }
 ```
