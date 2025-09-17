@@ -16,9 +16,38 @@ body {
 .progress { height: 0.5rem; border-radius: 10rem; }
 .badge { font-size: 0.75em; }
 
-@media (max-width: 768px) {
+/* 專案卡片響應式佈局 - 針對 4 個專案優化 */
+.project-card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+/* 桌面版：4 個專案一排 */
+@media (min-width: 1200px) {
+    .project-card-4col {
+        flex: 0 0 calc(25% - 0.75rem);
+        max-width: calc(25% - 0.75rem);
+    }
+}
+
+/* 平板版：2 個專案一排 */
+@media (min-width: 768px) and (max-width: 1199px) {
+    .project-card-4col {
+        flex: 0 0 calc(50% - 0.5rem);
+        max-width: calc(50% - 0.5rem);
+    }
+}
+
+/* 手機版：1 個專案一排 */
+@media (max-width: 767px) {
     .container-fluid { padding: 0 15px; }
     .card-body .row > div { margin-bottom: 1rem; }
+
+    .project-card-4col {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
 }
 
 .spinner-border { width: 3rem; height: 3rem; }
