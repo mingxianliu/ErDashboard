@@ -150,13 +150,16 @@ class GitHubAPI {
   }
 
   filterReposByPattern(repos, pattern) {
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'), 'i');
+    // 確保模式匹配從字串開頭開始
+    const regexPattern = '^' + pattern.replace(/\*/g, '.*');
+    const regex = new RegExp(regexPattern, 'i');
     return repos.filter(repo => regex.test(repo.name));
   }
 
   getPrefixForRepo(repoName, prefixRules) {
     for (const rule of prefixRules) {
-      const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+      const regexPattern = '^' + rule.pattern.replace(/\*/g, '.*');
+      const regex = new RegExp(regexPattern, 'i');
       if (regex.test(repoName)) {
         return rule.prefix;
       }
@@ -166,7 +169,8 @@ class GitHubAPI {
 
   getColorForRepo(repoName, colorRules) {
     for (const rule of colorRules) {
-      const regex = new RegExp(rule.pattern.replace(/\*/g, '.*'), 'i');
+      const regexPattern = '^' + rule.pattern.replace(/\*/g, '.*');
+      const regex = new RegExp(regexPattern, 'i');
       if (regex.test(repoName)) {
         return rule.color;
       }
