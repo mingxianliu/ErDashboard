@@ -16,9 +16,36 @@ body {
 .progress { height: 0.5rem; border-radius: 10rem; }
 .badge { font-size: 0.75em; }
 
-@media (max-width: 768px) {
+/* 4 專案佈局強制覆蓋 */
+@media (min-width: 1200px) {
+    #projectsList .col-xl-3 {
+        flex: 0 0 25% !important;
+        max-width: 25% !important;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    #projectsList .col-lg-6 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    #projectsList .col-md-6 {
+        flex: 0 0 50% !important;
+        max-width: 50% !important;
+    }
+}
+
+@media (max-width: 767.98px) {
     .container-fluid { padding: 0 15px; }
     .card-body .row > div { margin-bottom: 1rem; }
+
+    #projectsList .col-sm-12 {
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+    }
 }
 
 .spinner-border { width: 3rem; height: 3rem; }
