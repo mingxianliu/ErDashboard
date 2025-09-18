@@ -256,9 +256,12 @@ class TeamManagement {
 
     // 獲取成員工作負載統計
     getMemberWorkload(memberId) {
+        const memberData = this.members[memberId];
+        console.log(`🔍 取得成員 ${memberId} 資料:`, memberData);
+
         const workload = {
             memberId,
-            memberName: this.members[memberId]?.name || `成員${memberId}`,
+            memberName: memberData?.name || `成員${memberId}`,
             projects: [],
             totalProjects: 0,
             roles: {
@@ -267,6 +270,8 @@ class TeamManagement {
                 testing: 0
             }
         };
+
+        console.log(`🔍 成員 ${memberId} 工作負載初始化:`, workload);
 
         Object.entries(this.assignments).forEach(([projectId, project]) => {
             if (project.members[memberId]) {
