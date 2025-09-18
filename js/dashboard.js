@@ -355,12 +355,44 @@ class ProjectDashboard {
         });
     }
 
+    getProjectMembers(projectName) {
+        // 從專案名稱取得專案 ID (例如 "ErCore - 企業級 AI 統一平台" -> "ErCore")
+        const projectId = projectName.split(' ')[0];
+
+        // 如果 teamDataManager 已初始化，從中取得專案分配資料
+        if (window.teamDataManager && window.teamDataManager.isReady()) {
+            return window.teamDataManager.getProjectAssignments(projectId);
+        }
+
+        return null;
+    }
+
     createProjectCard(project) {
         const card = document.createElement('div');
         card.className = 'col-xl-6 col-lg-6 mb-4';
 
         const progressBarColor = project.stats.progress >= 80 ? 'success' :
                                 project.stats.progress >= 50 ? 'warning' : 'info';
+
+        // 取得專案成員資訊
+        const projectMembers = this.getProjectMembers(project.config.name);
+        const membersByRole = {
+            frontend: [],
+            backend: [],
+            testing: []
+        };
+
+        if (projectMembers && projectMembers.members) {
+            Object.values(projectMembers.members).forEach(member => {
+                if (member.role && membersByRole[member.role]) {
+                    // 從 teamDataManager 取得成員名稱
+                    const memberName = window.teamDataManager && window.teamDataManager.members &&
+                                     window.teamDataManager.members[member.memberId] ?
+                                     window.teamDataManager.members[member.memberId].name : member.memberId;
+                    membersByRole[member.role].push(memberName);
+                }
+            });
+        }
 
         const featuresHtml = Object.entries(project.features).map(([code, feature]) => {
             const statusInfo = CONFIG.statusMapping[feature.status] || { status: feature.status, color: '#6c757d', icon: '❓' };
@@ -402,6 +434,32 @@ class ProjectDashboard {
                             <div class="progress-bar bg-${progressBarColor}" style="width: ${project.stats.progress}%"></div>
                         </div>
                     </div>
+
+                    ${(membersByRole.frontend.length > 0 || membersByRole.backend.length > 0 || membersByRole.testing.length > 0) ? `
+                        <div class="mb-3">
+                            <small class="text-muted d-block mb-2">
+                                <i class="fas fa-users me-1"></i>團隊成員
+                            </small>
+                            ${membersByRole.frontend.length > 0 ? `
+                                <div class="mb-1">
+                                    <span class="badge bg-primary me-1">前端</span>
+                                    <small class="text-muted">(${membersByRole.frontend.join(', ')})</small>
+                                </div>
+                            ` : ''}
+                            ${membersByRole.backend.length > 0 ? `
+                                <div class="mb-1">
+                                    <span class="badge bg-success me-1">後端</span>
+                                    <small class="text-muted">(${membersByRole.backend.join(', ')})</small>
+                                </div>
+                            ` : ''}
+                            ${membersByRole.testing.length > 0 ? `
+                                <div class="mb-1">
+                                    <span class="badge bg-warning text-dark me-1">測試</span>
+                                    <small class="text-muted">(${membersByRole.testing.join(', ')})</small>
+                                </div>
+                            ` : ''}
+                        </div>
+                    ` : ''}
 
                     ${Object.keys(project.features).length > 0 ? `
                         <div class="row">

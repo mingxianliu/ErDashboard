@@ -321,6 +321,15 @@
             // 僅在已驗證時初始化 Dashboard
             try {
                 console.log('開始初始化 Markdown Dashboard...');
+
+                // 初始化團隊資料管理器
+                if (!window.teamDataManager) {
+                    window.teamDataManager = new TeamDataManager();
+                    window.teamDataManager.init().catch(error => {
+                        console.log('團隊資料管理器初始化失敗 (可能未登入 Google Drive):', error.message);
+                    });
+                }
+
                 window.markdownDashboard = new MarkdownProjectDashboard();
             } catch (error) {
                 console.error('Dashboard 初始化失敗:', error);

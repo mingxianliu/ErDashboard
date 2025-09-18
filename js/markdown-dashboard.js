@@ -267,16 +267,56 @@ class MarkdownProjectDashboard {
                                 </div>
                             </div>
                             
+                            <!-- 團隊成員資訊 -->
+                            ${(() => {
+                                const projectId = project.name.split(' - ')[0];
+                                const projectMembers = window.teamDataManager && window.teamDataManager.isReady()
+                                    ? window.teamDataManager.getProjectAssignments(projectId) : null;
+
+                                if (projectMembers && projectMembers.members) {
+                                    const membersByRole = {
+                                        frontend: [],
+                                        backend: [],
+                                        testing: []
+                                    };
+
+                                    Object.values(projectMembers.members).forEach(member => {
+                                        if (member.role && membersByRole[member.role]) {
+                                            const memberName = window.teamDataManager.members[member.memberId]
+                                                ? window.teamDataManager.members[member.memberId].name
+                                                : member.memberId;
+                                            membersByRole[member.role].push(memberName);
+                                        }
+                                    });
+
+                                    let html = '';
+                                    if (membersByRole.frontend.length > 0) {
+                                        html += `<div class="mb-1"><small class="text-muted">前端 (${membersByRole.frontend.join(', ')})</small></div>`;
+                                    }
+                                    if (membersByRole.backend.length > 0) {
+                                        html += `<div class="mb-1"><small class="text-muted">後端 (${membersByRole.backend.join(', ')})</small></div>`;
+                                    }
+                                    if (membersByRole.testing.length > 0) {
+                                        html += `<div class="mb-1"><small class="text-muted">測試 (${membersByRole.testing.join(', ')})</small></div>`;
+                                    }
+
+                                    if (html) {
+                                        return `<div class="border-top pt-2 mt-2">${html}</div>`;
+                                    }
+                                }
+                                return '';
+                            })()}
+
                             <!-- 5個核心完整度指標 -->
                             ${project.coreMetrics ? Object.entries(project.coreMetrics).map(([key, metric]) => {
                                 const names = {
                                     frontend: '前端',
                                     backend: '後端',
-                                    database: '資料庫', 
+                                    database: '資料庫',
                                     deployment: '部署',
                                     validation: '驗證'
                                 };
-                                const progressColor = metric.progress === 100 ? 'bg-success' : 
+                                const progressColor = metric.progress === 100 ? 'bg-success' :
                                                     metric.progress >= 50 ? 'bg-warning' : 'bg-info';
                                 return `
                                     <div class="d-flex justify-content-between align-items-center mb-1">
