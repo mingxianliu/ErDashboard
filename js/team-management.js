@@ -662,6 +662,616 @@ class TeamManagement {
             }
         }, 4000);
     }
+
+    // ==================== CRUD 功能擴展 ====================
+
+    // 開啟團隊管理儀表板
+    openTeamManagementDashboard() {
+        const modalContent = `
+            <div class="modal fade" id="teamManagementModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-users-cog me-2"></i>團隊管理中心
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <ul class="nav nav-tabs" id="teamManagementTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab">
+                                        <i class="fas fa-chart-pie me-2"></i>總覽統計
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+                                        <i class="fas fa-project-diagram me-2"></i>專案管理
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="members-tab" data-bs-toggle="tab" data-bs-target="#members" type="button" role="tab">
+                                        <i class="fas fa-users me-2"></i>成員管理
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                                        <i class="fas fa-cog me-2"></i>系統設定
+                                    </button>
+                                </li>
+                            </ul>
+                            <div class="tab-content mt-3" id="teamManagementTabContent">
+                                <div class="tab-pane fade show active" id="overview" role="tabpanel">
+                                    <div id="teamOverviewContent">載入中...</div>
+                                </div>
+                                <div class="tab-pane fade" id="projects" role="tabpanel">
+                                    <div id="projectManagementContent">載入中...</div>
+                                </div>
+                                <div class="tab-pane fade" id="members" role="tabpanel">
+                                    <div id="memberManagementContent">載入中...</div>
+                                </div>
+                                <div class="tab-pane fade" id="settings" role="tabpanel">
+                                    <div id="systemSettingsContent">載入中...</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-outline-primary" onclick="teamManagement.exportTeamData()">
+                                <i class="fas fa-download me-2"></i>匯出資料
+                            </button>
+                            <button type="button" class="btn btn-outline-warning" onclick="teamManagement.clearLocalChanges()">
+                                <i class="fas fa-eraser me-2"></i>清除本地變更
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除現有模態框
+        const existingModal = document.getElementById('teamManagementModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 加入新模態框
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+
+        // 顯示模態框
+        const modal = new bootstrap.Modal(document.getElementById('teamManagementModal'));
+        modal.show();
+
+        // 載入各分頁內容
+        this.loadTeamOverview();
+
+        // 監聽分頁切換
+        document.getElementById('projects-tab').addEventListener('click', () => this.loadProjectManagement());
+        document.getElementById('members-tab').addEventListener('click', () => this.loadMemberManagement());
+        document.getElementById('settings-tab').addEventListener('click', () => this.loadSystemSettings());
+    }
+
+    // ==================== READ 功能 ====================
+
+    // 載入團隊總覽
+    loadTeamOverview() {
+        const stats = this.generateTeamStatistics();
+        const content = `
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x mb-2"></i>
+                            <h3>${stats.totalMembers}</h3>
+                            <p>總成員數</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-project-diagram fa-2x mb-2"></i>
+                            <h3>${stats.activeProjects}</h3>
+                            <p>活躍專案</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h3>${stats.completedProjects}</h3>
+                            <p>已完成專案</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body text-center">
+                            <i class="fas fa-user-plus fa-2x mb-2"></i>
+                            <h3>${stats.availableMembers.length}</h3>
+                            <p>可用成員</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-chart-bar me-2"></i>角色分布</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-paint-brush text-primary"></i> 前端開發</span>
+                                    <span class="badge bg-primary">${stats.roleDistribution.frontend}</span>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-primary" style="width: ${(stats.roleDistribution.frontend / stats.totalProjects * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-cogs text-danger"></i> 後端開發</span>
+                                    <span class="badge bg-danger">${stats.roleDistribution.backend}</span>
+                                </div>
+                                <div class="progress mb-2">
+                                    <div class="progress-bar bg-danger" style="width: ${(stats.roleDistribution.backend / stats.totalProjects * 100)}%"></div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span><i class="fas fa-vial text-success"></i> 測試驗證</span>
+                                    <span class="badge bg-success">${stats.roleDistribution.testing}</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar bg-success" style="width: ${(stats.roleDistribution.testing / stats.totalProjects * 100)}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-users me-2"></i>成員工作負載</h6>
+                        </div>
+                        <div class="card-body">
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                ${Object.entries(stats.memberUtilization).map(([memberId, data]) => `
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <span class="me-2">${this.members[memberId]?.avatar || '👤'}</span>
+                                            <span>${data.name}</span>
+                                        </div>
+                                        <div>
+                                            <span class="badge ${data.projects === 0 ? 'bg-secondary' : data.projects > 2 ? 'bg-danger' : 'bg-success'}">${data.projects} 專案</span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('teamOverviewContent').innerHTML = content;
+    }
+
+    // ==================== CREATE 功能 ====================
+
+    // 載入專案管理
+    loadProjectManagement() {
+        const content = `
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6><i class="fas fa-project-diagram me-2"></i>專案管理</h6>
+                <button class="btn btn-primary btn-sm" onclick="teamManagement.openCreateProjectModal()">
+                    <i class="fas fa-plus me-2"></i>新增專案
+                </button>
+            </div>
+            <div class="row" id="projectManagementList">
+                ${Object.entries(this.assignments).map(([projectId, project]) => `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0">${project.projectName}</h6>
+                                    <small class="text-muted">ID: ${projectId}</small>
+                                </div>
+                                <div>
+                                    <span class="badge ${project.status === 'active' ? 'bg-success' : 'bg-primary'}">${project.status === 'active' ? '進行中' : '已完成'}</span>
+                                    <div class="btn-group btn-group-sm ms-2">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="teamManagement.editProject('${projectId}')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" onclick="teamManagement.deleteProject('${projectId}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <small class="text-muted">前端</small>
+                                        <div class="fw-bold text-primary">${Object.values(project.members).filter(m => m.role === 'frontend').length}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">後端</small>
+                                        <div class="fw-bold text-danger">${Object.values(project.members).filter(m => m.role === 'backend').length}</div>
+                                    </div>
+                                    <div class="col-4">
+                                        <small class="text-muted">測試</small>
+                                        <div class="fw-bold text-success">${Object.values(project.members).filter(m => m.role === 'testing').length}</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">最後更新：${project.lastUpdated}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        document.getElementById('projectManagementContent').innerHTML = content;
+    }
+
+    // 新增專案模態框
+    openCreateProjectModal() {
+        const modalContent = `
+            <div class="modal fade" id="createProjectModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-plus me-2"></i>新增專案
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="createProjectForm">
+                                <div class="mb-3">
+                                    <label class="form-label">專案 ID *</label>
+                                    <input type="text" class="form-control" id="projectId" placeholder="例如：ErDemo" required>
+                                    <small class="text-muted">建議以 Er 開頭</small>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">專案名稱 *</label>
+                                    <input type="text" class="form-control" id="projectName" placeholder="例如：ErDemo - 示範專案" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">專案狀態</label>
+                                    <select class="form-select" id="projectStatus">
+                                        <option value="active">進行中</option>
+                                        <option value="completed">已完成</option>
+                                        <option value="planning">規劃中</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.createProject()">建立專案</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除現有模態框
+        const existing = document.getElementById('createProjectModal');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+        const modal = new bootstrap.Modal(document.getElementById('createProjectModal'));
+        modal.show();
+    }
+
+    // 建立新專案
+    createProject() {
+        const projectId = document.getElementById('projectId').value.trim();
+        const projectName = document.getElementById('projectName').value.trim();
+        const projectStatus = document.getElementById('projectStatus').value;
+
+        if (!projectId || !projectName) {
+            this.showToast('輸入錯誤', '請填寫所有必填欄位', 'warning');
+            return;
+        }
+
+        if (this.assignments[projectId]) {
+            this.showToast('專案已存在', `專案 ID "${projectId}" 已存在`, 'warning');
+            return;
+        }
+
+        // 新增專案
+        this.assignments[projectId] = {
+            projectId: projectId,
+            projectName: projectName,
+            members: {},
+            status: projectStatus,
+            lastUpdated: new Date().toLocaleDateString('zh-TW'),
+            locallyModified: true
+        };
+
+        // 儲存到本地
+        this.saveToLocal();
+
+        // 關閉模態框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('createProjectModal'));
+        modal.hide();
+
+        // 重新載入專案列表
+        this.loadProjectManagement();
+
+        this.showToast('建立成功', `專案 "${projectName}" 已建立`, 'success');
+    }
+
+    // ==================== UPDATE 功能 ====================
+
+    // 編輯專案
+    editProject(projectId) {
+        const project = this.assignments[projectId];
+        if (!project) return;
+
+        const modalContent = `
+            <div class="modal fade" id="editProjectModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>編輯專案：${project.projectName}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editProjectForm">
+                                <div class="mb-3">
+                                    <label class="form-label">專案 ID</label>
+                                    <input type="text" class="form-control" value="${projectId}" disabled>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">專案名稱 *</label>
+                                    <input type="text" class="form-control" id="editProjectName" value="${project.projectName}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">專案狀態</label>
+                                    <select class="form-select" id="editProjectStatus">
+                                        <option value="active" ${project.status === 'active' ? 'selected' : ''}>進行中</option>
+                                        <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>已完成</option>
+                                        <option value="planning" ${project.status === 'planning' ? 'selected' : ''}>規劃中</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.updateProject('${projectId}')">儲存變更</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除現有模態框
+        const existing = document.getElementById('editProjectModal');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+        const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+        modal.show();
+    }
+
+    // 更新專案
+    updateProject(projectId) {
+        const projectName = document.getElementById('editProjectName').value.trim();
+        const projectStatus = document.getElementById('editProjectStatus').value;
+
+        if (!projectName) {
+            this.showToast('輸入錯誤', '請填寫專案名稱', 'warning');
+            return;
+        }
+
+        // 更新專案資料
+        this.assignments[projectId].projectName = projectName;
+        this.assignments[projectId].status = projectStatus;
+        this.assignments[projectId].lastUpdated = new Date().toLocaleDateString('zh-TW');
+        this.assignments[projectId].locallyModified = true;
+
+        // 儲存到本地
+        this.saveToLocal();
+
+        // 關閉模態框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editProjectModal'));
+        modal.hide();
+
+        // 重新載入專案列表
+        this.loadProjectManagement();
+
+        this.showToast('更新成功', `專案 "${projectName}" 已更新`, 'success');
+    }
+
+    // ==================== DELETE 功能 ====================
+
+    // 刪除專案
+    deleteProject(projectId) {
+        const project = this.assignments[projectId];
+        if (!project) return;
+
+        const memberCount = Object.keys(project.members).length;
+        const confirmMessage = memberCount > 0
+            ? `確定要刪除專案「${project.projectName}」嗎？這將移除 ${memberCount} 名成員的分配記錄。`
+            : `確定要刪除專案「${project.projectName}」嗎？`;
+
+        if (confirm(confirmMessage)) {
+            delete this.assignments[projectId];
+            this.saveToLocal();
+            this.loadProjectManagement();
+            this.showToast('刪除成功', `專案「${project.projectName}」已刪除`, 'success');
+        }
+    }
+
+    // ==================== 成員管理 ====================
+
+    // 載入成員管理
+    loadMemberManagement() {
+        const content = `
+            <div class="row">
+                ${Object.entries(this.members).map(([memberId, member]) => {
+                    const workload = this.getMemberWorkload(memberId);
+                    return `
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <div style="font-size: 3em;">${member.avatar}</div>
+                                    <h6 class="mt-2">${member.name}</h6>
+                                    <small class="text-muted">加入日期：${member.joinDate}</small>
+                                    <div class="mt-2">
+                                        <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
+                                            ${workload.totalProjects} 個專案
+                                        </span>
+                                    </div>
+                                    <div class="mt-2">
+                                        <button class="btn btn-outline-primary btn-sm" onclick="teamManagement.viewMemberDetails('${memberId}')">
+                                            <i class="fas fa-eye"></i> 詳情
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+        document.getElementById('memberManagementContent').innerHTML = content;
+    }
+
+    // 查看成員詳情
+    viewMemberDetails(memberId) {
+        const member = this.members[memberId];
+        const workload = this.getMemberWorkload(memberId);
+
+        const modalContent = `
+            <div class="modal fade" id="memberDetailsModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <span style="font-size: 1.5em;">${member.avatar}</span>
+                                ${member.name} 的詳細資料
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <strong>成員 ID：</strong>${member.id}
+                                </div>
+                                <div class="col-6">
+                                    <strong>加入日期：</strong>${member.joinDate}
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <strong>技能：</strong>
+                                ${member.skills.map(skill => `<span class="badge bg-primary me-1">${this.roles[skill]?.name || skill}</span>`).join('')}
+                            </div>
+                            <div class="mb-3">
+                                <strong>目前專案分配：</strong>
+                                ${workload.projects.length === 0 ?
+                                    '<p class="text-muted">目前沒有分配到任何專案</p>' :
+                                    workload.projects.map(project => `
+                                        <div class="card mb-2">
+                                            <div class="card-body py-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>${project.projectName}</strong>
+                                                        <br><small class="text-muted">角色：${project.roleName}</small>
+                                                    </div>
+                                                    <span class="badge ${project.status === 'active' ? 'bg-success' : 'bg-primary'}">${project.status === 'active' ? '進行中' : '已完成'}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除現有模態框
+        const existing = document.getElementById('memberDetailsModal');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+        const modal = new bootstrap.Modal(document.getElementById('memberDetailsModal'));
+        modal.show();
+    }
+
+    // ==================== 系統設定 ====================
+
+    // 載入系統設定
+    loadSystemSettings() {
+        const localData = localStorage.getItem('teamAssignments');
+        const hasLocalChanges = localData !== null;
+
+        const content = `
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-database me-2"></i>資料管理</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label">本地變更狀態</label>
+                                <div class="alert ${hasLocalChanges ? 'alert-warning' : 'alert-success'}">
+                                    <i class="fas ${hasLocalChanges ? 'fa-exclamation-triangle' : 'fa-check-circle'} me-2"></i>
+                                    ${hasLocalChanges ? '有未同步的本地變更' : '與原始資料同步'}
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="teamManagement.exportTeamData()">
+                                    <i class="fas fa-download me-2"></i>匯出所有資料
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="teamManagement.clearLocalChanges(); teamManagement.loadSystemSettings();">
+                                    <i class="fas fa-eraser me-2"></i>清除本地變更
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h6><i class="fas fa-info-circle me-2"></i>系統資訊</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-2">
+                                <strong>總成員數：</strong>${Object.keys(this.members).length}
+                            </div>
+                            <div class="mb-2">
+                                <strong>總專案數：</strong>${Object.keys(this.assignments).length}
+                            </div>
+                            <div class="mb-2">
+                                <strong>本地儲存空間：</strong>${hasLocalChanges ? Math.round(localStorage.getItem('teamAssignments').length / 1024) + ' KB' : '0 KB'}
+                            </div>
+                            <div class="mb-2">
+                                <strong>系統版本：</strong>v1.0.0
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.getElementById('systemSettingsContent').innerHTML = content;
+    }
 }
 
 // 全域實例

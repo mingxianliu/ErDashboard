@@ -6,7 +6,7 @@
     <title>多專案進度監控中心</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="css/dashboard.css?v=20250918" rel="stylesheet">
+    <link href="css/dashboard.css?v=20250918b" rel="stylesheet">
     <meta name="description" content="基於 Markdown 檔案的專案進度監控儀表板">
     <meta name="robots" content="noindex,nofollow">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -24,6 +24,9 @@
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
+                </button>
+                <button class="btn btn-outline-light btn-sm me-2" id="teamManagementBtn" style="display: none;">
+                    <i class="fas fa-users-cog"></i> 團隊管理
                 </button>
                 <button class="btn btn-danger btn-sm" id="logoutBtn" style="display: none;">
                     <i class="fas fa-sign-out-alt"></i> 登出
@@ -99,10 +102,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/crypto-auth.js?v=20250918"></script>
-    <script src="js/markdown-reader.js?v=20250918"></script>
-    <script src="js/team-management.js?v=20250918"></script>
-    <script src="js/markdown-dashboard.js?v=20250918"></script>
+    <script src="js/crypto-auth.js?v=20250918b"></script>
+    <script src="js/markdown-reader.js?v=20250918b"></script>
+    <script src="js/team-management.js?v=20250918b"></script>
+    <script src="js/markdown-dashboard.js?v=20250918b"></script>
     <script>
         // 嚴格的認證檢查 - 無繞過機制
         function checkAuthentication() {
@@ -194,6 +197,7 @@
         // 顯示主 Dashboard
         function showMainDashboard() {
             document.getElementById('logoutBtn').style.display = 'inline-block';
+            document.getElementById('teamManagementBtn').style.display = 'inline-block';
         }
         
         // 登出功能
@@ -246,6 +250,13 @@
         // 重新載入功能
         document.getElementById('refreshBtn').addEventListener('click', function() {
             location.reload();
+        });
+
+        // 團隊管理功能
+        document.getElementById('teamManagementBtn').addEventListener('click', function() {
+            if (window.teamManagement) {
+                window.teamManagement.openTeamManagementDashboard();
+            }
         });
 
         // 啟動 Dashboard
