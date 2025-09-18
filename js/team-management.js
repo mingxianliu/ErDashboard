@@ -747,9 +747,23 @@ class TeamManagement {
         // 載入各分頁內容
         this.loadTeamOverview();
 
+        // 預載入成員管理資料以確保組織資料可用
+        setTimeout(() => {
+            if (this.teamConfig && this.teamConfig.groups) {
+                console.log('預載入成員管理資料完成');
+            }
+        }, 1000);
+
         // 監聽分頁切換
         document.getElementById('projects-tab').addEventListener('click', () => this.loadProjectManagement());
-        document.getElementById('members-tab').addEventListener('click', () => this.loadMemberManagement());
+        document.getElementById('members-tab').addEventListener('click', async () => {
+            // 確保團隊資料已載入
+            if (!this.teamConfig || !this.teamConfig.groups) {
+                console.log('重新載入團隊資料...');
+                await this.loadTeamData();
+            }
+            this.loadMemberManagement();
+        });
         document.getElementById('settings-tab').addEventListener('click', () => this.loadSystemSettings());
     }
 
@@ -1119,9 +1133,23 @@ class TeamManagement {
 
     // 載入成員管理
     loadMemberManagement() {
-        console.log('載入成員管理 - teamConfig:', this.teamConfig);
+        console.log('=== 開始載入成員管理 ===');
+        console.log('teamConfig 存在:', !!this.teamConfig);
+        console.log('teamConfig.groups 存在:', !!(this.teamConfig?.groups));
+
+        // 先顯示載入中狀態
+        document.getElementById('memberManagementContent').innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">載入中...</span>
+                </div>
+                <div class="mt-2">正在載入團隊組織資料...</div>
+            </div>
+        `;
+
         const groups = this.teamConfig?.groups || {};
         console.log('找到的組織數量:', Object.keys(groups).length);
+        console.log('組織列表:', Object.keys(groups));
 
         if (Object.keys(groups).length === 0) {
             // 如果沒有組織資料，顯示錯誤訊息
