@@ -85,6 +85,8 @@ class GoogleDriveAPI {
             console.log('✅ Google Drive API 初始化完成');
         } catch (error) {
             console.error('❌ Google API 初始化失敗:', error);
+            this.isConfigured = false;
+            this.tokenClient = null;
         }
     }
 
@@ -123,8 +125,14 @@ class GoogleDriveAPI {
     // 登入 Google Drive (新版 OAuth)
     async signIn() {
         try {
+            // 如果 tokenClient 未初始化，嘗試重新初始化
             if (!this.tokenClient) {
-                throw new Error('Token client 尚未初始化');
+                console.log('🔄 Token client 未初始化，嘗試重新初始化...');
+                await this.initGoogleAPI();
+
+                if (!this.tokenClient) {
+                    throw new Error('Google Drive API 初始化失敗，請檢查設定');
+                }
             }
 
             console.log('🔐 開始 Google Drive 登入...');
@@ -159,6 +167,11 @@ class GoogleDriveAPI {
     // 檢查是否已登入
     isSignedIn() {
         return this.isConfigured && this.isAuthenticated && this.accessToken !== null;
+    }
+
+    // 檢查 API 是否已準備好
+    isReady() {
+        return this.isConfigured && this.tokenClient !== null;
     }
 
     // 儲存檔案到 Google Drive

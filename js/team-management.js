@@ -1947,19 +1947,39 @@ class TeamManagement {
     // 登入 Google Drive
     async signInToGoogleDrive() {
         try {
-            if (window.googleDriveAPI) {
-                const success = await window.googleDriveAPI.signIn();
-                if (success) {
-                    this.showToast('登入成功', 'Google Drive 登入成功，已啟動自動同步', 'success');
-                    // 移除登入提示通知
-                    document.querySelectorAll('.alert').forEach(alert => {
-                        if (alert.textContent.includes('Google Drive 同步')) {
-                            alert.remove();
-                        }
-                    });
-                } else {
-                    this.showToast('登入失敗', 'Google Drive 登入失敗', 'error');
+            if (!window.googleDriveAPI) {
+                this.showToast('API 未載入', 'Google Drive API 尚未載入', 'error');
+                return;
+            }
+
+            // 檢查 API 是否已準備好
+            if (!window.googleDriveAPI.isReady()) {
+                this.showToast('正在初始化', 'Google Drive API 正在初始化，請稍候...', 'warning');
+
+                // 等待最多 5 秒讓 API 初始化完成
+                let attempts = 0;
+                while (!window.googleDriveAPI.isReady() && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
                 }
+
+                if (!window.googleDriveAPI.isReady()) {
+                    this.showToast('初始化失敗', 'Google Drive API 初始化失敗，請檢查設定', 'error');
+                    return;
+                }
+            }
+
+            const success = await window.googleDriveAPI.signIn();
+            if (success) {
+                this.showToast('登入成功', 'Google Drive 登入成功，已啟動自動同步', 'success');
+                // 移除登入提示通知
+                document.querySelectorAll('.alert').forEach(alert => {
+                    if (alert.textContent.includes('Google Drive 同步')) {
+                        alert.remove();
+                    }
+                });
+            } else {
+                this.showToast('登入失敗', 'Google Drive 登入失敗', 'error');
             }
         } catch (error) {
             console.error('Google Drive 登入失敗:', error);
