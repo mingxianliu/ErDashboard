@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive API 測試</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .test-container { max-width: 800px; margin: 50px auto; }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class="container test-container">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-vial me-2"></i>Google Drive API 功能測試
+                </h5>
+            </div>
+            <div class="card-body">
+                <div id="testResults"></div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button class="btn btn-primary" id="runAllTests">
+                        <i class="fas fa-play me-2"></i>執行所有測試
+                    </button>
+                    <button class="btn btn-success" id="testSignIn" disabled>
+                        <i class="fab fa-google-drive me-2"></i>測試 Google Drive 登入
+                    </button>
+                    <button class="btn btn-info" id="testSaveFile" disabled>
+                        <i class="fas fa-upload me-2"></i>測試檔案儲存
+                    </button>
+                    <button class="btn btn-warning" id="testListFiles" disabled>
+                        <i class="fas fa-list me-2"></i>測試檔案列表
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="js/google-drive-api.js?v=20250918r"></script>
+    <script>
+        const resultsDiv = document.getElementById('testResults');
+
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            resultsDiv.appendChild(div);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function enableButtons() {
+            document.getElementById('testSignIn').disabled = false;
+            document.getElementById('testSaveFile').disabled = false;
+            document.getElementById('testListFiles').disabled = false;
+        }
+
+        // 測試 1: API 載入檢查
+        async function testAPILoading() {
+            addResult('🔍 測試 1: 檢查 Google API 載入狀態');
+
+            if (typeof gapi === 'undefined') {
+                addResult('❌ Google API 未載入', 'error');
+                return false;
+            }
+            addResult('✅ Google API 已載入', 'success');
+
+            if (typeof window.googleDriveAPI === 'undefined') {
+                addResult('❌ GoogleDriveAPI 類別未找到', 'error');
+                return false;
+            }
+            addResult('✅ GoogleDriveAPI 類別已載入', 'success');
+
+            return true;
+        }
+
+        // 測試 2: Client ID 檢查
+        async function testClientID() {
+            addResult('🔍 測試 2: 檢查 Client ID 設定');
+
+            try {
+                // 增加超時機制
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('OAuth 初始化超時 (20秒)')), 20000);
+                });
+
+                const initPromise = (async () => {
+                    await new Promise((resolve) => {
+                        gapi.load('auth2', resolve);
+                    });
+
+                    const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+                    addResult(`🔑 使用 Client ID: ${CLIENT_ID.substring(0, 20)}...`, 'info');
+
+                    await gapi.auth2.init({
+                        client_id: CLIENT_ID,
+                        scope: 'https://www.googleapis.com/auth/drive.file'
+                    });
+
+                    return true;
+                })();
+
+                await Promise.race([initPromise, timeoutPromise]);
+                addResult('✅ Client ID 設定正確，OAuth 初始化成功', 'success');
+                return true;
+
+            } catch (error) {
+                addResult(`❌ OAuth 初始化失敗: ${error.message}`, 'error');
+
+                if (error.message.includes('Invalid origin') || error.message.includes('Not a valid origin')) {
+                    addResult('💡 OAuth 設定問題：', 'warning');
+                    addResult('   1. 進入 Google Cloud Console', 'warning');
+                    addResult('   2. API 和服務 > 憑證', 'warning');
+                    addResult('   3. 檢查「授權的 JavaScript 來源」', 'warning');
+                    addResult('   4. 確保為: http://localhost:8001 (無結尾斜線)', 'warning');
+                } else if (error.message.includes('超時')) {
+                    addResult('💡 網路問題：請檢查網路連線或防火牆設定', 'warning');
+                } else if (error.message.includes('idpiframe_initialization_failed')) {
+                    addResult('💡 iframe 初始化失敗，可能是網路或設定問題', 'warning');
+                }
+
+                return false;
+            }
+        }
+
+        // 測試 3: 登入功能
+        async function testSignIn() {
+            addResult('🔍 測試 3: Google Drive 登入');
+
+            try {
+                const success = await window.googleDriveAPI.signIn();
+                if (success) {
+                    addResult('✅ Google Drive 登入成功', 'success');
+                    return true;
+                } else {
+                    addResult('❌ Google Drive 登入失敗', 'error');
+                    return false;
+                }
+            } catch (error) {
+                addResult(`❌ 登入錯誤: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // 測試 4: 檔案儲存
+        async function testSaveFile() {
+            addResult('🔍 測試 4: 檔案儲存功能');
+
+            try {
+                const testData = {
+                    testTime: new Date().toISOString(),
+                    message: 'ErDashboard Google Drive 測試檔案',
+                    data: { test: true }
+                };
+
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+                const fileName = `ErDashboard_Test_${timestamp[0]}_${timestamp[1].split('-')[0]}.json`;
+
+                await window.googleDriveAPI.saveFile(fileName, testData, 'test');
+                addResult(`✅ 測試檔案已儲存: ${fileName}`, 'success');
+                return true;
+            } catch (error) {
+                addResult(`❌ 檔案儲存失敗: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // 測試 5: 檔案列表
+        async function testListFiles() {
+            addResult('🔍 測試 5: 檔案列表功能');
+
+            try {
+                const files = await window.googleDriveAPI.listFiles();
+                addResult(`✅ 成功取得檔案列表，共 ${files.length} 個檔案`, 'success');
+
+                if (files.length > 0) {
+                    addResult('📁 最近的檔案:', 'info');
+                    files.slice(0, 3).forEach(file => {
+                        addResult(`   - ${file.name} (${new Date(file.modifiedTime).toLocaleString()})`, 'info');
+                    });
+                }
+                return true;
+            } catch (error) {
+                addResult(`❌ 檔案列表取得失敗: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // 執行所有測試
+        async function runAllTests() {
+            addResult('🚀 開始執行 Google Drive API 完整測試', 'info');
+            addResult('─'.repeat(50), 'info');
+
+            const test1 = await testAPILoading();
+            if (!test1) return;
+
+            const test2 = await testClientID();
+            if (!test2) return;
+
+            enableButtons();
+            addResult('✅ 基礎測試通過，您現在可以測試登入和檔案操作功能', 'success');
+            addResult('💡 請點擊上方按鈕逐步測試各項功能', 'info');
+        }
+
+        // 事件監聽器
+        document.getElementById('runAllTests').addEventListener('click', runAllTests);
+        document.getElementById('testSignIn').addEventListener('click', testSignIn);
+        document.getElementById('testSaveFile').addEventListener('click', testSaveFile);
+        document.getElementById('testListFiles').addEventListener('click', testListFiles);
+
+        // 自動開始基礎測試
+        window.addEventListener('load', () => {
+            setTimeout(runAllTests, 1000);
+        });
+    </script>
+</body>
+</html>

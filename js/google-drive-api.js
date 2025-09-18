@@ -1,13 +1,14 @@
 /**
  * Google Drive API 整合模組
  * 提供直接讀寫 Google Drive 檔案的功能
+ * 使用 Google Identity Services (新版 OAuth)
  */
 
 class GoogleDriveAPI {
     constructor() {
-        this.apiKey = null;
         this.accessToken = null;
         this.folderId = 'YOUR_FOLDER_ID_HERE';
+        this.tokenClient = null;
         this.isAuthenticated = false;
         this.initGoogleAPI();
     }
@@ -15,32 +16,58 @@ class GoogleDriveAPI {
     // 初始化 Google API
     async initGoogleAPI() {
         try {
-            // 載入 Google API
-            await this.loadGoogleAPIScript();
+            console.log('🚀 初始化 Google Drive API...');
 
-            // 初始化 GAPI
+            // 載入 Google API 和 Identity Services
+            await this.loadGoogleAPIScript();
+            await this.loadGoogleIdentityServices();
+
+            // 初始化 GAPI Client
             await new Promise((resolve) => {
-                gapi.load('auth2,drive', resolve);
+                gapi.load('client', resolve);
             });
 
-            // 設定 API 參數 - Google Drive Client ID
+            await gapi.client.init({
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+            });
+
+            // 設定 OAuth Token Client (新版)
             const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
 
-            await gapi.auth2.init({
+            this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/drive.file'
+                scope: 'https://www.googleapis.com/auth/drive.file',
+                callback: (response) => {
+                    if (response.access_token) {
+                        this.accessToken = response.access_token;
+                        this.isAuthenticated = true;
+                        console.log('✅ Google Drive OAuth 成功');
+                    } else {
+                        console.error('❌ OAuth 回應沒有 access_token');
+                    }
+                },
             });
 
-            console.log('Google Drive API 初始化完成');
+            console.log('✅ Google Drive API 初始化完成');
         } catch (error) {
-            console.error('Google API 初始化失敗:', error);
-
-            // 提供更詳細的錯誤訊息
-            if (error.message && error.message.includes('Invalid origin')) {
-                console.error('❌ OAuth 設定錯誤：請檢查 Google Cloud Console 中的「授權的 JavaScript 來源」設定');
-                console.error('   正確格式：http://localhost:8001 (不可以有結尾斜線或路徑)');
-            }
+            console.error('❌ Google API 初始化失敗:', error);
         }
+    }
+
+    // 載入 Google Identity Services
+    async loadGoogleIdentityServices() {
+        return new Promise((resolve, reject) => {
+            if (window.google && window.google.accounts) {
+                resolve();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.src = 'https://accounts.google.com/gsi/client';
+            script.onload = resolve;
+            script.onerror = reject;
+            document.head.appendChild(script);
+        });
     }
 
     // 載入 Google API Script
@@ -59,40 +86,45 @@ class GoogleDriveAPI {
         });
     }
 
-    // 登入 Google Drive
+    // 登入 Google Drive (新版 OAuth)
     async signIn() {
         try {
-            const authInstance = gapi.auth2.getAuthInstance();
-            const user = await authInstance.signIn();
-
-            this.accessToken = user.getAuthResponse().access_token;
-            this.isAuthenticated = true;
-
-            console.log('Google Drive 登入成功');
-            return true;
-        } catch (error) {
-            console.error('Google Drive 登入失敗:', error);
-
-            // 提供更詳細的錯誤訊息
-            if (error.error === 'popup_blocked_by_browser') {
-                console.error('❌ 彈出視窗被瀏覽器封鎖，請允許彈出視窗或手動點擊登入');
-            } else if (error.error === 'idpiframe_initialization_failed') {
-                console.error('❌ OAuth 設定錯誤：請檢查 Client ID 和授權來源設定');
-                console.error('   確認「授權的 JavaScript 來源」為：http://localhost:8001 (無結尾斜線)');
-            } else if (error.error === 'access_denied') {
-                console.error('❌ 使用者拒絕授權或帳號未在測試使用者名單中');
+            if (!this.tokenClient) {
+                throw new Error('Token client 尚未初始化');
             }
 
+            console.log('🔐 開始 Google Drive 登入...');
+
+            // 使用新版 OAuth 流程
+            return new Promise((resolve) => {
+                const originalCallback = this.tokenClient.callback;
+                this.tokenClient.callback = (response) => {
+                    // 恢復原始 callback
+                    this.tokenClient.callback = originalCallback;
+
+                    if (response.access_token) {
+                        this.accessToken = response.access_token;
+                        this.isAuthenticated = true;
+                        console.log('✅ Google Drive 登入成功');
+                        resolve(true);
+                    } else {
+                        console.error('❌ 登入失敗：沒有取得 access token');
+                        resolve(false);
+                    }
+                };
+
+                this.tokenClient.requestAccessToken();
+            });
+
+        } catch (error) {
+            console.error('❌ Google Drive 登入失敗:', error);
             return false;
         }
     }
 
     // 檢查是否已登入
     isSignedIn() {
-        if (!window.gapi || !gapi.auth2) return false;
-
-        const authInstance = gapi.auth2.getAuthInstance();
-        return authInstance && authInstance.isSignedIn.get();
+        return this.isAuthenticated && this.accessToken !== null;
     }
 
     // 儲存檔案到 Google Drive

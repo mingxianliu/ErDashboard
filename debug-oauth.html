@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth 設定診斷</title>
+    <style>
+        body { font-family: monospace; margin: 20px; background: #f0f0f0; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h2>🔧 OAuth 設定診斷工具</h2>
+    <div id="results"></div>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function log(msg, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            results.appendChild(div);
+        }
+
+        async function diagnose() {
+            log('🚀 開始 OAuth 診斷...');
+
+            // 檢查當前 URL
+            log(`📍 當前網址: ${window.location.href}`);
+            log(`📍 來源 (Origin): ${window.location.origin}`);
+
+            // 檢查 Client ID
+            const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+            log(`🔑 Client ID: ${CLIENT_ID}`);
+
+            // 載入 Google API
+            log('📥 載入 Google API...');
+
+            try {
+                // 載入 Google API 腳本
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = 'https://apis.google.com/js/api.js';
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('無法載入 Google API'));
+                    document.head.appendChild(script);
+                });
+
+                log('✅ Google API 腳本載入成功', 'success');
+
+                // 初始化 GAPI
+                await new Promise((resolve) => {
+                    gapi.load('auth2', resolve);
+                });
+
+                log('✅ GAPI auth2 模組載入成功', 'success');
+
+                // 嘗試初始化 OAuth
+                log('🔐 嘗試初始化 OAuth...');
+
+                const authInstance = await gapi.auth2.init({
+                    client_id: CLIENT_ID,
+                    scope: 'https://www.googleapis.com/auth/drive.file'
+                });
+
+                log('✅ OAuth 初始化成功！', 'success');
+                log(`🔒 是否已登入: ${authInstance.isSignedIn.get()}`, 'info');
+
+                // 如果未登入，提供登入按鈕
+                if (!authInstance.isSignedIn.get()) {
+                    const button = document.createElement('button');
+                    button.textContent = '🚀 測試登入 Google Drive';
+                    button.style.cssText = 'margin: 20px 0; padding: 10px 20px; font-size: 16px; cursor: pointer;';
+                    button.onclick = async () => {
+                        try {
+                            log('🔐 嘗試登入...');
+                            const user = await authInstance.signIn();
+                            log('✅ 登入成功！', 'success');
+                            log(`👤 使用者: ${user.getBasicProfile().getEmail()}`, 'success');
+
+                            // 測試 Drive API
+                            testDriveAPI(user.getAuthResponse().access_token);
+                        } catch (error) {
+                            log(`❌ 登入失敗: ${error.message}`, 'error');
+                        }
+                    };
+                    results.appendChild(button);
+                }
+
+            } catch (error) {
+                log(`❌ 錯誤: ${error}`, 'error');
+                console.error('完整錯誤物件:', error);
+
+                // 安全的字串檢查
+                const errorMsg = error && error.message ? error.message : String(error);
+                const errorDetails = error && error.details ? error.details : '';
+
+                log(`📝 錯誤詳情: ${errorMsg}`, 'info');
+                if (errorDetails) {
+                    log(`📝 額外詳情: ${errorDetails}`, 'info');
+                }
+
+                // 提供具體的解決建議
+                if (errorMsg.includes('Invalid origin') ||
+                    errorMsg.includes('Not a valid origin') ||
+                    errorMsg.includes('idpiframe_initialization_failed')) {
+
+                    log('💡 OAuth 設定問題 - 解決方案:', 'warning');
+                    log('1. 前往 Google Cloud Console', 'warning');
+                    log('2. 選擇您的專案', 'warning');
+                    log('3. 前往 API 和服務 > 憑證', 'warning');
+                    log('4. 編輯您的 OAuth 2.0 用戶端 ID', 'warning');
+                    log('5. 在「授權的 JavaScript 來源」中確認有:', 'warning');
+                    log(`   ${window.location.origin}`, 'warning');
+                    log('6. 儲存設定並等待 5-10 分鐘生效', 'warning');
+                } else if (errorMsg.includes('popup') || errorMsg.includes('blocked')) {
+                    log('💡 彈出視窗被封鎖 - 解決方案:', 'warning');
+                    log('1. 允許瀏覽器彈出視窗', 'warning');
+                    log('2. 檢查瀏覽器設定', 'warning');
+                } else {
+                    log('💡 未知錯誤 - 通用解決方案:', 'warning');
+                    log('1. 檢查網路連線', 'warning');
+                    log('2. 確認 Google Drive API 已啟用', 'warning');
+                    log('3. 檢查 Client ID 設定', 'warning');
+                }
+            }
+        }
+
+        async function testDriveAPI(accessToken) {
+            log('📁 測試 Google Drive API...');
+
+            try {
+                const response = await fetch('https://www.googleapis.com/drive/v3/files?q=parents in "YOUR_FOLDER_ID_HERE"', {
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    log(`✅ Drive API 測試成功！資料夾中有 ${data.files.length} 個檔案`, 'success');
+
+                    if (data.files.length > 0) {
+                        log('📄 最近的檔案:', 'info');
+                        data.files.slice(0, 3).forEach(file => {
+                            log(`   - ${file.name}`, 'info');
+                        });
+                    }
+                } else {
+                    log(`❌ Drive API 測試失敗: ${response.status} ${response.statusText}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Drive API 錯誤: ${error.message}`, 'error');
+            }
+        }
+
+        // 自動開始診斷
+        diagnose();
+    </script>
+</body>
+</html>
