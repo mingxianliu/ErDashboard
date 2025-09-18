@@ -13,9 +13,9 @@ class TeamManagement {
             await this.loadTeamData();
             await this.loadAssignments();
             await this.loadLocalChanges(); // 載入本地變更
-            console.log('✅ 團隊管理系統初始化完成');
+            console.log('[OK] 團隊管理系統初始化完成');
         } catch (error) {
-            console.error('❌ 團隊管理系統初始化失敗:', error);
+            console.error('[ERROR] 團隊管理系統初始化失敗:', error);
         }
     }
 
@@ -41,10 +41,10 @@ class TeamManagement {
                 const savedAssignments = JSON.parse(localAssignments);
                 // 合併本地變更與原始資料
                 this.assignments = { ...this.assignments, ...savedAssignments };
-                console.log('✅ 已載入本地團隊變更');
+                console.log('[OK] 已載入本地團隊變更');
             }
         } catch (error) {
-            console.error('❌ 載入本地變更失敗:', error);
+            console.error('[ERROR] 載入本地變更失敗:', error);
         }
     }
 
@@ -66,10 +66,10 @@ class TeamManagement {
             });
 
             localStorage.setItem('teamAssignments', JSON.stringify(modifiedAssignments));
-            console.log('✅ 團隊變更已儲存到本地');
+            console.log('[OK] 團隊變更已儲存到本地');
             return true;
         } catch (error) {
-            console.error('❌ 本地儲存失敗:', error);
+            console.error('[ERROR] 本地儲存失敗:', error);
             return false;
         }
     }
@@ -85,9 +85,9 @@ class TeamManagement {
     clearLocalChanges() {
         try {
             localStorage.removeItem('teamAssignments');
-            console.log('✅ 已清除本地團隊變更');
+            console.log('[OK] 已清除本地團隊變更');
         } catch (error) {
-            console.error('❌ 清除本地變更失敗:', error);
+            console.error('[ERROR] 清除本地變更失敗:', error);
         }
     }
 

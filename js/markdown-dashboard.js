@@ -54,10 +54,10 @@ class MarkdownProjectDashboard {
             // 設定事件監聽
             this.setupEventListeners();
             
-            console.log('✅ Dashboard 載入完成');
+            console.log('[OK] Dashboard 載入完成');
             
         } catch (error) {
-            console.error('❌ Dashboard 載入失敗:', error);
+            console.error('[ERROR] Dashboard 載入失敗:', error);
             this.showError('載入專案資料失敗: ' + error.message);
         }
     }
@@ -72,7 +72,7 @@ class MarkdownProjectDashboard {
         console.log('📖 載入 Markdown 專案檔案...');
         this.data.projects = await this.reader.loadAllProjects();
         // 移除硬編碼的進度覆蓋，使用 Markdown 檔案中的實際進度資料
-        console.log(`✅ 載入了 ${this.data.projects.length} 個專案，使用 Markdown 檔案中的實際進度資料`);
+        console.log(`[OK] 載入了 ${this.data.projects.length} 個專案，使用 Markdown 檔案中的實際進度資料`);
     }
 
     calculateSummary() {

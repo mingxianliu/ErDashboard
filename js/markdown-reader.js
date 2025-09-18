@@ -54,7 +54,7 @@ class MarkdownProjectReader {
 
             // 解析專案狀態資訊
             if (line.startsWith('**專案狀態：**')) {
-                // 提取 ✅ 完成 這樣的狀態文字
+                // 提取 [OK] 完成 這樣的狀態文字
                 const statusMatch = line.match(/\*\*專案狀態：\*\*\s*(.+)/);
                 if (statusMatch) {
                     project.status = statusMatch[1].trim();
@@ -110,7 +110,7 @@ class MarkdownProjectReader {
                 currentMetric = 'deployment';
                 continue;
             }
-            if (line.includes('✅ 驗證') || line.includes('驗證')) {
+            if (line.includes('[TEST] 驗證') || line.includes('驗證')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'validation';
                 continue;
