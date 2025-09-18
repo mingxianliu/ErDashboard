@@ -290,6 +290,10 @@ class TeamManagement {
 
     // 生成團隊統計報告
     generateTeamStatistics() {
+        console.log('📊 開始生成團隊統計資料');
+        console.log('this.members:', this.members);
+        console.log('this.assignments:', this.assignments);
+
         const stats = {
             totalMembers: Object.keys(this.members).length,
             totalProjects: Object.keys(this.assignments).length,
@@ -319,8 +323,11 @@ class TeamManagement {
         });
 
         // 計算成員利用率
+        console.log('📊 計算成員利用率，成員數量:', Object.keys(this.members).length);
         Object.keys(this.members).forEach(memberId => {
             const workload = this.getMemberWorkload(memberId);
+            console.log(`📊 成員 ${memberId} 工作負載:`, workload);
+
             stats.memberUtilization[memberId] = {
                 name: workload.memberName,
                 projects: workload.totalProjects,
@@ -331,6 +338,8 @@ class TeamManagement {
                 stats.availableMembers.push(memberId);
             }
         });
+
+        console.log('📊 成員利用率計算完成:', stats.memberUtilization);
 
         return stats;
     }
@@ -824,7 +833,13 @@ class TeamManagement {
 
     // 載入團隊總覽
     loadTeamOverview() {
+        console.log('🎯 載入團隊總覽');
+        console.log('members 資料:', Object.keys(this.members).length, '個成員');
+        console.log('assignments 資料:', Object.keys(this.assignments).length, '個專案');
+
         const stats = this.generateTeamStatistics();
+        console.log('統計資料生成完成:', stats);
+
         const content = `
             <div class="row mb-4">
                 <div class="col-md-3">
@@ -909,17 +924,20 @@ class TeamManagement {
                         </div>
                         <div class="card-body">
                             <div style="max-height: 300px; overflow-y: auto;">
-                                ${Object.entries(stats.memberUtilization).map(([memberId, data]) => `
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <div class="d-flex align-items-center">
-                                            <span class="me-2">${this.members[memberId]?.avatar || '[U]'}</span>
-                                            <span>${data.name}</span>
+                                ${Object.keys(stats.memberUtilization).length === 0 ?
+                                    '<div class="text-center text-muted py-3"><i class="fas fa-user-slash me-2"></i>尚無成員資料</div>' :
+                                    Object.entries(stats.memberUtilization).map(([memberId, data]) => `
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="d-flex align-items-center">
+                                                <span class="me-2">${this.members[memberId]?.avatar || '[U]'}</span>
+                                                <span>${data.name}</span>
+                                            </div>
+                                            <div>
+                                                <span class="badge ${data.projects === 0 ? 'bg-secondary' : data.projects > 2 ? 'bg-danger' : 'bg-success'}">${data.projects} 專案</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="badge ${data.projects === 0 ? 'bg-secondary' : data.projects > 2 ? 'bg-danger' : 'bg-success'}">${data.projects} 專案</span>
-                                        </div>
-                                    </div>
-                                `).join('')}
+                                    `).join('')
+                                }
                             </div>
                         </div>
                     </div>
