@@ -59,10 +59,33 @@ class TeamManagement {
     }
 
     async loadAssignments() {
-        const response = await fetch('config/project-assignments.json');
-        const data = await response.json();
-        this.assignments = data.assignments;
-        this.constraints = data.constraints;
+        try {
+            const response = await fetch('config/project-assignments.json');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const data = await response.json();
+            this.assignments = data.assignments;
+            this.constraints = data.constraints;
+            console.log('✅ 成功載入專案分配資料:', Object.keys(this.assignments).length, '個專案');
+        } catch (error) {
+            console.error('❌ 載入專案分配資料失敗:', error);
+            this.assignments = {};
+            this.constraints = {};
+        }
+    }
+
+    // 重新載入專案分配資料
+    async reloadAssignments() {
+        try {
+            await this.loadAssignments();
+            await this.loadLocalChanges();
+            this.loadProjectManagement(); // 重新載入專案管理介面
+            this.showToast('載入成功', '專案資料已重新載入', 'success');
+        } catch (error) {
+            console.error('重新載入失敗:', error);
+            this.showToast('載入失敗', '無法載入專案資料', 'error');
+        }
     }
 
     // 載入本地變更
@@ -910,6 +933,37 @@ class TeamManagement {
 
     // 載入專案管理
     loadProjectManagement() {
+        console.log('🎯 載入專案管理，assignments 資料:', this.assignments);
+
+        // 檢查 assignments 是否為空
+        if (!this.assignments || Object.keys(this.assignments).length === 0) {
+            const emptyContent = `
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6><i class="fas fa-project-diagram me-2"></i>專案管理</h6>
+                    <button class="btn btn-primary btn-sm" onclick="teamManagement.openCreateProjectModal()">
+                        <i class="fas fa-plus me-2"></i>新增專案
+                    </button>
+                </div>
+                <div class="text-center py-5">
+                    <div class="mb-3">
+                        <i class="fas fa-project-diagram text-muted" style="font-size: 3rem;"></i>
+                    </div>
+                    <h5 class="text-muted">尚無專案資料</h5>
+                    <p class="text-muted">點擊「新增專案」按鈕建立第一個專案，或檢查資料載入狀態</p>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-primary btn-sm me-2" onclick="teamManagement.reloadAssignments()">
+                            <i class="fas fa-sync-alt me-2"></i>重新載入資料
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="teamManagement.openCreateProjectModal()">
+                            <i class="fas fa-plus me-2"></i>新增專案
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.getElementById('projectManagementContent').innerHTML = emptyContent;
+            return;
+        }
+
         const content = `
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6><i class="fas fa-project-diagram me-2"></i>專案管理</h6>
