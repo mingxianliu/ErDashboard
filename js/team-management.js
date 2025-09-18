@@ -1214,6 +1214,8 @@ class TeamManagement {
                                             <div class="card border-0 shadow-sm">
                                                 <div class="card-body text-center p-3">
                                                     <div style="font-size: 2em;">${member.avatar}</div>
+
+                                                    <!-- 可編輯的成員名稱 -->
                                                     <div class="mt-2 mb-1">
                                                         <div class="editable-member-name" data-member-id="${memberId}">
                                                             <h6 class="member-name-display mb-0">${member.name}</h6>
@@ -1225,7 +1227,22 @@ class TeamManagement {
                                                             <i class="fas fa-edit text-muted"></i>
                                                         </button>
                                                     </div>
+
+                                                    <!-- 固定的成員ID -->
                                                     <small class="text-muted">ID: ${member.id}</small>
+
+                                                    <!-- 可編輯的備註 -->
+                                                    <div class="mt-1 mb-2">
+                                                        <div class="editable-member-notes" data-member-id="${memberId}">
+                                                            <small class="member-notes-display text-muted">${member.notes || '備註'}</small>
+                                                            <input type="text" class="form-control form-control-sm member-notes-input d-none"
+                                                                   value="${member.notes || '備註'}" style="display: none;">
+                                                        </div>
+                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.6em;"
+                                                                onclick="teamManagement.editMemberNotes('${memberId}')">
+                                                            <i class="fas fa-edit text-muted"></i>
+                                                        </button>
+                                                    </div>
                                                     <div class="mt-2">
                                                         <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
                                                             ${workload.totalProjects} 個專案
@@ -1719,6 +1736,52 @@ class TeamManagement {
             }
         } catch (error) {
             console.error('載入本地成員變更失敗:', error);
+        }
+    }
+
+    // 編輯成員備註
+    editMemberNotes(memberId) {
+        const notesElement = document.querySelector(`.editable-member-notes[data-member-id="${memberId}"]`);
+        const displaySpan = notesElement.querySelector('.member-notes-display');
+        const inputField = notesElement.querySelector('.member-notes-input');
+
+        if (displaySpan.style.display !== 'none') {
+            // 進入編輯模式
+            displaySpan.style.display = 'none';
+            inputField.style.display = 'block';
+            inputField.classList.remove('d-none');
+            inputField.focus();
+            inputField.select();
+
+            // 監聽 Enter 鍵和失焦事件
+            const saveEdit = () => {
+                const newNotes = inputField.value.trim();
+                if (newNotes !== this.members[memberId].notes) {
+                    // 更新本地資料
+                    this.members[memberId].notes = newNotes;
+                    this.teamConfig.members[memberId].notes = newNotes;
+
+                    // 更新顯示
+                    displaySpan.textContent = newNotes || '備註';
+
+                    // 儲存變更
+                    this.saveMemberChanges();
+
+                    this.showToast('備註更新', `${memberId} 備註已更新`, 'success');
+                }
+
+                // 退出編輯模式
+                displaySpan.style.display = 'inline';
+                inputField.style.display = 'none';
+                inputField.classList.add('d-none');
+            };
+
+            inputField.addEventListener('blur', saveEdit, { once: true });
+            inputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveEdit();
+                }
+            }, { once: true });
         }
     }
 }
