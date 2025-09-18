@@ -39,6 +39,12 @@ class GoogleDriveAPI {
             console.log('Google Drive API 初始化完成');
         } catch (error) {
             console.error('Google API 初始化失敗:', error);
+
+            // 提供更詳細的錯誤訊息
+            if (error.message && error.message.includes('Invalid origin')) {
+                console.error('❌ OAuth 設定錯誤：請檢查 Google Cloud Console 中的「授權的 JavaScript 來源」設定');
+                console.error('   正確格式：http://localhost:8001 (不可以有結尾斜線或路徑)');
+            }
         }
     }
 
@@ -71,6 +77,17 @@ class GoogleDriveAPI {
             return true;
         } catch (error) {
             console.error('Google Drive 登入失敗:', error);
+
+            // 提供更詳細的錯誤訊息
+            if (error.error === 'popup_blocked_by_browser') {
+                console.error('❌ 彈出視窗被瀏覽器封鎖，請允許彈出視窗或手動點擊登入');
+            } else if (error.error === 'idpiframe_initialization_failed') {
+                console.error('❌ OAuth 設定錯誤：請檢查 Client ID 和授權來源設定');
+                console.error('   確認「授權的 JavaScript 來源」為：http://localhost:8001 (無結尾斜線)');
+            } else if (error.error === 'access_denied') {
+                console.error('❌ 使用者拒絕授權或帳號未在測試使用者名單中');
+            }
+
             return false;
         }
     }

@@ -21,11 +21,16 @@
 3. 應用程式類型選擇「網路應用程式」
 4. 名稱：`ErDashboard-WebApp`
 5. 授權的 JavaScript 來源：
-   - `http://localhost:8001` (開發環境)
-   - 您的實際網域 (正式環境)
+   - `http://localhost:8001` (開發環境，不可以有路徑或結尾斜線)
+   - `https://your-domain.com` (正式環境，替換為您的實際網域)
 6. 授權的重新導向 URI：
    - `http://localhost:8001` (開發環境)
-   - 您的實際網域 (正式環境)
+   - `https://your-domain.com` (正式環境)
+
+**重要注意事項**：
+- ❌ 錯誤格式：`http://localhost:8001/` (不可以有結尾斜線)
+- ❌ 錯誤格式：`http://localhost:8001/index.html` (不可以有路徑)
+- ✅ 正確格式：`http://localhost:8001` (只有協議、主機名和埠號)
 
 ## 步驟 4: 取得 Client ID
 
@@ -73,10 +78,22 @@
 
 ## 疑難排解
 
+### 問題：「來源無效：URI 不得包含路徑或以「/」結尾」
+**解決方案**：
+1. 進入 Google Cloud Console > API 和服務 > 憑證
+2. 點擊您的 OAuth 2.0 用戶端 ID
+3. 檢查「授權的 JavaScript 來源」欄位
+4. 確保格式正確：
+   - ✅ `http://localhost:8001`
+   - ❌ `http://localhost:8001/`
+   - ❌ `http://localhost:8001/index.html`
+5. 儲存變更後等待 5-10 分鐘讓設定生效
+
 ### 問題：無法登入 Google Drive
-- 檢查 Client ID 是否正確
-- 確認授權的來源網域設定正確
+- 檢查 Client ID 是否正確設定在 `js/google-drive-api.js`
+- 確認授權的來源網域設定正確（無結尾斜線）
 - 檢查瀏覽器是否封鎖彈出視窗
+- 清除瀏覽器快取並重新載入頁面
 
 ### 問題：無法儲存檔案
 - 確認已授權「Google Drive API」權限
