@@ -46,5 +46,42 @@
       "color": "#10b981",
       "description": "負責功能測試、品質保證與驗證報告"
     }
+  },
+  "groups": {
+    "group1": {
+      "id": "group1",
+      "name": "前端開發組",
+      "description": "專責前端技術開發",
+      "members": ["A", "B", "C", "D", "E"],
+      "color": "#3b82f6"
+    },
+    "group2": {
+      "id": "group2",
+      "name": "後端開發組",
+      "description": "專責後端服務開發",
+      "members": ["F", "G", "H", "I", "J"],
+      "color": "#ef4444"
+    },
+    "group3": {
+      "id": "group3",
+      "name": "測試品保組",
+      "description": "專責測試與品質保證",
+      "members": ["K", "L", "M", "N", "O"],
+      "color": "#10b981"
+    },
+    "group4": {
+      "id": "group4",
+      "name": "架構設計組",
+      "description": "專責系統架構設計",
+      "members": ["P", "Q", "R", "S", "T"],
+      "color": "#f59e0b"
+    },
+    "group5": {
+      "id": "group5",
+      "name": "專案管理組",
+      "description": "專責專案協調管理",
+      "members": ["U", "V", "W", "X", "Y", "Z"],
+      "color": "#8b5cf6"
+    }
   }
 }

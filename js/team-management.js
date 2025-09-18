@@ -24,6 +24,7 @@ class TeamManagement {
         const data = await response.json();
         this.members = data.members;
         this.roles = data.roles;
+        this.teamConfig = data; // 載入完整的團隊配置，包含 groups
     }
 
     async loadAssignments() {
@@ -1117,34 +1118,89 @@ class TeamManagement {
 
     // 載入成員管理
     loadMemberManagement() {
+        const groups = this.teamConfig.groups || {};
+
         const content = `
-            <div class="row">
-                ${Object.entries(this.members).map(([memberId, member]) => {
-                    const workload = this.getMemberWorkload(memberId);
-                    return `
-                        <div class="col-md-6 col-lg-4 mb-3">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <div style="font-size: 3em;">${member.avatar}</div>
-                                    <h6 class="mt-2">${member.name}</h6>
-                                    <small class="text-muted">加入日期：${member.joinDate}</small>
-                                    <div class="mt-2">
-                                        <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
-                                            ${workload.totalProjects} 個專案
-                                        </span>
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">團隊組織管理</h6>
+                    <button class="btn btn-primary btn-sm" onclick="teamManagement.saveGroupChanges()">
+                        <i class="fas fa-save me-1"></i>儲存變更
+                    </button>
+                </div>
+            </div>
+
+            ${Object.entries(groups).map(([groupId, group]) => {
+                const groupMembers = group.members || [];
+                return `
+                    <div class="card mb-4" style="border-left: 4px solid ${group.color};">
+                        <div class="card-header" style="background-color: ${group.color}20;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="editable-group-name" data-group-id="${groupId}">
+                                        <span class="group-name-display fw-bold">${group.name}</span>
+                                        <input type="text" class="form-control form-control-sm group-name-input d-none"
+                                               value="${group.name}" style="display: none;">
                                     </div>
-                                    <div class="mt-2">
-                                        <button class="btn btn-outline-primary btn-sm" onclick="teamManagement.viewMemberDetails('${memberId}')">
-                                            <i class="fas fa-eye"></i> 詳情
-                                        </button>
-                                    </div>
+                                    <button class="btn btn-outline-secondary btn-sm ms-2"
+                                            onclick="teamManagement.editGroupName('${groupId}')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                                <div class="text-muted">
+                                    <small>${group.description} | ${groupMembers.length} 位成員</small>
                                 </div>
                             </div>
                         </div>
-                    `;
-                }).join('')}
-            </div>
+                        <div class="card-body">
+                            <div class="row">
+                                ${groupMembers.map(memberId => {
+                                    const member = this.members[memberId];
+                                    if (!member) return '';
+                                    const workload = this.getMemberWorkload(memberId);
+                                    return `
+                                        <div class="col-md-6 col-lg-3 mb-3">
+                                            <div class="card border-0 shadow-sm">
+                                                <div class="card-body text-center p-3">
+                                                    <div style="font-size: 2em;">${member.avatar}</div>
+                                                    <h6 class="mt-2 mb-1">${member.name}</h6>
+                                                    <small class="text-muted">ID: ${member.id}</small>
+                                                    <div class="mt-2">
+                                                        <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
+                                                            ${workload.totalProjects} 個專案
+                                                        </span>
+                                                    </div>
+                                                    <div class="mt-2 d-flex gap-1 justify-content-center">
+                                                        <button class="btn btn-outline-primary btn-sm"
+                                                                onclick="teamManagement.viewMemberDetails('${memberId}')">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        <button class="btn btn-outline-secondary btn-sm"
+                                                                onclick="teamManagement.editMemberProjects('${memberId}')">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+
+                                ${groupMembers.length === 0 ? `
+                                    <div class="col-12">
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fas fa-users fa-2x mb-2"></i>
+                                            <p>此組目前沒有成員</p>
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}
         `;
+
         document.getElementById('memberManagementContent').innerHTML = content;
     }
 
@@ -1271,6 +1327,260 @@ class TeamManagement {
             </div>
         `;
         document.getElementById('systemSettingsContent').innerHTML = content;
+    }
+
+    // ==================== 組織管理功能 ====================
+
+    // 編輯組名稱
+    editGroupName(groupId) {
+        const groupElement = document.querySelector(`[data-group-id="${groupId}"]`);
+        const displaySpan = groupElement.querySelector('.group-name-display');
+        const inputField = groupElement.querySelector('.group-name-input');
+
+        if (displaySpan.style.display !== 'none') {
+            // 進入編輯模式
+            displaySpan.style.display = 'none';
+            inputField.style.display = 'inline-block';
+            inputField.classList.remove('d-none');
+            inputField.focus();
+            inputField.select();
+
+            // 監聽 Enter 鍵和失焦事件
+            const saveEdit = () => {
+                const newName = inputField.value.trim();
+                if (newName && newName !== this.teamConfig.groups[groupId].name) {
+                    this.teamConfig.groups[groupId].name = newName;
+                    displaySpan.textContent = newName;
+                    this.showToast('組名稱更新', `已更新為：${newName}`, 'success');
+                }
+
+                // 退出編輯模式
+                displaySpan.style.display = 'inline';
+                inputField.style.display = 'none';
+                inputField.classList.add('d-none');
+            };
+
+            inputField.addEventListener('blur', saveEdit, { once: true });
+            inputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveEdit();
+                }
+            }, { once: true });
+        }
+    }
+
+    // 儲存組織變更
+    saveGroupChanges() {
+        try {
+            // 這裡可以加入更複雜的儲存邏輯，例如發送到伺服器
+            localStorage.setItem('teamGroupChanges', JSON.stringify(this.teamConfig.groups));
+            this.showToast('儲存成功', '組織變更已儲存至本地', 'success');
+        } catch (error) {
+            this.showToast('儲存失敗', error.message, 'error');
+        }
+    }
+
+    // 編輯成員專案分配
+    editMemberProjects(memberId) {
+        const member = this.members[memberId];
+        const workload = this.getMemberWorkload(memberId);
+        const availableProjects = Object.keys(this.assignments);
+
+        const modalContent = `
+            <div class="modal fade" id="editMemberProjectsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <span style="font-size: 1.5em;">${member.avatar}</span>
+                                編輯 ${member.name} 的專案分配
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <h6>目前分配的專案</h6>
+                                <div id="currentAssignments">
+                                    ${workload.projects.length === 0 ?
+                                        '<p class="text-muted">目前沒有分配到任何專案</p>' :
+                                        workload.projects.map(project => `
+                                            <div class="card mb-2" data-project="${project.projectKey}">
+                                                <div class="card-body py-2">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <strong>${project.projectName}</strong>
+                                                            <br><small class="text-muted">角色：${project.roleName}</small>
+                                                        </div>
+                                                        <button class="btn btn-outline-danger btn-sm"
+                                                                onclick="teamManagement.removeProjectAssignment('${memberId}', '${project.projectKey}')">
+                                                            <i class="fas fa-times"></i> 移除
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('')
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6>新增專案分配</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">選擇專案</label>
+                                        <select class="form-select" id="newProjectSelect">
+                                            <option value="">請選擇專案...</option>
+                                            ${availableProjects.map(projectKey => `
+                                                <option value="${projectKey}">${projectKey}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">選擇角色</label>
+                                        <select class="form-select" id="newRoleSelect">
+                                            <option value="">請選擇角色...</option>
+                                            ${member.skills.map(skill => `
+                                                <option value="${skill}">${this.roles[skill]?.name || skill}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button class="btn btn-primary w-100"
+                                                onclick="teamManagement.addProjectAssignment('${memberId}')">
+                                            <i class="fas fa-plus"></i> 新增
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        注意：每個成員在同一專案中只能有一個角色
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.saveMemberProjectChanges('${memberId}')">
+                                <i class="fas fa-save"></i> 儲存變更
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除現有模態框
+        const existing = document.getElementById('editMemberProjectsModal');
+        if (existing) existing.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+        const modal = new bootstrap.Modal(document.getElementById('editMemberProjectsModal'));
+        modal.show();
+    }
+
+    // 移除專案分配
+    removeProjectAssignment(memberId, projectKey) {
+        if (this.assignments[projectKey] && this.assignments[projectKey].members[memberId]) {
+            delete this.assignments[projectKey].members[memberId];
+
+            // 更新顯示
+            const projectCard = document.querySelector(`[data-project="${projectKey}"]`);
+            if (projectCard) {
+                projectCard.remove();
+            }
+
+            // 如果沒有任何分配了，顯示提示
+            const currentAssignments = document.getElementById('currentAssignments');
+            if (currentAssignments.children.length === 0) {
+                currentAssignments.innerHTML = '<p class="text-muted">目前沒有分配到任何專案</p>';
+            }
+
+            this.showToast('移除成功', `已移除 ${projectKey} 專案分配`, 'success');
+        }
+    }
+
+    // 新增專案分配
+    addProjectAssignment(memberId) {
+        const projectSelect = document.getElementById('newProjectSelect');
+        const roleSelect = document.getElementById('newRoleSelect');
+
+        const projectKey = projectSelect.value;
+        const roleKey = roleSelect.value;
+
+        if (!projectKey || !roleKey) {
+            this.showToast('請完整選擇', '請選擇專案和角色', 'warning');
+            return;
+        }
+
+        // 檢查是否已經在該專案中有角色
+        if (this.assignments[projectKey] && this.assignments[projectKey].members[memberId]) {
+            this.showToast('分配衝突', '該成員已在此專案中有角色分配', 'warning');
+            return;
+        }
+
+        // 確保專案存在
+        if (!this.assignments[projectKey]) {
+            this.assignments[projectKey] = { members: {} };
+        }
+
+        // 新增分配
+        this.assignments[projectKey].members[memberId] = {
+            memberId: memberId,
+            role: roleKey,
+            assignedDate: new Date().toISOString().split('T')[0],
+            tasks: [`${this.roles[roleKey]?.name || roleKey}相關任務`]
+        };
+
+        // 更新顯示
+        const currentAssignments = document.getElementById('currentAssignments');
+        if (currentAssignments.querySelector('.text-muted')) {
+            currentAssignments.innerHTML = '';
+        }
+
+        const roleName = this.roles[roleKey]?.name || roleKey;
+        const newAssignmentCard = `
+            <div class="card mb-2" data-project="${projectKey}">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${projectKey}</strong>
+                            <br><small class="text-muted">角色：${roleName}</small>
+                        </div>
+                        <button class="btn btn-outline-danger btn-sm"
+                                onclick="teamManagement.removeProjectAssignment('${memberId}', '${projectKey}')">
+                            <i class="fas fa-times"></i> 移除
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        currentAssignments.insertAdjacentHTML('beforeend', newAssignmentCard);
+
+        // 清空選擇
+        projectSelect.value = '';
+        roleSelect.value = '';
+
+        this.showToast('新增成功', `已新增 ${projectKey} 專案分配`, 'success');
+    }
+
+    // 儲存成員專案變更
+    saveMemberProjectChanges(memberId) {
+        try {
+            // 儲存到本地存儲
+            this.saveToLocal();
+
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editMemberProjectsModal'));
+            modal.hide();
+
+            // 刷新成員管理頁面
+            this.loadMemberManagement();
+
+            this.showToast('儲存成功', '成員專案分配已更新', 'success');
+        } catch (error) {
+            this.showToast('儲存失敗', error.message, 'error');
+        }
     }
 }
 
