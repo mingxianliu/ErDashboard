@@ -21,8 +21,17 @@ class TeamManagement {
     }
 
     async loadTeamData() {
-        const response = await fetch('config/team-members.json');
-        const data = await response.json();
+        try {
+            console.log('🔄 開始載入團隊成員資料...');
+            const response = await fetch('config/team-members.json');
+            console.log('🔄 team-members.json 回應狀態:', response.status, response.statusText);
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            console.log('🔄 team-members.json 資料載入成功:', data);
 
         // 先載入預設資料
         this.members = data.members;
@@ -55,7 +64,13 @@ class TeamManagement {
             console.log('已載入本地組織變更');
         }
 
-        console.log('團隊資料載入完成 - groups:', data.groups ? Object.keys(data.groups).length : 0);
+            console.log('團隊資料載入完成 - groups:', data.groups ? Object.keys(data.groups).length : 0);
+        } catch (error) {
+            console.error('❌ 團隊成員資料載入失敗:', error);
+            this.members = {};
+            this.roles = {};
+            this.teamConfig = { groups: {} };
+        }
     }
 
     async loadAssignments() {
