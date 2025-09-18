@@ -23,13 +23,8 @@ class GoogleDriveAPI {
                 gapi.load('auth2,drive', resolve);
             });
 
-            // 設定 API 參數 - 請參考 GOOGLE_DRIVE_SETUP.md 設定您的 Client ID
-            const CLIENT_ID = '你的-client-id.apps.googleusercontent.com'; // 🔧 請替換為您的 Google Client ID
-
-            if (CLIENT_ID === '你的-client-id.apps.googleusercontent.com') {
-                console.warn('⚠️ 尚未設定 Google Drive Client ID，請參考 GOOGLE_DRIVE_SETUP.md');
-                return;
-            }
+            // 設定 API 參數 - Google Drive Client ID
+            const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
 
             await gapi.auth2.init({
                 client_id: CLIENT_ID,
