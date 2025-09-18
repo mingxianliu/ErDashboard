@@ -4,44 +4,44 @@
       "projectId": "ErCore",
       "projectName": "ErCore - 企業級 AI 統一平台",
       "members": {
-        "A": { "memberId": "A", "role": "frontend", "assignedDate": "2025-01-15", "tasks": ["UI 設計", "前端架構", "組件開發"] },
-        "G": { "memberId": "G", "role": "backend", "assignedDate": "2025-01-15", "tasks": ["API 開發", "資料庫設計", "服務架構"] },
-        "M": { "memberId": "M", "role": "testing", "assignedDate": "2025-01-20", "tasks": ["功能測試", "效能測試", "品質保證"] }
+        "A-CC": { "memberId": "A-CC", "role": "frontend", "assignedDate": "2025-01-15", "tasks": ["UI 設計", "前端架構", "組件開發"] },
+        "B-CC": { "memberId": "B-CC", "role": "backend", "assignedDate": "2025-01-15", "tasks": ["API 開發", "資料庫設計", "服務架構"] },
+        "C-CC": { "memberId": "C-CC", "role": "testing", "assignedDate": "2025-01-20", "tasks": ["功能測試", "效能測試", "品質保證"] }
       },
-      "lastUpdated": "2025-09-17",
+      "lastUpdated": "2025-09-18",
       "status": "active"
     },
     "ErNexus": {
       "projectId": "ErNexus",
       "projectName": "ErNexus - 企業級統一平台",
       "members": {
-        "B": { "memberId": "B", "role": "frontend", "assignedDate": "2025-02-01", "tasks": ["Admin Portal UI", "React 組件", "狀態管理"] },
-        "H": { "memberId": "H", "role": "backend", "assignedDate": "2025-02-01", "tasks": ["微服務架構", "JWT 認證", "API 整合"] },
-        "N": { "memberId": "N", "role": "testing", "assignedDate": "2025-02-10", "tasks": ["整合測試", "API 測試", "自動化測試"] }
+        "A-CA": { "memberId": "A-CA", "role": "frontend", "assignedDate": "2025-02-01", "tasks": ["Admin Portal UI", "React 組件", "狀態管理"] },
+        "B-CA": { "memberId": "B-CA", "role": "backend", "assignedDate": "2025-02-01", "tasks": ["微服務架構", "JWT 認證", "API 整合"] },
+        "C-CA": { "memberId": "C-CA", "role": "testing", "assignedDate": "2025-02-10", "tasks": ["整合測試", "API 測試", "自動化測試"] }
       },
-      "lastUpdated": "2025-09-17",
+      "lastUpdated": "2025-09-18",
       "status": "completed"
     },
     "ErShield": {
       "projectId": "ErShield",
       "projectName": "ErShield - 安全防護平台",
       "members": {
-        "C": { "memberId": "C", "role": "frontend", "assignedDate": "2025-03-01", "tasks": ["安全儀表板", "Docker 風格設計", "響應式布局"] },
-        "I": { "memberId": "I", "role": "backend", "assignedDate": "2025-03-01", "tasks": ["安全模組", "權限管理", "日誌系統"] },
-        "O": { "memberId": "O", "role": "testing", "assignedDate": "2025-03-10", "tasks": ["安全測試", "滲透測試", "合規驗證"] }
+        "A-GI": { "memberId": "A-GI", "role": "frontend", "assignedDate": "2025-03-01", "tasks": ["安全儀表板", "Docker 風格設計", "響應式布局"] },
+        "B-GI": { "memberId": "B-GI", "role": "backend", "assignedDate": "2025-03-01", "tasks": ["安全模組", "權限管理", "日誌系統"] },
+        "C-GI": { "memberId": "C-GI", "role": "testing", "assignedDate": "2025-03-10", "tasks": ["安全測試", "滲透測試", "合規驗證"] }
       },
-      "lastUpdated": "2025-09-17",
+      "lastUpdated": "2025-09-18",
       "status": "active"
     },
     "ErTidy": {
       "projectId": "ErTidy",
       "projectName": "ErTidy - 企業級智能開發平台",
       "members": {
-        "D": { "memberId": "D", "role": "frontend", "assignedDate": "2025-04-01", "tasks": ["智能 IDE", "設計系統", "開發工具 UI"] },
-        "J": { "memberId": "J", "role": "backend", "assignedDate": "2025-04-01", "tasks": ["AI 引擎", "Rust 核心", "智能分析"] },
-        "P": { "memberId": "P", "role": "testing", "assignedDate": "2025-04-10", "tasks": ["AI-TDD 測試", "智能測試", "代碼品質"] }
+        "A-CI": { "memberId": "A-CI", "role": "frontend", "assignedDate": "2025-04-01", "tasks": ["智能 IDE", "設計系統", "開發工具 UI"] },
+        "B-CI": { "memberId": "B-CI", "role": "backend", "assignedDate": "2025-04-01", "tasks": ["AI 引擎", "Rust 核心", "智能分析"] },
+        "C-CI": { "memberId": "C-CI", "role": "testing", "assignedDate": "2025-04-10", "tasks": ["AI-TDD 測試", "智能測試", "代碼品質"] }
       },
-      "lastUpdated": "2025-09-17",
+      "lastUpdated": "2025-09-18",
       "status": "active"
     }
   },
@@ -56,6 +56,6 @@
     "activeProjects": 3,
     "completedProjects": 1,
     "membersInUse": 12,
-    "availableMembers": 14
+    "availableMembers": 6
   }
 }
