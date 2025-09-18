@@ -1213,7 +1213,7 @@ class TeamManagement {
                                         <div class="col-md-6 col-lg-3 mb-3">
                                             <div class="card border-0 shadow-sm">
                                                 <div class="card-body text-center p-3">
-                                                    <div style="font-size: 2em;">👤</div>
+                                                    <div style="font-size: 2em; font-weight: bold; color: ${group.color};">${memberId.charAt(0)}</div>
 
                                                     <!-- 可編輯的成員名稱 -->
                                                     <div class="mt-2 mb-1">
