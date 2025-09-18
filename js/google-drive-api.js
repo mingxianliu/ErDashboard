@@ -31,12 +31,22 @@ class GoogleDriveAPI {
                 discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
             });
 
-            // 設定 OAuth Token Client (新版)
-            const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+            // 檢查設定檔是否載入
+            if (!window.GOOGLE_DRIVE_CONFIG) {
+                throw new Error('Google Drive 設定檔案未載入，請確認 js/config.js 檔案存在');
+            }
+
+            // 從設定檔取得 Client ID
+            const CLIENT_ID = window.GOOGLE_DRIVE_CONFIG.CLIENT_ID;
+            this.folderId = window.GOOGLE_DRIVE_CONFIG.FOLDER_ID;
+
+            if (!CLIENT_ID || CLIENT_ID === '你的-client-id.apps.googleusercontent.com') {
+                throw new Error('請在 js/config.js 中設定有效的 Google Client ID');
+            }
 
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
-                scope: 'https://www.googleapis.com/auth/drive.file',
+                scope: window.GOOGLE_DRIVE_CONFIG.SCOPES,
                 callback: (response) => {
                     if (response.access_token) {
                         this.accessToken = response.access_token;

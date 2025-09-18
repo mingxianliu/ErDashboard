@@ -1,0 +1,23 @@
+{
+  "description": "專案目錄名稱對應到 Dashboard 的 markdown 檔案",
+  "mapping": {
+    "ErTidy": "ErTidy.md",
+    "ErNexus": "ErNexus.md",
+    "ErShield": "ErShield.md",
+    "ErCore": "ErCore.md"
+  },
+  "autoDetection": {
+    "enabled": true,
+    "lastUpdated": "2025-08-30T00:00:00.000Z",
+    "rules": [
+      {
+        "pattern": "Er*",
+        "action": "match_name"
+      },
+      {
+        "pattern": "*App*",
+        "action": "map_to_erproject"
+      }
+    ]
+  }
+}

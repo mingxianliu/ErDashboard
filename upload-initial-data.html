@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上傳初始專案資料到 Google Drive</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 10px 20px; margin: 10px 5px; font-size: 16px; cursor: pointer; }
+        .project-card { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <h1>📤 上傳初始專案資料到 Google Drive</h1>
+    <div id="status">準備中...</div>
+
+    <div id="buttons" style="display: none;">
+        <button onclick="uploadAllProjectData()">🚀 上傳所有專案資料</button>
+        <button onclick="uploadCurrentTeamConfig()">👥 上傳目前團隊設定</button>
+    </div>
+
+    <div id="project-preview">
+        <h2>📋 即將上傳的專案資料預覽</h2>
+        <div id="projects-list"></div>
+    </div>
+
+    <div id="results"></div>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script>
+        const CLIENT_ID = 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+        const FOLDER_ID = 'YOUR_FOLDER_ID_HERE';
+
+        let tokenClient;
+        let accessToken = null;
+
+        // 專案基本資料
+        const projectsData = {
+            ErCore: {
+                projectId: "ErCore",
+                projectName: "ErCore - 企業級 AI 統一平台",
+                description: "企業級人工智慧統一管理平台，整合多種 AI 服務並提供統一介面",
+                status: "active",
+                priority: "high",
+                startDate: "2025-01-15",
+                estimatedEndDate: "2025-06-30",
+                budget: "高預算專案",
+                technologies: ["AI/ML", "Python", "React", "Docker", "Kubernetes"],
+                goals: [
+                    "建立企業級 AI 服務整合平台",
+                    "提供統一的 AI API 介面",
+                    "實現多模型部署和管理",
+                    "建立監控和分析系統"
+                ],
+                milestones: [
+                    { name: "需求分析完成", date: "2025-02-01", status: "completed" },
+                    { name: "架構設計完成", date: "2025-02-15", status: "in_progress" },
+                    { name: "核心功能開發", date: "2025-04-01", status: "pending" },
+                    { name: "測試和部署", date: "2025-05-15", status: "pending" },
+                    { name: "正式上線", date: "2025-06-30", status: "pending" }
+                ],
+                team: {
+                    "A-CC": { role: "frontend", tasks: ["UI 設計", "前端架構", "組件開發"] },
+                    "B-CC": { role: "backend", tasks: ["API 開發", "資料庫設計", "服務架構"] },
+                    "C-CC": { role: "testing", tasks: ["功能測試", "效能測試", "品質保證"] }
+                },
+                risks: [
+                    "AI 模型整合複雜度高",
+                    "效能要求嚴格",
+                    "安全性要求高"
+                ]
+            },
+
+            ErNexus: {
+                projectId: "ErNexus",
+                projectName: "ErNexus - 企業級統一平台",
+                description: "企業級統一管理平台，整合各種企業服務和工具",
+                status: "completed",
+                priority: "medium",
+                startDate: "2025-02-01",
+                estimatedEndDate: "2025-04-30",
+                actualEndDate: "2025-04-25",
+                budget: "中等預算專案",
+                technologies: ["React", "Node.js", "PostgreSQL", "Redis", "JWT"],
+                goals: [
+                    "建立企業統一管理介面",
+                    "整合現有企業系統",
+                    "提供單一登入功能",
+                    "建立權限管理系統"
+                ],
+                milestones: [
+                    { name: "需求分析完成", date: "2025-02-10", status: "completed" },
+                    { name: "系統設計完成", date: "2025-02-20", status: "completed" },
+                    { name: "核心開發完成", date: "2025-03-20", status: "completed" },
+                    { name: "整合測試完成", date: "2025-04-10", status: "completed" },
+                    { name: "專案交付", date: "2025-04-25", status: "completed" }
+                ],
+                team: {
+                    "A-CA": { role: "frontend", tasks: ["Admin Portal UI", "React 組件", "狀態管理"] },
+                    "B-CA": { role: "backend", tasks: ["微服務架構", "JWT 認證", "API 整合"] },
+                    "C-CA": { role: "testing", tasks: ["整合測試", "API 測試", "自動化測試"] }
+                },
+                achievements: [
+                    "成功整合 5 個企業系統",
+                    "實現單一登入功能",
+                    "建立完整的權限管理體系",
+                    "獲得用戶高度滿意度"
+                ]
+            },
+
+            ErShield: {
+                projectId: "ErShield",
+                projectName: "ErShield - 安全防護平台",
+                description: "企業級安全防護和監控平台，提供全方位的安全保護",
+                status: "active",
+                priority: "high",
+                startDate: "2025-03-01",
+                estimatedEndDate: "2025-08-31",
+                budget: "高預算專案",
+                technologies: ["Cybersecurity", "Python", "Go", "Docker", "ELK Stack"],
+                goals: [
+                    "建立企業安全監控中心",
+                    "實現威脅檢測和預警",
+                    "提供安全事件響應機制",
+                    "建立合規報告系統"
+                ],
+                milestones: [
+                    { name: "安全需求分析", date: "2025-03-15", status: "completed" },
+                    { name: "威脅模型建立", date: "2025-04-01", status: "in_progress" },
+                    { name: "核心防護功能", date: "2025-05-15", status: "pending" },
+                    { name: "監控系統開發", date: "2025-07-01", status: "pending" },
+                    { name: "系統上線測試", date: "2025-08-31", status: "pending" }
+                ],
+                team: {
+                    "A-GI": { role: "frontend", tasks: ["安全儀表板", "Docker 風格設計", "響應式布局"] },
+                    "B-GI": { role: "backend", tasks: ["安全模組", "權限管理", "日誌系統"] },
+                    "C-GI": { role: "testing", tasks: ["安全測試", "滲透測試", "合規驗證"] }
+                },
+                securityFeatures: [
+                    "實時威脅檢測",
+                    "入侵防護系統",
+                    "數據加密保護",
+                    "存取控制管理",
+                    "審計日誌記錄"
+                ]
+            },
+
+            ErTidy: {
+                projectId: "ErTidy",
+                projectName: "ErTidy - 企業級智能開發平台",
+                description: "智能化開發平台，提供 AI 輔助的代碼開發和管理工具",
+                status: "active",
+                priority: "medium",
+                startDate: "2025-04-01",
+                estimatedEndDate: "2025-10-31",
+                budget: "中高預算專案",
+                technologies: ["AI/ML", "Rust", "TypeScript", "WebAssembly", "TensorFlow"],
+                goals: [
+                    "建立 AI 輔助開發環境",
+                    "提供智能代碼生成",
+                    "實現自動化測試驅動開發",
+                    "建立代碼品質監控系統"
+                ],
+                milestones: [
+                    { name: "AI 模型訓練", date: "2025-04-20", status: "in_progress" },
+                    { name: "開發工具整合", date: "2025-06-01", status: "pending" },
+                    { name: "智能功能開發", date: "2025-08-01", status: "pending" },
+                    { name: "品質系統建立", date: "2025-09-15", status: "pending" },
+                    { name: "平台正式發布", date: "2025-10-31", status: "pending" }
+                ],
+                team: {
+                    "A-CI": { role: "frontend", tasks: ["智能 IDE", "設計系統", "開發工具 UI"] },
+                    "B-CI": { role: "backend", tasks: ["AI 引擎", "Rust 核心", "智能分析"] },
+                    "C-CI": { role: "testing", tasks: ["AI-TDD 測試", "智能測試", "代碼品質"] }
+                },
+                aiFeatures: [
+                    "智能代碼補全",
+                    "自動化重構建議",
+                    "智能測試生成",
+                    "代碼品質分析",
+                    "效能優化建議"
+                ]
+            }
+        };
+
+        // 團隊配置資料
+        const teamConfig = {
+            members: {
+                "A-CC": { "id": "A-CC", "name": "成員A-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CC", "joinDate": "2025-01-01", "notes": "負責 ErCore 前端開發" },
+                "A-CA": { "id": "A-CA", "name": "成員A-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CA", "joinDate": "2025-01-01", "notes": "負責 ErNexus 前端開發" },
+                "A-GI": { "id": "A-GI", "name": "成員A-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-GI", "joinDate": "2025-01-01", "notes": "負責 ErShield 前端開發" },
+                "A-CI": { "id": "A-CI", "name": "成員A-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CI", "joinDate": "2025-01-01", "notes": "負責 ErTidy 前端開發" },
+                "A-CS": { "id": "A-CS", "name": "成員A-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CS", "joinDate": "2025-01-01", "notes": "備用成員" },
+                "A-VC": { "id": "A-VC", "name": "成員A-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-VC", "joinDate": "2025-01-01", "notes": "備用成員" },
+                "B-CC": { "id": "B-CC", "name": "成員B-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CC", "joinDate": "2025-01-01", "notes": "負責 ErCore 後端開發" },
+                "B-CA": { "id": "B-CA", "name": "成員B-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CA", "joinDate": "2025-01-01", "notes": "負責 ErNexus 後端開發" },
+                "B-GI": { "id": "B-GI", "name": "成員B-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-GI", "joinDate": "2025-01-01", "notes": "負責 ErShield 後端開發" },
+                "B-CI": { "id": "B-CI", "name": "成員B-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CI", "joinDate": "2025-01-01", "notes": "負責 ErTidy 後端開發" },
+                "B-CS": { "id": "B-CS", "name": "成員B-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CS", "joinDate": "2025-01-01", "notes": "備用成員" },
+                "B-VC": { "id": "B-VC", "name": "成員B-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-VC", "joinDate": "2025-01-01", "notes": "備用成員" },
+                "C-CC": { "id": "C-CC", "name": "成員C-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CC", "joinDate": "2025-01-01", "notes": "負責 ErCore 測試驗證" },
+                "C-CA": { "id": "C-CA", "name": "成員C-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CA", "joinDate": "2025-01-01", "notes": "負責 ErNexus 測試驗證" },
+                "C-GI": { "id": "C-GI", "name": "成員C-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-GI", "joinDate": "2025-01-01", "notes": "負責 ErShield 測試驗證" },
+                "C-CI": { "id": "C-CI", "name": "成員C-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CI", "joinDate": "2025-01-01", "notes": "負責 ErTidy 測試驗證" },
+                "C-CS": { "id": "C-CS", "name": "成員C-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CS", "joinDate": "2025-01-01", "notes": "備用成員" },
+                "C-VC": { "id": "C-VC", "name": "成員C-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-VC", "joinDate": "2025-01-01", "notes": "備用成員" }
+            },
+            groups: {
+                "groupA": { "id": "groupA", "name": "A組", "description": "A組團隊成員", "members": ["A-CC", "A-CA", "A-GI", "A-CI", "A-CS", "A-VC"], "color": "#3b82f6" },
+                "groupB": { "id": "groupB", "name": "B組", "description": "B組團隊成員", "members": ["B-CC", "B-CA", "B-GI", "B-CI", "B-CS", "B-VC"], "color": "#ef4444" },
+                "groupC": { "id": "groupC", "name": "C組", "description": "C組團隊成員", "members": ["C-CC", "C-CA", "C-GI", "C-CI", "C-CS", "C-VC"], "color": "#10b981" }
+            },
+            roles: {
+                "frontend": { "name": "前端開發", "icon": "[UI]", "color": "#3b82f6", "description": "負責用戶介面設計與前端功能實作" },
+                "backend": { "name": "後端開發", "icon": "[API]", "color": "#ef4444", "description": "負責伺服器邏輯、API 開發與資料庫設計" },
+                "testing": { "name": "測試驗證", "icon": "[TEST]", "color": "#10b981", "description": "負責功能測試、品質保證與驗證報告" }
+            }
+        };
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function showProjectPreview() {
+            const container = document.getElementById('projects-list');
+            container.innerHTML = '';
+
+            Object.values(projectsData).forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+                card.innerHTML = `
+                    <h3>${project.projectName}</h3>
+                    <p><strong>狀態:</strong> ${project.status === 'active' ? '進行中' : '已完成'}</p>
+                    <p><strong>優先級:</strong> ${project.priority}</p>
+                    <p><strong>描述:</strong> ${project.description}</p>
+                    <p><strong>技術棧:</strong> ${project.technologies.join(', ')}</p>
+                    <p><strong>團隊成員:</strong> ${Object.keys(project.team).join(', ')}</p>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function initializeGAPI() {
+            try {
+                document.getElementById('status').textContent = '正在初始化 Google API...';
+
+                await new Promise((resolve) => {
+                    gapi.load('client', resolve);
+                });
+
+                await gapi.client.init({
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+                });
+
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (response) => {
+                        if (response.access_token) {
+                            accessToken = response.access_token;
+                            log('✅ Google Drive 登入成功', 'success');
+                            document.getElementById('buttons').style.display = 'block';
+                        }
+                    },
+                });
+
+                document.getElementById('status').textContent = '✅ 初始化完成，請點擊按鈕開始上傳';
+                showProjectPreview();
+
+                // 自動登入
+                tokenClient.requestAccessToken();
+
+            } catch (error) {
+                document.getElementById('status').textContent = '❌ 初始化失敗';
+                log(`❌ 初始化錯誤: ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadFile(fileName, content, description = '') {
+            const metadata = {
+                name: fileName,
+                parents: [FOLDER_ID],
+                mimeType: 'application/json',
+                description: description
+            };
+
+            const form = new FormData();
+            form.append('metadata', new Blob([JSON.stringify(metadata)], {type: 'application/json'}));
+            form.append('file', new Blob([JSON.stringify(content, null, 2)], {type: 'application/json'}));
+
+            const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                },
+                body: form
+            });
+
+            if (!response.ok) {
+                throw new Error(`上傳失敗: ${response.status} ${response.statusText}`);
+            }
+
+            return await response.json();
+        }
+
+        async function uploadAllProjectData() {
+            if (!accessToken) {
+                log('❌ 請先登入 Google Drive', 'error');
+                return;
+            }
+
+            log('🚀 開始上傳所有專案資料...', 'info');
+
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+                const dateStr = timestamp[0];
+                const timeStr = timestamp[1].split('-')[0];
+
+                // 上傳每個專案的詳細資料
+                for (const [projectId, projectData] of Object.entries(projectsData)) {
+                    const fileName = `ErDashboard_Project_${projectId}_${dateStr}_${timeStr}.json`;
+                    const wrappedData = {
+                        version: "1.0",
+                        type: "project",
+                        projectId: projectId,
+                        lastSync: new Date().toISOString(),
+                        data: projectData
+                    };
+
+                    const result = await uploadFile(fileName, wrappedData, `${projectData.projectName} 專案詳細資料`);
+                    log(`✅ ${projectData.projectName} 資料已上傳 (ID: ${result.id})`, 'success');
+                }
+
+                // 上傳專案分配資訊
+                const assignmentsData = {
+                    version: "1.0",
+                    type: "assignments",
+                    lastSync: new Date().toISOString(),
+                    data: {
+                        assignments: {
+                            ErCore: {
+                                projectId: "ErCore",
+                                projectName: "ErCore - 企業級 AI 統一平台",
+                                members: projectsData.ErCore.team,
+                                lastUpdated: dateStr,
+                                status: "active"
+                            },
+                            ErNexus: {
+                                projectId: "ErNexus",
+                                projectName: "ErNexus - 企業級統一平台",
+                                members: projectsData.ErNexus.team,
+                                lastUpdated: dateStr,
+                                status: "completed"
+                            },
+                            ErShield: {
+                                projectId: "ErShield",
+                                projectName: "ErShield - 安全防護平台",
+                                members: projectsData.ErShield.team,
+                                lastUpdated: dateStr,
+                                status: "active"
+                            },
+                            ErTidy: {
+                                projectId: "ErTidy",
+                                projectName: "ErTidy - 企業級智能開發平台",
+                                members: projectsData.ErTidy.team,
+                                lastUpdated: dateStr,
+                                status: "active"
+                            }
+                        }
+                    }
+                };
+
+                const assignmentsResult = await uploadFile(
+                    `ErDashboard_Assignments_${dateStr}_${timeStr}.json`,
+                    assignmentsData,
+                    '專案分配資訊'
+                );
+                log(`✅ 專案分配資訊已上傳 (ID: ${assignmentsResult.id})`, 'success');
+
+                log('🎉 所有專案資料上傳完成！', 'success');
+
+            } catch (error) {
+                log(`❌ 上傳過程中發生錯誤: ${error.message}`, 'error');
+            }
+        }
+
+        async function uploadCurrentTeamConfig() {
+            if (!accessToken) {
+                log('❌ 請先登入 Google Drive', 'error');
+                return;
+            }
+
+            log('👥 開始上傳團隊配置資料...', 'info');
+
+            try {
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+                const dateStr = timestamp[0];
+                const timeStr = timestamp[1].split('-')[0];
+
+                // 上傳成員資料
+                const membersResult = await uploadFile(
+                    `ErDashboard_Members_${dateStr}_${timeStr}.json`,
+                    {
+                        version: "1.0",
+                        type: "members",
+                        lastSync: new Date().toISOString(),
+                        data: teamConfig.members
+                    },
+                    '團隊成員基本資料'
+                );
+                log(`✅ 團隊成員資料已上傳 (ID: ${membersResult.id})`, 'success');
+
+                // 上傳組織資料
+                const groupsResult = await uploadFile(
+                    `ErDashboard_Groups_${dateStr}_${timeStr}.json`,
+                    {
+                        version: "1.0",
+                        type: "groups",
+                        lastSync: new Date().toISOString(),
+                        data: teamConfig.groups
+                    },
+                    '團隊組織結構資料'
+                );
+                log(`✅ 組織結構資料已上傳 (ID: ${groupsResult.id})`, 'success');
+
+                log('🎉 團隊配置資料上傳完成！', 'success');
+
+            } catch (error) {
+                log(`❌ 團隊資料上傳失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // 頁面載入後開始初始化
+        window.addEventListener('load', initializeGAPI);
+    </script>
+</body>
+</html>

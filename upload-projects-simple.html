@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上傳專案資料 - 簡化版</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        button { padding: 15px 25px; margin: 10px 5px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .project-card { border: 1px solid #ddd; margin: 15px 0; padding: 20px; border-radius: 8px; background: #f8f9fa; }
+        .upload-area { border: 2px dashed #ccc; padding: 30px; text-align: center; margin: 20px 0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <h1>📤 上傳四個專案的基本資料到 Google Drive</h1>
+
+    <div class="upload-area">
+        <h2>🎯 方式一：直接複製 JSON 檔案</h2>
+        <p>我已經為您準備好了四個專案的完整 JSON 檔案，您可以直接下載並上傳到 Google Drive：</p>
+        <button class="btn-primary" onclick="downloadAllProjects()">📥 下載所有專案檔案</button>
+        <button class="btn-success" onclick="openGoogleDrive()">📁 開啟 Google Drive 資料夾</button>
+    </div>
+
+    <div class="upload-area">
+        <h2>🔗 方式二：手動建立檔案</h2>
+        <p>您也可以手動在 Google Drive 中建立以下檔案：</p>
+        <div id="filesList"></div>
+    </div>
+
+    <h2>📋 專案資料預覽</h2>
+    <div id="projects-preview"></div>
+
+    <div id="results"></div>
+
+    <script>
+        // 專案資料定義
+        const projectsData = {
+            ErCore: {
+                projectId: "ErCore",
+                projectName: "ErCore - 企業級 AI 統一平台",
+                description: "企業級人工智慧統一管理平台，整合多種 AI 服務並提供統一介面",
+                status: "active",
+                priority: "high",
+                startDate: "2025-01-15",
+                estimatedEndDate: "2025-06-30",
+                budget: "高預算專案",
+                technologies: ["AI/ML", "Python", "React", "Docker", "Kubernetes"],
+                goals: [
+                    "建立企業級 AI 服務整合平台",
+                    "提供統一的 AI API 介面",
+                    "實現多模型部署和管理",
+                    "建立監控和分析系統"
+                ],
+                milestones: [
+                    { name: "需求分析完成", date: "2025-02-01", status: "completed" },
+                    { name: "架構設計完成", date: "2025-02-15", status: "in_progress" },
+                    { name: "核心功能開發", date: "2025-04-01", status: "pending" },
+                    { name: "測試和部署", date: "2025-05-15", status: "pending" },
+                    { name: "正式上線", date: "2025-06-30", status: "pending" }
+                ],
+                team: {
+                    "A-CC": { role: "frontend", tasks: ["UI 設計", "前端架構", "組件開發"] },
+                    "B-CC": { role: "backend", tasks: ["API 開發", "資料庫設計", "服務架構"] },
+                    "C-CC": { role: "testing", tasks: ["功能測試", "效能測試", "品質保證"] }
+                },
+                risks: ["AI 模型整合複雜度高", "效能要求嚴格", "安全性要求高"]
+            },
+
+            ErNexus: {
+                projectId: "ErNexus",
+                projectName: "ErNexus - 企業級統一平台",
+                description: "企業級統一管理平台，整合各種企業服務和工具",
+                status: "completed",
+                priority: "medium",
+                startDate: "2025-02-01",
+                estimatedEndDate: "2025-04-30",
+                actualEndDate: "2025-04-25",
+                budget: "中等預算專案",
+                technologies: ["React", "Node.js", "PostgreSQL", "Redis", "JWT"],
+                goals: [
+                    "建立企業統一管理介面",
+                    "整合現有企業系統",
+                    "提供單一登入功能",
+                    "建立權限管理系統"
+                ],
+                milestones: [
+                    { name: "需求分析完成", date: "2025-02-10", status: "completed" },
+                    { name: "系統設計完成", date: "2025-02-20", status: "completed" },
+                    { name: "核心開發完成", date: "2025-03-20", status: "completed" },
+                    { name: "整合測試完成", date: "2025-04-10", status: "completed" },
+                    { name: "專案交付", date: "2025-04-25", status: "completed" }
+                ],
+                team: {
+                    "A-CA": { role: "frontend", tasks: ["Admin Portal UI", "React 組件", "狀態管理"] },
+                    "B-CA": { role: "backend", tasks: ["微服務架構", "JWT 認證", "API 整合"] },
+                    "C-CA": { role: "testing", tasks: ["整合測試", "API 測試", "自動化測試"] }
+                },
+                achievements: [
+                    "成功整合 5 個企業系統",
+                    "實現單一登入功能",
+                    "建立完整的權限管理體系",
+                    "獲得用戶高度滿意度"
+                ]
+            },
+
+            ErShield: {
+                projectId: "ErShield",
+                projectName: "ErShield - 安全防護平台",
+                description: "企業級安全防護和監控平台，提供全方位的安全保護",
+                status: "active",
+                priority: "high",
+                startDate: "2025-03-01",
+                estimatedEndDate: "2025-08-31",
+                budget: "高預算專案",
+                technologies: ["Cybersecurity", "Python", "Go", "Docker", "ELK Stack"],
+                goals: [
+                    "建立企業安全監控中心",
+                    "實現威脅檢測和預警",
+                    "提供安全事件響應機制",
+                    "建立合規報告系統"
+                ],
+                milestones: [
+                    { name: "安全需求分析", date: "2025-03-15", status: "completed" },
+                    { name: "威脅模型建立", date: "2025-04-01", status: "in_progress" },
+                    { name: "核心防護功能", date: "2025-05-15", status: "pending" },
+                    { name: "監控系統開發", date: "2025-07-01", status: "pending" },
+                    { name: "系統上線測試", date: "2025-08-31", status: "pending" }
+                ],
+                team: {
+                    "A-GI": { role: "frontend", tasks: ["安全儀表板", "Docker 風格設計", "響應式布局"] },
+                    "B-GI": { role: "backend", tasks: ["安全模組", "權限管理", "日誌系統"] },
+                    "C-GI": { role: "testing", tasks: ["安全測試", "滲透測試", "合規驗證"] }
+                },
+                securityFeatures: [
+                    "實時威脅檢測",
+                    "入侵防護系統",
+                    "數據加密保護",
+                    "存取控制管理",
+                    "審計日誌記錄"
+                ]
+            },
+
+            ErTidy: {
+                projectId: "ErTidy",
+                projectName: "ErTidy - 企業級智能開發平台",
+                description: "智能化開發平台，提供 AI 輔助的代碼開發和管理工具",
+                status: "active",
+                priority: "medium",
+                startDate: "2025-04-01",
+                estimatedEndDate: "2025-10-31",
+                budget: "中高預算專案",
+                technologies: ["AI/ML", "Rust", "TypeScript", "WebAssembly", "TensorFlow"],
+                goals: [
+                    "建立 AI 輔助開發環境",
+                    "提供智能代碼生成",
+                    "實現自動化測試驅動開發",
+                    "建立代碼品質監控系統"
+                ],
+                milestones: [
+                    { name: "AI 模型訓練", date: "2025-04-20", status: "in_progress" },
+                    { name: "開發工具整合", date: "2025-06-01", status: "pending" },
+                    { name: "智能功能開發", date: "2025-08-01", status: "pending" },
+                    { name: "品質系統建立", date: "2025-09-15", status: "pending" },
+                    { name: "平台正式發布", date: "2025-10-31", status: "pending" }
+                ],
+                team: {
+                    "A-CI": { role: "frontend", tasks: ["智能 IDE", "設計系統", "開發工具 UI"] },
+                    "B-CI": { role: "backend", tasks: ["AI 引擎", "Rust 核心", "智能分析"] },
+                    "C-CI": { role: "testing", tasks: ["AI-TDD 測試", "智能測試", "代碼品質"] }
+                },
+                aiFeatures: [
+                    "智能代碼補全",
+                    "自動化重構建議",
+                    "智能測試生成",
+                    "代碼品質分析",
+                    "效能優化建議"
+                ]
+            }
+        };
+
+        // 專案分配資料
+        const assignmentsData = {
+            assignments: {
+                ErCore: {
+                    projectId: "ErCore",
+                    projectName: "ErCore - 企業級 AI 統一平台",
+                    members: {
+                        "A-CC": { memberId: "A-CC", role: "frontend", assignedDate: "2025-01-15", tasks: ["UI 設計", "前端架構", "組件開發"] },
+                        "B-CC": { memberId: "B-CC", role: "backend", assignedDate: "2025-01-15", tasks: ["API 開發", "資料庫設計", "服務架構"] },
+                        "C-CC": { memberId: "C-CC", role: "testing", assignedDate: "2025-01-20", tasks: ["功能測試", "效能測試", "品質保證"] }
+                    },
+                    lastUpdated: "2025-09-18",
+                    status: "active"
+                },
+                ErNexus: {
+                    projectId: "ErNexus",
+                    projectName: "ErNexus - 企業級統一平台",
+                    members: {
+                        "A-CA": { memberId: "A-CA", role: "frontend", assignedDate: "2025-02-01", tasks: ["Admin Portal UI", "React 組件", "狀態管理"] },
+                        "B-CA": { memberId: "B-CA", role: "backend", assignedDate: "2025-02-01", tasks: ["微服務架構", "JWT 認證", "API 整合"] },
+                        "C-CA": { memberId: "C-CA", role: "testing", assignedDate: "2025-02-10", tasks: ["整合測試", "API 測試", "自動化測試"] }
+                    },
+                    lastUpdated: "2025-09-18",
+                    status: "completed"
+                },
+                ErShield: {
+                    projectId: "ErShield",
+                    projectName: "ErShield - 安全防護平台",
+                    members: {
+                        "A-GI": { memberId: "A-GI", role: "frontend", assignedDate: "2025-03-01", tasks: ["安全儀表板", "Docker 風格設計", "響應式布局"] },
+                        "B-GI": { memberId: "B-GI", role: "backend", assignedDate: "2025-03-01", tasks: ["安全模組", "權限管理", "日誌系統"] },
+                        "C-GI": { memberId: "C-GI", role: "testing", assignedDate: "2025-03-10", tasks: ["安全測試", "滲透測試", "合規驗證"] }
+                    },
+                    lastUpdated: "2025-09-18",
+                    status: "active"
+                },
+                ErTidy: {
+                    projectId: "ErTidy",
+                    projectName: "ErTidy - 企業級智能開發平台",
+                    members: {
+                        "A-CI": { memberId: "A-CI", role: "frontend", assignedDate: "2025-04-01", tasks: ["智能 IDE", "設計系統", "開發工具 UI"] },
+                        "B-CI": { memberId: "B-CI", role: "backend", assignedDate: "2025-04-01", tasks: ["AI 引擎", "Rust 核心", "智能分析"] },
+                        "C-CI": { memberId: "C-CI", role: "testing", assignedDate: "2025-04-10", tasks: ["AI-TDD 測試", "智能測試", "代碼品質"] }
+                    },
+                    lastUpdated: "2025-09-18",
+                    status: "active"
+                }
+            },
+            constraints: {
+                oneRolePerProject: "每個成員在單一專案中只能擔任一個角色",
+                availableRoles: ["frontend", "backend", "testing"],
+                minMembersPerRole: 1,
+                maxMembersPerRole: 3
+            },
+            statistics: {
+                totalAssignments: 12,
+                activeProjects: 3,
+                completedProjects: 1,
+                membersInUse: 12,
+                availableMembers: 6
+            }
+        };
+
+        function log(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            document.getElementById('results').appendChild(div);
+        }
+
+        function showProjectsPreview() {
+            const container = document.getElementById('projects-preview');
+            container.innerHTML = '';
+
+            Object.values(projectsData).forEach(project => {
+                const card = document.createElement('div');
+                card.className = 'project-card';
+
+                const statusBadge = project.status === 'active' ?
+                    '<span style="background: #28a745; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">進行中</span>' :
+                    '<span style="background: #6c757d; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">已完成</span>';
+
+                const priorityColor = project.priority === 'high' ? '#dc3545' :
+                                    project.priority === 'medium' ? '#ffc107' : '#28a745';
+
+                card.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;">${project.projectName}</h3>
+                        <div>
+                            ${statusBadge}
+                            <span style="background: ${priorityColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px; margin-left: 5px;">
+                                ${project.priority === 'high' ? '高優先級' : project.priority === 'medium' ? '中優先級' : '低優先級'}
+                            </span>
+                        </div>
+                    </div>
+                    <p><strong>描述:</strong> ${project.description}</p>
+                    <p><strong>技術棧:</strong> ${project.technologies.join(', ')}</p>
+                    <p><strong>團隊成員:</strong> ${Object.keys(project.team).join(', ')}</p>
+                    <p><strong>主要目標:</strong></p>
+                    <ul>${project.goals.map(goal => `<li>${goal}</li>`).join('')}</ul>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function downloadAllProjects() {
+            log('📥 開始下載所有專案檔案...', 'info');
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+            const dateStr = timestamp[0];
+            const timeStr = timestamp[1].split('-')[0];
+
+            // 下載每個專案檔案
+            Object.entries(projectsData).forEach(([projectId, projectData]) => {
+                const wrappedData = {
+                    version: "1.0",
+                    type: "project",
+                    projectId: projectId,
+                    lastSync: new Date().toISOString(),
+                    data: projectData
+                };
+
+                downloadJSON(wrappedData, `ErDashboard_Project_${projectId}_${dateStr}_${timeStr}.json`);
+                log(`✅ ${projectData.projectName} 檔案已下載`, 'success');
+            });
+
+            // 下載專案分配檔案
+            const assignmentsWrapped = {
+                version: "1.0",
+                type: "assignments",
+                lastSync: new Date().toISOString(),
+                data: assignmentsData
+            };
+
+            downloadJSON(assignmentsWrapped, `ErDashboard_Assignments_${dateStr}_${timeStr}.json`);
+            log('✅ 專案分配檔案已下載', 'success');
+
+            log('🎉 所有檔案下載完成！請將這些檔案上傳到 Google Drive 資料夾', 'success');
+        }
+
+        function downloadJSON(data, filename) {
+            const dataStr = JSON.stringify(data, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+            const exportFileDefaultName = filename;
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+        }
+
+        function openGoogleDrive() {
+            const driveUrl = 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE';
+            window.open(driveUrl, '_blank');
+            log('📁 已開啟 Google Drive 資料夾', 'info');
+        }
+
+        function showFilesList() {
+            const container = document.getElementById('filesList');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+            const dateStr = timestamp[0];
+            const timeStr = timestamp[1].split('-')[0];
+
+            const files = [
+                `ErDashboard_Project_ErCore_${dateStr}_${timeStr}.json`,
+                `ErDashboard_Project_ErNexus_${dateStr}_${timeStr}.json`,
+                `ErDashboard_Project_ErShield_${dateStr}_${timeStr}.json`,
+                `ErDashboard_Project_ErTidy_${dateStr}_${timeStr}.json`,
+                `ErDashboard_Assignments_${dateStr}_${timeStr}.json`
+            ];
+
+            container.innerHTML = `
+                <p>建議的檔案名稱：</p>
+                <ul>
+                    ${files.map(file => `<li><code>${file}</code></li>`).join('')}
+                </ul>
+            `;
+        }
+
+        // 頁面載入後顯示預覽
+        window.addEventListener('load', () => {
+            showProjectsPreview();
+            showFilesList();
+            log('📋 專案資料已準備完成', 'info');
+        });
+    </script>
+</body>
+</html>

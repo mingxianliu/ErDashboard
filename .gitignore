@@ -1,19 +1,53 @@
-node_modules/
-.DS_Store
-*.log
+# 敏感設定檔案
+js/config.js
+
+# 環境設定檔案
 .env
 .env.local
-dist/
-build/
-data/progress.json
+.env.development.local
+.env.test.local
+.env.production.local
 
-# 私鑰檔案 - 絕對不能 commit！
-private-key.pem
+# 私鑰檔案
 *.pem
 *.key
-private-*
+*.p12
+*.pfx
 
-# 腳本和指引 - 不推送到遠端
-scripts/update-dashboard.js
-scripts/PROJECT_ONBOARDING.md
-scripts/project-mapping.json
+# 備份檔案
+*.backup
+*.bak
+
+# 日誌檔案
+*.log
+logs/
+
+# 臨時檔案
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# IDE 設定檔案
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# Node.js (如果未來使用)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 測試覆蓋率報告
+coverage/
+.nyc_output/
+
+# 建置輸出
+dist/
+build/
+
+# 快取目錄
+.cache/
+.parcel-cache/
