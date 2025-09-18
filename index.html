@@ -6,7 +6,7 @@
     <title>多專案進度監控中心</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="css/dashboard.css?v=20250918b" rel="stylesheet">
+    <link href="css/dashboard.css?v=20250918c" rel="stylesheet">
     <meta name="description" content="基於 Markdown 檔案的專案進度監控儀表板">
     <meta name="robots" content="noindex,nofollow">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -95,6 +95,24 @@
             <!-- 動態載入 -->
         </div>
 
+        <!-- 團隊管理快速入口 -->
+        <div class="row mt-4" id="teamManagementQuickAccess" style="display: none;">
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-body text-center py-4">
+                        <h5 class="card-title">
+                            <i class="fas fa-users-cog text-primary fa-2x mb-3"></i>
+                            <br>團隊管理系統
+                        </h5>
+                        <p class="card-text text-muted">管理專案成員分配、查看統計報告、新增或編輯專案資料</p>
+                        <button class="btn btn-primary btn-lg" onclick="if(window.teamManagement) window.teamManagement.openTeamManagementDashboard()">
+                            <i class="fas fa-cog me-2"></i>開啟團隊管理中心
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- 專案列表 -->
         <div class="row mt-4" id="projectsList" style="display: none;">
             <!-- 動態載入 -->
@@ -102,10 +120,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="js/crypto-auth.js?v=20250918b"></script>
-    <script src="js/markdown-reader.js?v=20250918b"></script>
-    <script src="js/team-management.js?v=20250918b"></script>
-    <script src="js/markdown-dashboard.js?v=20250918b"></script>
+    <script src="js/crypto-auth.js?v=20250918c"></script>
+    <script src="js/markdown-reader.js?v=20250918c"></script>
+    <script src="js/team-management.js?v=20250918c"></script>
+    <script src="js/markdown-dashboard.js?v=20250918c"></script>
     <script>
         // 嚴格的認證檢查 - 無繞過機制
         function checkAuthentication() {
@@ -198,6 +216,7 @@
         function showMainDashboard() {
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
+            document.getElementById('teamManagementQuickAccess').style.display = 'block';
         }
         
         // 登出功能
@@ -207,9 +226,11 @@
                 sessionStorage.removeItem('KEY_AUTHENTICATED');
                 sessionStorage.removeItem('LOGIN_TIME');
                 
-                // 隱藏登出按鈕
+                // 隱藏登出按鈕和團隊管理按鈕
                 this.style.display = 'none';
-                
+                document.getElementById('teamManagementBtn').style.display = 'none';
+                document.getElementById('teamManagementQuickAccess').style.display = 'none';
+
                 // 顯示認證介面
                 document.getElementById('keyAuthentication').style.display = 'block';
                 document.getElementById('loadingSpinner').style.display = 'none';
