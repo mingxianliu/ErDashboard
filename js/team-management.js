@@ -13,6 +13,7 @@ class TeamManagement {
             await this.loadTeamData();
             await this.loadAssignments();
             await this.loadLocalChanges(); // 載入本地變更
+            await this.loadLocalMemberChanges(); // 載入本地成員變更
             console.log('[OK] 團隊管理系統初始化完成');
         } catch (error) {
             console.error('[ERROR] 團隊管理系統初始化失敗:', error);
@@ -1213,7 +1214,17 @@ class TeamManagement {
                                             <div class="card border-0 shadow-sm">
                                                 <div class="card-body text-center p-3">
                                                     <div style="font-size: 2em;">${member.avatar}</div>
-                                                    <h6 class="mt-2 mb-1">${member.name}</h6>
+                                                    <div class="mt-2 mb-1">
+                                                        <div class="editable-member-name" data-member-id="${memberId}">
+                                                            <h6 class="member-name-display mb-0">${member.name}</h6>
+                                                            <input type="text" class="form-control form-control-sm member-name-input d-none"
+                                                                   value="${member.name}" style="display: none;">
+                                                        </div>
+                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.7em;"
+                                                                onclick="teamManagement.editMemberName('${memberId}')">
+                                                            <i class="fas fa-edit text-muted"></i>
+                                                        </button>
+                                                    </div>
                                                     <small class="text-muted">ID: ${member.id}</small>
                                                     <div class="mt-2">
                                                         <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
@@ -1630,6 +1641,84 @@ class TeamManagement {
             this.showToast('儲存成功', '成員專案分配已更新', 'success');
         } catch (error) {
             this.showToast('儲存失敗', error.message, 'error');
+        }
+    }
+
+    // ==================== 成員名稱編輯功能 ====================
+
+    // 編輯成員名稱
+    editMemberName(memberId) {
+        const memberElement = document.querySelector(`[data-member-id="${memberId}"]`);
+        const displaySpan = memberElement.querySelector('.member-name-display');
+        const inputField = memberElement.querySelector('.member-name-input');
+
+        if (displaySpan.style.display !== 'none') {
+            // 進入編輯模式
+            displaySpan.style.display = 'none';
+            inputField.style.display = 'block';
+            inputField.classList.remove('d-none');
+            inputField.focus();
+            inputField.select();
+
+            // 監聽 Enter 鍵和失焦事件
+            const saveEdit = () => {
+                const newName = inputField.value.trim();
+                if (newName && newName !== this.members[memberId].name) {
+                    // 更新本地資料
+                    this.members[memberId].name = newName;
+                    this.teamConfig.members[memberId].name = newName;
+
+                    // 更新顯示
+                    displaySpan.textContent = newName;
+
+                    // 儲存變更
+                    this.saveMemberChanges();
+
+                    this.showToast('成員名稱更新', `${memberId} 已更新為：${newName}`, 'success');
+                }
+
+                // 退出編輯模式
+                displaySpan.style.display = 'block';
+                inputField.style.display = 'none';
+                inputField.classList.add('d-none');
+            };
+
+            inputField.addEventListener('blur', saveEdit, { once: true });
+            inputField.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    saveEdit();
+                }
+            }, { once: true });
+        }
+    }
+
+    // 儲存成員變更
+    saveMemberChanges() {
+        try {
+            // 儲存到本地存儲
+            localStorage.setItem('teamMemberChanges', JSON.stringify(this.teamConfig.members));
+            console.log('成員變更已儲存至本地');
+        } catch (error) {
+            console.error('儲存成員變更失敗:', error);
+            this.showToast('儲存失敗', error.message, 'error');
+        }
+    }
+
+    // 載入本地成員變更
+    loadLocalMemberChanges() {
+        try {
+            const localMembers = localStorage.getItem('teamMemberChanges');
+            if (localMembers) {
+                const savedMembers = JSON.parse(localMembers);
+                // 合併本地變更
+                this.members = { ...this.members, ...savedMembers };
+                if (this.teamConfig) {
+                    this.teamConfig.members = { ...this.teamConfig.members, ...savedMembers };
+                }
+                console.log('已載入本地成員變更');
+            }
+        } catch (error) {
+            console.error('載入本地成員變更失敗:', error);
         }
     }
 }
