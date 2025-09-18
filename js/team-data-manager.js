@@ -39,27 +39,37 @@ class TeamDataManager {
     async loadTeamData() {
         try {
             console.log('🔄 開始載入團隊成員資料...');
+            let data = null;
 
-            // 檢查 Google Drive API 是否可用
-            if (!window.googleDriveAPI) {
-                throw new Error('Google Drive API 未載入，無法讀取資料');
+            // 優先嘗試從 Google Drive 載入
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                try {
+                    console.log('☁️ 從 Google Drive 載入 team-members.json...');
+                    const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
+                    if (driveContent) {
+                        data = JSON.parse(driveContent);
+                        console.log('☁️ Google Drive 團隊成員資料載入成功:', data);
+                        console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
+                    }
+                } catch (driveError) {
+                    console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                }
             }
 
-            if (!window.googleDriveAPI.isAuthenticated) {
-                throw new Error('Google Drive 未登入，無法讀取資料');
+            // 如果 Google Drive 沒有資料或未登入，載入本地檔案
+            if (!data) {
+                console.log('📁 從本地載入 team-members.json...');
+                const response = await fetch('config/team-members.json?v=' + Date.now());
+                console.log('📁 team-members.json 回應狀態:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                data = await response.json();
+                console.log('📁 team-members.json 資料載入成功:', data);
+                console.log('📁 members 數量:', Object.keys(data.members || {}).length);
             }
-
-            // 強制從 Google Drive 載入
-            console.log('☁️ 從 Google Drive 載入 team-members.json...');
-            const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
-
-            if (!driveContent) {
-                throw new Error('Google Drive 中找不到 team-members.json 檔案');
-            }
-
-            const data = JSON.parse(driveContent);
-            console.log('☁️ Google Drive 團隊成員資料載入成功:', data);
-            console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
 
             // 先載入預設資料
             this.members = data.members;
@@ -115,33 +125,41 @@ class TeamDataManager {
 
     async loadAssignments() {
         try {
-            // 檢查 Google Drive API 是否可用
-            if (!window.googleDriveAPI) {
-                throw new Error('Google Drive API 未載入，無法讀取資料');
+            let data = null;
+
+            // 優先嘗試從 Google Drive 載入
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                try {
+                    console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
+                    const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
+                    if (driveContent) {
+                        data = JSON.parse(driveContent);
+                        console.log('☁️ 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
+                        console.log('☁️ assignments 內容:', data.assignments);
+                    }
+                } catch (driveError) {
+                    console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                }
             }
 
-            if (!window.googleDriveAPI.isAuthenticated) {
-                throw new Error('Google Drive 未登入，無法讀取資料');
+            // 如果 Google Drive 沒有資料或未登入，載入本地檔案
+            if (!data) {
+                console.log('📁 從本地載入 project-assignments.json...');
+                const response = await fetch('config/project-assignments.json?v=' + Date.now());
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                data = await response.json();
+                console.log('📁 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
+                console.log('📁 assignments 內容:', data.assignments);
             }
 
-            // 強制從 Google Drive 載入
-            console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
-            const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
-
-            if (!driveContent) {
-                throw new Error('Google Drive 中找不到 project-assignments.json 檔案');
-            }
-
-            const data = JSON.parse(driveContent);
             this.assignments = data.assignments;
             this.constraints = data.constraints;
-            console.log('☁️ 成功載入專案分配資料:', Object.keys(this.assignments).length, '個專案');
-            console.log('☁️ assignments 內容:', this.assignments);
         } catch (error) {
             console.error('❌ 載入專案分配資料失敗:', error);
             this.assignments = {};
             this.constraints = {};
-            throw error; // 重新拋出錯誤，因為現在必須從 Google Drive 載入
         }
     }
 
