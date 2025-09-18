@@ -325,8 +325,19 @@
                 syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上傳中...';
 
                 // 檢查 Google Drive 連線
-                if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
-                    throw new Error('Google Drive 未登入，請先登入');
+                if (!window.googleDriveAPI) {
+                    throw new Error('Google Drive API 未載入');
+                }
+
+                if (!window.googleDriveAPI.isAuthenticated) {
+                    // 自動觸發登入
+                    syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+                    showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
+                    const loginSuccess = await window.googleDriveAPI.signIn();
+                    if (!loginSuccess) {
+                        throw new Error('Google Drive 登入失敗或被取消');
+                    }
+                    syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上傳中...';
                 }
 
                 await pushLocalFilesToGoogleDrive();
@@ -355,8 +366,19 @@
                 pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 下載中...';
 
                 // 檢查 Google Drive 連線
-                if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
-                    throw new Error('Google Drive 未登入，請先登入');
+                if (!window.googleDriveAPI) {
+                    throw new Error('Google Drive API 未載入');
+                }
+
+                if (!window.googleDriveAPI.isAuthenticated) {
+                    // 自動觸發登入
+                    pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
+                    showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
+                    const loginSuccess = await window.googleDriveAPI.signIn();
+                    if (!loginSuccess) {
+                        throw new Error('Google Drive 登入失敗或被取消');
+                    }
+                    pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 下載中...';
                 }
 
                 await pullFilesFromGoogleDrive();
