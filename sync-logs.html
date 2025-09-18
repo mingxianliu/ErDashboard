@@ -80,12 +80,16 @@
                 const statusIcon = log.errorCount === 0 ? 'check-circle' :
                                   log.successCount === 0 ? 'times-circle' : 'exclamation-triangle';
 
+                const actionType = log.type === 'push' ? 'Push' : 'Pull';
+                const actionIcon = log.type === 'push' ? 'cloud-upload-alt' : 'cloud-download-alt';
+                const actionColor = log.type === 'push' ? 'success' : 'info';
+
                 html += `
                     <div class="card mb-3">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div>
-                                <i class="fas fa-${statusIcon} text-${statusColor} me-2"></i>
-                                <strong>同步 #${syncLogs.length - index}</strong>
+                                <i class="fas fa-${actionIcon} text-${actionColor} me-2"></i>
+                                <strong>${actionType} #${syncLogs.length - index}</strong>
                                 <span class="badge bg-${statusColor} ms-2">${successRate}% 成功</span>
                             </div>
                             <small class="text-muted">${formattedDate}</small>

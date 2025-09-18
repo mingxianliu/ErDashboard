@@ -23,7 +23,10 @@
             <div class="d-flex align-items-center">
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
                 <button class="btn btn-success btn-sm me-2" id="syncBtn" style="display: none;" title="同步本地檔案到 Google Drive">
-                    <i class="fas fa-cloud-upload-alt"></i> Sync
+                    <i class="fas fa-cloud-upload-alt"></i> Push
+                </button>
+                <button class="btn btn-info btn-sm me-2" id="pullBtn" style="display: none;" title="從 Google Drive 拉取最新資料到本地">
+                    <i class="fas fa-cloud-download-alt"></i> Pull
                 </button>
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
@@ -253,6 +256,7 @@
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
             document.getElementById('syncBtn').style.display = 'inline-block';
+            document.getElementById('pullBtn').style.display = 'inline-block';
         }
         
         // 登出功能
@@ -266,6 +270,7 @@
                 this.style.display = 'none';
                 document.getElementById('teamManagementBtn').style.display = 'none';
                 document.getElementById('syncBtn').style.display = 'none';
+                document.getElementById('pullBtn').style.display = 'none';
 
                 // 顯示認證介面
                 document.getElementById('keyAuthentication').style.display = 'block';
@@ -309,7 +314,7 @@
             location.reload();
         });
 
-        // Sync 功能
+        // Push 功能 (上傳到雲端)
         document.getElementById('syncBtn').addEventListener('click', async function() {
             const syncBtn = this;
             const originalText = syncBtn.innerHTML;
@@ -317,17 +322,17 @@
             try {
                 // 更新按鈕狀態
                 syncBtn.disabled = true;
-                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上傳中...';
 
                 // 檢查 Google Drive 連線
                 if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
                     throw new Error('Google Drive 未登入，請先登入');
                 }
 
-                await syncLocalFilesToGoogleDrive();
+                await pushLocalFilesToGoogleDrive();
 
                 // 成功訊息
-                showSyncToast('同步成功', '本地檔案已成功同步到 Google Drive', 'success');
+                showSyncToast('推送成功', '本地檔案已推送到 Google Drive', 'success');
 
             } catch (error) {
                 console.error('同步失敗:', error);
@@ -339,8 +344,45 @@
             }
         });
 
-        // 同步本地檔案到 Google Drive
-        async function syncLocalFilesToGoogleDrive() {
+        // Pull 功能 (從雲端下載)
+        document.getElementById('pullBtn').addEventListener('click', async function() {
+            const pullBtn = this;
+            const originalText = pullBtn.innerHTML;
+
+            try {
+                // 更新按鈕狀態
+                pullBtn.disabled = true;
+                pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 下載中...';
+
+                // 檢查 Google Drive 連線
+                if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
+                    throw new Error('Google Drive 未登入，請先登入');
+                }
+
+                await pullFilesFromGoogleDrive();
+
+                // 成功訊息
+                showSyncToast('拉取成功', '已從 Google Drive 拉取最新資料', 'success');
+
+                // 建議重新載入頁面
+                setTimeout(() => {
+                    if (confirm('資料已更新，是否重新載入頁面以顯示最新內容？')) {
+                        location.reload();
+                    }
+                }, 1000);
+
+            } catch (error) {
+                console.error('拉取失敗:', error);
+                showSyncToast('拉取失敗', error.message, 'error');
+            } finally {
+                // 恢復按鈕狀態
+                pullBtn.disabled = false;
+                pullBtn.innerHTML = originalText;
+            }
+        });
+
+        // 推送本地檔案到 Google Drive
+        async function pushLocalFilesToGoogleDrive() {
             const filesToSync = [
                 'config/team-members.json',
                 'config/project-assignments.json'
@@ -389,6 +431,61 @@
             logSyncResults(syncResults);
 
             return syncResults;
+        }
+
+        // 從 Google Drive 拉取檔案到本地
+        async function pullFilesFromGoogleDrive() {
+            const filesToPull = [
+                'team-members.json',
+                'project-assignments.json'
+            ];
+
+            const pullResults = [];
+
+            for (const fileName of filesToPull) {
+                try {
+                    console.log(`🔄 從 Google Drive 拉取檔案: ${fileName}`);
+
+                    // 從 Google Drive 下載檔案
+                    const fileContent = await window.googleDriveAPI.loadFile(fileName);
+
+                    if (!fileContent) {
+                        throw new Error(`Google Drive 中找不到 ${fileName}`);
+                    }
+
+                    // 驗證 JSON 格式
+                    try {
+                        JSON.parse(fileContent);
+                    } catch (parseError) {
+                        throw new Error(`${fileName} 格式錯誤: ${parseError.message}`);
+                    }
+
+                    // 儲存到 localStorage（模擬下載到本地）
+                    const storageKey = fileName === 'team-members.json' ? 'cachedTeamMembers' : 'cachedProjectAssignments';
+                    localStorage.setItem(storageKey, fileContent);
+
+                    pullResults.push({
+                        file: fileName,
+                        status: 'success',
+                        message: '拉取成功'
+                    });
+
+                    console.log(`✅ ${fileName} 拉取完成`);
+
+                } catch (error) {
+                    console.error(`❌ ${fileName} 拉取失敗:`, error);
+                    pullResults.push({
+                        file: fileName,
+                        status: 'error',
+                        message: error.message
+                    });
+                }
+            }
+
+            // 記錄拉取結果
+            logPullResults(pullResults);
+
+            return pullResults;
         }
 
         // 同步專案狀態檔案
@@ -442,10 +539,11 @@
             toast.show();
         }
 
-        // 記錄同步結果
+        // 記錄推送結果
         function logSyncResults(results) {
             const timestamp = new Date().toISOString();
             const syncLog = {
+                type: 'push',
                 timestamp,
                 results,
                 totalFiles: results.length,
@@ -457,13 +555,38 @@
             const existingLogs = JSON.parse(localStorage.getItem('syncLogs') || '[]');
             existingLogs.unshift(syncLog);
 
-            // 只保留最近 50 次同步記錄
+            // 只保留最近 50 次記錄
             if (existingLogs.length > 50) {
                 existingLogs.splice(50);
             }
 
             localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
-            console.log('📝 同步記錄已保存:', syncLog);
+            console.log('📝 推送記錄已保存:', syncLog);
+        }
+
+        // 記錄拉取結果
+        function logPullResults(results) {
+            const timestamp = new Date().toISOString();
+            const pullLog = {
+                type: 'pull',
+                timestamp,
+                results,
+                totalFiles: results.length,
+                successCount: results.filter(r => r.status === 'success').length,
+                errorCount: results.filter(r => r.status === 'error').length
+            };
+
+            // 儲存到 localStorage
+            const existingLogs = JSON.parse(localStorage.getItem('syncLogs') || '[]');
+            existingLogs.unshift(pullLog);
+
+            // 只保留最近 50 次記錄
+            if (existingLogs.length > 50) {
+                existingLogs.splice(50);
+            }
+
+            localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
+            console.log('📝 拉取記錄已保存:', pullLog);
         }
 
         // 團隊管理功能
