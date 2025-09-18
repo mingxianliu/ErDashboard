@@ -50,3 +50,93 @@ body {
 
 .spinner-border { width: 3rem; height: 3rem; }
 
+/* 團隊管理編輯樣式 */
+.member-assignment {
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+.member-assignment:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+.member-selector-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: 2px solid transparent;
+}
+
+.member-selector-card:hover {
+    border-color: #007bff;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+}
+
+.add-member-btn, .remove-member-btn {
+    transition: all 0.3s ease;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.add-member-btn:hover {
+    background-color: #28a745;
+    border-color: #28a745;
+    color: white !important;
+    transform: scale(1.1);
+}
+
+.remove-member-btn:hover {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white !important;
+    transform: scale(1.1);
+}
+
+/* 編輯模式動畫 */
+.team-edit-mode .member-assignment {
+    border: 2px dashed #dee2e6;
+    margin-bottom: 10px;
+}
+
+.team-edit-mode .add-member-btn,
+.team-edit-mode .remove-member-btn {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* 角色衝突警告樣式 */
+.role-conflict-warning {
+    border: 2px solid #ffc107 !important;
+    background-color: #fff3cd !important;
+}
+
+.role-conflict-message {
+    color: #856404;
+    font-size: 0.875rem;
+    margin-top: 5px;
+}
+
+/* 成功分配樣式 */
+.assignment-success {
+    border: 2px solid #28a745 !important;
+    background-color: #d4edda !important;
+    animation: successPulse 2s ease-in-out;
+}
+
+@keyframes successPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
