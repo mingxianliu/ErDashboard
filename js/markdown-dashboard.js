@@ -657,8 +657,11 @@ function showProjectDetails(projectId) {
                         <div id="detailedProgressSection"></div>
                     </div>
                     <div class="modal-footer">
-                        <a href="projects/${project.id}.md" target="_blank" class="btn btn-outline-primary">
-                            <i class="fas fa-external-link-alt me-2"></i>編輯 Markdown
+                        <button class="btn btn-primary" onclick="openMarkdownEditor('${project.id}')">
+                            <i class="fas fa-edit me-2"></i>線上編輯
+                        </button>
+                        <a href="projects/${project.id}.md" target="_blank" class="btn btn-outline-secondary">
+                            <i class="fas fa-external-link-alt me-2"></i>檢視原檔
                         </a>
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
                     </div>
@@ -688,4 +691,229 @@ function showProjectDetails(projectId) {
             dashboard.loadDetailedProgress(project.id);
         }, 100);
     }
+}
+
+// 線上 Markdown 編輯器功能
+function openMarkdownEditor(projectId) {
+    const editorModal = document.createElement('div');
+    editorModal.className = 'modal fade';
+    editorModal.id = 'markdownEditorModal';
+    editorModal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-edit me-2"></i>編輯 ${projectId}.md
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Markdown 編輯器</label>
+                            <textarea id="markdownEditor" class="form-control" rows="20"
+                                      style="font-family: 'Consolas', 'Monaco', monospace;"
+                                      placeholder="載入中..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">即時預覽</label>
+                            <div id="markdownPreview" class="border p-3"
+                                 style="height: 500px; overflow-y: auto; background: #f8f9fa;">
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-spinner fa-spin"></i> 載入中...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-success" id="saveMarkdownBtn">
+                        <i class="fas fa-save me-2"></i>儲存到 Google Drive
+                    </button>
+                    <button class="btn btn-outline-primary" id="downloadMarkdownBtn">
+                        <i class="fas fa-download me-2"></i>下載檔案
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(editorModal);
+
+    // 初始化 Bootstrap Modal
+    const modal = new bootstrap.Modal(editorModal);
+
+    // 載入現有檔案內容
+    loadMarkdownContent(projectId);
+
+    // 設定即時預覽
+    const editor = document.getElementById('markdownEditor');
+    const preview = document.getElementById('markdownPreview');
+
+    editor.addEventListener('input', () => {
+        updateMarkdownPreview(editor.value, preview);
+    });
+
+    // 儲存功能
+    document.getElementById('saveMarkdownBtn').addEventListener('click', () => {
+        saveMarkdownToGoogleDrive(projectId, editor.value);
+    });
+
+    // 下載功能
+    document.getElementById('downloadMarkdownBtn').addEventListener('click', () => {
+        downloadMarkdownFile(projectId, editor.value);
+    });
+
+    // 當 modal 關閉時移除
+    editorModal.addEventListener('hidden.bs.modal', () => {
+        document.body.removeChild(editorModal);
+    });
+
+    modal.show();
+}
+
+// 載入 Markdown 檔案內容
+async function loadMarkdownContent(projectId) {
+    const editor = document.getElementById('markdownEditor');
+    const preview = document.getElementById('markdownPreview');
+
+    try {
+        const response = await fetch(`projects/${projectId}.md`);
+        if (response.ok) {
+            const content = await response.text();
+            editor.value = content;
+            updateMarkdownPreview(content, preview);
+        } else {
+            // 如果檔案不存在，建立預設內容
+            const defaultContent = createDefaultMarkdownContent(projectId);
+            editor.value = defaultContent;
+            updateMarkdownPreview(defaultContent, preview);
+        }
+    } catch (error) {
+        console.error('載入 Markdown 檔案失敗:', error);
+        const defaultContent = createDefaultMarkdownContent(projectId);
+        editor.value = defaultContent;
+        updateMarkdownPreview(defaultContent, preview);
+    }
+}
+
+// 建立預設 Markdown 內容
+function createDefaultMarkdownContent(projectId) {
+    return `# ${projectId} 專案
+
+## 專案概述
+請在此描述專案的基本資訊...
+
+## 目標
+- [ ] 目標 1
+- [ ] 目標 2
+- [ ] 目標 3
+
+## 進度
+### 已完成
+- [x] 初始化專案
+
+### 進行中
+- [ ] 功能開發
+
+### 待辦事項
+- [ ] 測試
+- [ ] 部署
+
+## 團隊成員
+| 姓名 | 角色 | 負責項目 |
+|------|------|----------|
+| 成員1 | 開發 | 前端開發 |
+| 成員2 | 開發 | 後端開發 |
+
+## 技術架構
+請描述技術選型和架構...
+
+## 備註
+其他相關資訊...
+`;
+}
+
+// 更新 Markdown 預覽
+function updateMarkdownPreview(content, previewElement) {
+    // 簡單的 Markdown 轉 HTML（基本功能）
+    let html = content
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^\* (.*$)/gim, '<li>$1</li>')
+        .replace(/^- (.*$)/gim, '<li>$1</li>')
+        .replace(/^\- \[x\] (.*$)/gim, '<li style="list-style: none;"><input type="checkbox" checked disabled> $1</li>')
+        .replace(/^\- \[ \] (.*$)/gim, '<li style="list-style: none;"><input type="checkbox" disabled> $1</li>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        .replace(/\n/g, '<br>');
+
+    // 處理表格
+    html = html.replace(/\|(.+)\|/g, (match, content) => {
+        const cells = content.split('|').map(cell => `<td>${cell.trim()}</td>`).join('');
+        return `<tr>${cells}</tr>`;
+    });
+
+    if (html.includes('<tr>')) {
+        html = html.replace(/(<tr>.*<\/tr>)/g, '<table class="table table-bordered">$1</table>');
+    }
+
+    previewElement.innerHTML = html;
+}
+
+// 儲存到 Google Drive
+async function saveMarkdownToGoogleDrive(projectId, content) {
+    try {
+        if (window.googleDriveAPI && window.googleDriveAPI.isConfigured) {
+            const fileName = `${projectId}_project.md`;
+            await window.googleDriveAPI.saveFile(fileName, content, 'markdown');
+
+            // 顯示成功訊息
+            const toast = document.createElement('div');
+            toast.className = 'toast align-items-center text-white bg-success border-0';
+            toast.style.position = 'fixed';
+            toast.style.top = '20px';
+            toast.style.right = '20px';
+            toast.style.zIndex = '9999';
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-check me-2"></i>檔案已儲存到 Google Drive
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            const toastBootstrap = new bootstrap.Toast(toast);
+            toastBootstrap.show();
+
+            setTimeout(() => {
+                if (document.body.contains(toast)) {
+                    document.body.removeChild(toast);
+                }
+            }, 5000);
+        } else {
+            alert('Google Drive 未設定，無法儲存');
+        }
+    } catch (error) {
+        console.error('儲存失敗:', error);
+        alert(`儲存失敗：${error.message}`);
+    }
+}
+
+// 下載檔案
+function downloadMarkdownFile(projectId, content) {
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${projectId}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 }

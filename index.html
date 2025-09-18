@@ -46,11 +46,23 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">此 Dashboard 需要私鑰驗證才能查看專案資料。請匯入您的私鑰：</p>
-                    
+                    <p class="text-muted">此 Dashboard 需要 Google Drive 設定和私鑰才能使用。請依序匯入：</p>
+
+                    <!-- Google Drive 設定區域 -->
+                    <div class="mb-4">
+                        <label class="form-label">1. Google Drive 設定 (JSON 格式)</label>
+                        <textarea class="form-control" id="googleConfigInput" rows="5"
+                                  placeholder='{
+  "CLIENT_ID": "您的-client-id.apps.googleusercontent.com",
+  "FOLDER_ID": "YOUR_FOLDER_ID_HERE",
+  "SCOPES": "https://www.googleapis.com/auth/drive.file"
+}'></textarea>
+                        <small class="text-muted">Google Drive API 設定，僅在瀏覽器中使用</small>
+                    </div>
+
                     <div class="mb-3">
-                        <label class="form-label">匯入私鑰 (PEM 格式)</label>
-                        <textarea class="form-control" id="privateKeyInput" rows="8" 
+                        <label class="form-label">2. 匯入私鑰 (PEM 格式)</label>
+                        <textarea class="form-control" id="privateKeyInput" rows="6"
                                   placeholder="-----BEGIN PRIVATE KEY-----
 ...
 -----END PRIVATE KEY-----"></textarea>
@@ -132,10 +144,32 @@
         
         // 私鑰驗證功能
         document.getElementById('verifyKeyBtn').addEventListener('click', async function() {
+            const googleConfigJSON = document.getElementById('googleConfigInput').value.trim();
             const privateKeyPEM = document.getElementById('privateKeyInput').value.trim();
             const errorDiv = document.getElementById('keyError');
             const successDiv = document.getElementById('keySuccess');
-            
+
+            // 驗證 Google Drive 設定
+            if (!googleConfigJSON) {
+                document.getElementById('keyErrorText').textContent = '請輸入 Google Drive 設定';
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+                return;
+            }
+
+            let googleConfig;
+            try {
+                googleConfig = JSON.parse(googleConfigJSON);
+                if (!googleConfig.CLIENT_ID || !googleConfig.FOLDER_ID || !googleConfig.SCOPES) {
+                    throw new Error('設定格式不完整');
+                }
+            } catch (error) {
+                document.getElementById('keyErrorText').textContent = `Google Drive 設定格式錯誤：${error.message}`;
+                errorDiv.classList.remove('d-none');
+                successDiv.classList.add('d-none');
+                return;
+            }
+
             if (!privateKeyPEM) {
                 document.getElementById('keyErrorText').textContent = '請輸入私鑰';
                 errorDiv.classList.remove('d-none');
@@ -151,11 +185,14 @@
                 const isValid = await verifyPrivateKeyWebCrypto(privateKeyPEM);
                 
                 if (isValid) {
+                    // 儲存 Google Drive 設定到 sessionStorage
+                    sessionStorage.setItem('GOOGLE_DRIVE_CONFIG', JSON.stringify(googleConfig));
+
                     // 設定登入狀態和時間戳
                     const loginTime = Date.now();
                     sessionStorage.setItem('KEY_AUTHENTICATED', 'true');
                     sessionStorage.setItem('LOGIN_TIME', loginTime.toString());
-                    
+
                     successDiv.classList.remove('d-none');
                     errorDiv.classList.add('d-none');
                     

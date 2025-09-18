@@ -10,6 +10,7 @@ class GoogleDriveAPI {
         this.folderId = 'YOUR_FOLDER_ID_HERE';
         this.tokenClient = null;
         this.isAuthenticated = false;
+        this.isConfigured = false;
         this.initGoogleAPI();
     }
 
@@ -31,22 +32,45 @@ class GoogleDriveAPI {
                 discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
             });
 
-            // 檢查設定檔是否載入
-            if (!window.GOOGLE_DRIVE_CONFIG) {
-                throw new Error('Google Drive 設定檔案未載入，請確認 js/config.js 檔案存在');
+            // 檢查設定檔或 sessionStorage 中的設定
+            let config = null;
+
+            // 優先從 sessionStorage 讀取（線上版本）
+            const storedConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+            if (storedConfig) {
+                try {
+                    config = JSON.parse(storedConfig);
+                } catch (error) {
+                    console.error('解析 Google Drive 設定失敗:', error);
+                }
             }
 
-            // 從設定檔取得 Client ID
-            const CLIENT_ID = window.GOOGLE_DRIVE_CONFIG.CLIENT_ID;
-            this.folderId = window.GOOGLE_DRIVE_CONFIG.FOLDER_ID;
+            // 如果沒有 sessionStorage 設定，則嘗試讀取 config.js（本地版本）
+            if (!config && window.GOOGLE_DRIVE_CONFIG) {
+                config = window.GOOGLE_DRIVE_CONFIG;
+            }
+
+            if (!config) {
+                console.warn('⚠️ Google Drive 設定未載入，功能將被停用');
+                this.isConfigured = false;
+                return;
+            }
+
+            // 從設定取得 Client ID
+            const CLIENT_ID = config.CLIENT_ID;
+            this.folderId = config.FOLDER_ID;
 
             if (!CLIENT_ID || CLIENT_ID === '你的-client-id.apps.googleusercontent.com') {
-                throw new Error('請在 js/config.js 中設定有效的 Google Client ID');
+                console.warn('⚠️ Google Client ID 未設定，Google Drive 功能將被停用');
+                this.isConfigured = false;
+                return;
             }
+
+            this.isConfigured = true;
 
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
-                scope: window.GOOGLE_DRIVE_CONFIG.SCOPES,
+                scope: config.SCOPES,
                 callback: (response) => {
                     if (response.access_token) {
                         this.accessToken = response.access_token;
@@ -134,11 +158,16 @@ class GoogleDriveAPI {
 
     // 檢查是否已登入
     isSignedIn() {
-        return this.isAuthenticated && this.accessToken !== null;
+        return this.isConfigured && this.isAuthenticated && this.accessToken !== null;
     }
 
     // 儲存檔案到 Google Drive
     async saveFile(fileName, content, fileType = 'members') {
+        if (!this.isConfigured) {
+            console.warn('⚠️ Google Drive 未設定，跳過儲存');
+            return null;
+        }
+
         if (!this.isSignedIn()) {
             const signInSuccess = await this.signIn();
             if (!signInSuccess) {
