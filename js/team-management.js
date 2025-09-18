@@ -1210,50 +1210,50 @@ class TeamManagement {
                                     if (!member) return '';
                                     const workload = this.getMemberWorkload(memberId);
                                     return `
-                                        <div class="col-md-6 col-lg-3 mb-3">
+                                        <div class="col-md-4 col-lg-2 mb-3">
                                             <div class="card border-0 shadow-sm">
-                                                <div class="card-body text-center p-3">
-                                                    <div style="font-size: 2em; font-weight: bold; color: ${group.color};">${memberId.charAt(0)}</div>
+                                                <div class="card-body text-center p-2">
+                                                    <div style="font-size: 1.5em; font-weight: bold; color: ${group.color};">${memberId.charAt(0)}</div>
 
                                                     <!-- 可編輯的成員名稱 -->
-                                                    <div class="mt-2 mb-1">
+                                                    <div class="mt-1 mb-1">
                                                         <div class="editable-member-name" data-member-id="${memberId}">
-                                                            <h6 class="member-name-display mb-0">${member.name}</h6>
+                                                            <div class="member-name-display mb-0" style="font-size: 0.9em; font-weight: 600;">${member.name}</div>
                                                             <input type="text" class="form-control form-control-sm member-name-input d-none"
                                                                    value="${member.name}" style="display: none;">
                                                         </div>
-                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.7em;"
+                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.6em;"
                                                                 onclick="teamManagement.editMemberName('${memberId}')">
                                                             <i class="fas fa-edit text-muted"></i>
                                                         </button>
                                                     </div>
 
                                                     <!-- 固定的成員ID -->
-                                                    <small class="text-muted">ID: ${member.id}</small>
+                                                    <small class="text-muted" style="font-size: 0.75em;">ID: ${member.id}</small>
 
                                                     <!-- 可編輯的備註 -->
-                                                    <div class="mt-1 mb-2">
+                                                    <div class="mt-1 mb-1">
                                                         <div class="editable-member-notes" data-member-id="${memberId}">
-                                                            <small class="member-notes-display text-muted">${member.notes && member.notes !== '備註' ? member.notes : '點擊新增備註'}</small>
+                                                            <small class="member-notes-display text-muted" style="font-size: 0.7em;">${member.notes && member.notes !== '備註' ? member.notes : '點擊新增備註'}</small>
                                                             <input type="text" class="form-control form-control-sm member-notes-input d-none"
                                                                    value="${member.notes || ''}" style="display: none;" placeholder="輸入備註...">
                                                         </div>
-                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.6em;"
+                                                        <button class="btn btn-link btn-sm p-0" style="font-size: 0.5em;"
                                                                 onclick="teamManagement.editMemberNotes('${memberId}')">
                                                             <i class="fas fa-edit text-muted"></i>
                                                         </button>
                                                     </div>
-                                                    <div class="mt-2">
-                                                        <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}">
-                                                            ${workload.totalProjects} 個專案
+                                                    <div class="mt-1">
+                                                        <span class="badge ${workload.totalProjects === 0 ? 'bg-secondary' : workload.totalProjects > 2 ? 'bg-danger' : 'bg-success'}" style="font-size: 0.7em;">
+                                                            ${workload.totalProjects} 專案
                                                         </span>
                                                     </div>
-                                                    <div class="mt-2 d-flex gap-1 justify-content-center">
-                                                        <button class="btn btn-outline-primary btn-sm"
+                                                    <div class="mt-1 d-flex gap-1 justify-content-center">
+                                                        <button class="btn btn-outline-primary btn-sm py-1 px-2" style="font-size: 0.7em;"
                                                                 onclick="teamManagement.viewMemberDetails('${memberId}')">
                                                             <i class="fas fa-eye"></i>
                                                         </button>
-                                                        <button class="btn btn-outline-secondary btn-sm"
+                                                        <button class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size: 0.7em;"
                                                                 onclick="teamManagement.editMemberProjects('${memberId}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
