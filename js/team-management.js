@@ -23,9 +23,38 @@ class TeamManagement {
     async loadTeamData() {
         const response = await fetch('config/team-members.json');
         const data = await response.json();
+
+        // 先載入預設資料
         this.members = data.members;
         this.roles = data.roles;
         this.teamConfig = data; // 載入完整的團隊配置，包含 groups
+
+        // 然後覆蓋本地儲存的變更（如果有的話）
+        const savedMembers = localStorage.getItem('teamMemberChanges');
+        if (savedMembers) {
+            const localMembers = JSON.parse(savedMembers);
+            // 合併本地變更到成員資料
+            Object.keys(localMembers).forEach(memberId => {
+                if (this.members[memberId]) {
+                    this.members[memberId] = { ...this.members[memberId], ...localMembers[memberId] };
+                    this.teamConfig.members[memberId] = { ...this.teamConfig.members[memberId], ...localMembers[memberId] };
+                }
+            });
+            console.log('已載入本地成員變更');
+        }
+
+        // 載入本地儲存的組名變更
+        const savedGroups = localStorage.getItem('teamGroupChanges');
+        if (savedGroups) {
+            const localGroups = JSON.parse(savedGroups);
+            Object.keys(localGroups).forEach(groupId => {
+                if (this.teamConfig.groups && this.teamConfig.groups[groupId]) {
+                    this.teamConfig.groups[groupId] = { ...this.teamConfig.groups[groupId], ...localGroups[groupId] };
+                }
+            });
+            console.log('已載入本地組織變更');
+        }
+
         console.log('團隊資料載入完成 - groups:', data.groups ? Object.keys(data.groups).length : 0);
     }
 
@@ -1175,9 +1204,20 @@ class TeamManagement {
             <div class="mb-3">
                 <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">團隊組織管理</h6>
-                    <button class="btn btn-primary btn-sm" onclick="teamManagement.saveGroupChanges()">
-                        <i class="fas fa-save me-1"></i>儲存變更
-                    </button>
+                    <div>
+                        <button class="btn btn-success btn-sm me-1" onclick="teamManagement.saveToGoogleDrive()">
+                            <i class="fab fa-google-drive me-1"></i>儲存到 Google Drive
+                        </button>
+                        <button class="btn btn-info btn-sm me-1" onclick="teamManagement.loadFromGoogleDrive()">
+                            <i class="fas fa-cloud-download-alt me-1"></i>從 Google Drive 載入
+                        </button>
+                        <button class="btn btn-warning btn-sm me-1" onclick="teamManagement.checkForUpdates()">
+                            <i class="fas fa-sync-alt me-1"></i>檢查更新
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="teamManagement.saveGroupChanges()">
+                            <i class="fas fa-save me-1"></i>儲存變更
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -1448,11 +1488,15 @@ class TeamManagement {
     }
 
     // 儲存組織變更
-    saveGroupChanges() {
+    async saveGroupChanges() {
         try {
-            // 這裡可以加入更複雜的儲存邏輯，例如發送到伺服器
+            // 儲存到本地
             localStorage.setItem('teamGroupChanges', JSON.stringify(this.teamConfig.groups));
-            this.showToast('儲存成功', '組織變更已儲存至本地', 'success');
+
+            // 自動同步到 Google Drive
+            await this.autoSaveToGoogleDrive();
+
+            this.showToast('儲存成功', '組織變更已儲存並同步到 Google Drive', 'success');
         } catch (error) {
             this.showToast('儲存失敗', error.message, 'error');
         }
@@ -1710,11 +1754,29 @@ class TeamManagement {
     }
 
     // 儲存成員變更
-    saveMemberChanges() {
+    async saveMemberChanges() {
         try {
-            // 儲存到本地存儲
-            localStorage.setItem('teamMemberChanges', JSON.stringify(this.teamConfig.members));
-            console.log('成員變更已儲存至本地');
+            // 只儲存有變更的成員資料，保持檔案小且高效
+            const changedMembers = {};
+            Object.keys(this.members).forEach(memberId => {
+                const member = this.members[memberId];
+                const original = this.teamConfig.members[memberId];
+
+                // 檢查是否有變更（名稱或備註）
+                if (member.name !== original.name || member.notes !== original.notes) {
+                    changedMembers[memberId] = {
+                        name: member.name,
+                        notes: member.notes
+                    };
+                }
+            });
+
+            localStorage.setItem('teamMemberChanges', JSON.stringify(changedMembers));
+
+            // 自動同步到 Google Drive
+            await this.autoSaveToGoogleDrive();
+
+            console.log('成員變更已儲存並同步:', Object.keys(changedMembers).length, '位成員有變更');
         } catch (error) {
             console.error('儲存成員變更失敗:', error);
             this.showToast('儲存失敗', error.message, 'error');
@@ -1737,6 +1799,613 @@ class TeamManagement {
         } catch (error) {
             console.error('載入本地成員變更失敗:', error);
         }
+    }
+
+    // 自動儲存變更到 Google Drive
+    async autoSaveToGoogleDrive() {
+        try {
+            // 如果已登入 Google Drive，自動儲存
+            if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+                await this.saveToGoogleDrive();
+                console.log('資料已自動同步到 Google Drive');
+            }
+        } catch (error) {
+            console.error('自動同步失敗:', error);
+        }
+    }
+
+    // ==================== Google Drive 同步功能 ====================
+
+    // 自動檢查 Google Drive 更新
+    startAutoSync() {
+        // 每 5 分鐘檢查一次是否有新檔案
+        this.autoSyncInterval = setInterval(() => {
+            this.checkForUpdates();
+        }, 5 * 60 * 1000); // 5 分鐘
+
+        console.log('已啟動自動同步檢查 (每 5 分鐘)');
+    }
+
+    // 停止自動同步
+    stopAutoSync() {
+        if (this.autoSyncInterval) {
+            clearInterval(this.autoSyncInterval);
+            this.autoSyncInterval = null;
+            console.log('已停止自動同步檢查');
+        }
+    }
+
+    // 檢查更新
+    async checkForUpdates() {
+        try {
+            if (!window.googleDriveAPI) {
+                console.log('Google Drive API 尚未載入，跳過自動檢查');
+                return;
+            }
+
+            // 如果尚未登入，顯示登入提示
+            if (!window.googleDriveAPI.isSignedIn()) {
+                this.showSignInNotification();
+                return;
+            }
+
+            // 檢查 Google Drive 是否有更新
+            const updates = await window.googleDriveAPI.checkForUpdates();
+
+            if (updates.length > 0) {
+                this.showUpdatesAvailableNotification(updates);
+            } else {
+                console.log('Google Drive 沒有新的更新');
+            }
+
+        } catch (error) {
+            console.error('檢查更新失敗:', error);
+        }
+    }
+
+    // 顯示登入提示
+    showSignInNotification() {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+
+        notification.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-sign-in-alt text-warning me-2"></i>
+                <strong>Google Drive 同步</strong>
+            </div>
+            <div class="small mb-2">
+                需要登入 Google Drive 才能自動同步團隊設定
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-warning btn-sm" onclick="window.teamManagement.signInToGoogleDrive()">
+                    登入 Google Drive
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="this.closest('.alert').remove()">
+                    稍後登入
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 15000);
+    }
+
+    // 顯示可用更新通知
+    showUpdatesAvailableNotification(updates) {
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-success alert-dismissible fade show position-fixed';
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+
+        const updateList = updates.map(u => `• ${u.type}`).join('<br>');
+
+        notification.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-cloud-download-alt text-success me-2"></i>
+                <strong>發現更新</strong>
+            </div>
+            <div class="small mb-2">
+                Google Drive 中有 ${updates.length} 個更新檔案：<br>
+                ${updateList}
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-success btn-sm" onclick="window.teamManagement.loadFromGoogleDrive()">
+                    立即載入更新
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="this.closest('.alert').remove()">
+                    稍後更新
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 20000);
+    }
+
+    // 登入 Google Drive
+    async signInToGoogleDrive() {
+        try {
+            if (window.googleDriveAPI) {
+                const success = await window.googleDriveAPI.signIn();
+                if (success) {
+                    this.showToast('登入成功', 'Google Drive 登入成功，已啟動自動同步', 'success');
+                    // 移除登入提示通知
+                    document.querySelectorAll('.alert').forEach(alert => {
+                        if (alert.textContent.includes('Google Drive 同步')) {
+                            alert.remove();
+                        }
+                    });
+                } else {
+                    this.showToast('登入失敗', 'Google Drive 登入失敗', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Google Drive 登入失敗:', error);
+            this.showToast('登入錯誤', error.message, 'error');
+        }
+    }
+
+    // 取得本地版本資訊
+    getLocalVersions() {
+        const versions = {
+            members: localStorage.getItem('ErDashboard_Members_Version') || 'unknown',
+            groups: localStorage.getItem('ErDashboard_Groups_Version') || 'unknown',
+            assignments: localStorage.getItem('ErDashboard_Assignments_Version') || 'unknown',
+            customizations: localStorage.getItem('ErDashboard_Customizations_Version') || 'unknown',
+            lastCheck: localStorage.getItem('ErDashboard_LastUpdate') || 'never'
+        };
+        return versions;
+    }
+
+    // 顯示更新檢查通知
+    showUpdateCheckNotification(localVersions) {
+        const driveUrl = 'https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE';
+
+        // 計算距離上次檢查的時間
+        const lastCheck = localVersions.lastCheck;
+        const timeSinceCheck = lastCheck === 'never' ? '從未' : this.formatTimeDifference(lastCheck);
+
+        // 建立檢查通知
+        const notification = document.createElement('div');
+        notification.className = 'alert alert-info alert-dismissible fade show position-fixed';
+        notification.style.cssText = `
+            top: 20px;
+            right: 20px;
+            z-index: 1050;
+            max-width: 400px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        `;
+
+        notification.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-cloud-download-alt text-primary me-2"></i>
+                <strong>檢查 Google Drive 更新</strong>
+            </div>
+            <div class="small mb-2">
+                <div>上次檢查: ${timeSinceCheck}</div>
+                <div>本地版本: ${localVersions.members.substr(0, 10)}...</div>
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-primary btn-sm" onclick="window.open('${driveUrl}', '_blank')">
+                    開啟 Google Drive
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" onclick="this.closest('.alert').remove()">
+                    稍後檢查
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+
+        // 10 秒後自動移除通知
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 10000);
+    }
+
+    // 格式化時間差異
+    formatTimeDifference(timestamp) {
+        if (timestamp === 'never') return '從未';
+
+        const now = new Date();
+        const then = new Date(timestamp);
+        const diffMs = now - then;
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) return `${diffDays} 天前`;
+        if (diffHours > 0) return `${diffHours} 小時前`;
+        if (diffMins > 0) return `${diffMins} 分鐘前`;
+        return '剛剛';
+    }
+
+    // 更新版本檢查機制
+    updateVersionCheck() {
+        const timestamp = new Date().toISOString();
+        localStorage.setItem('ErDashboard_LastUpdate', timestamp);
+
+        // 更新本地版本號
+        const version = `v${Date.now()}`;
+        localStorage.setItem('ErDashboard_Members_Version', version);
+        localStorage.setItem('ErDashboard_Groups_Version', version);
+        localStorage.setItem('ErDashboard_Assignments_Version', version);
+        localStorage.setItem('ErDashboard_Customizations_Version', version);
+    }
+
+    // ==================== Google Drive 同步功能 ====================
+
+    // 自動儲存到 Google Drive
+    async saveToGoogleDrive() {
+        try {
+            if (!window.googleDriveAPI) {
+                throw new Error('Google Drive API 尚未載入');
+            }
+
+            // 檢查是否已登入
+            if (!window.googleDriveAPI.isSignedIn()) {
+                const signInSuccess = await window.googleDriveAPI.signIn();
+                if (!signInSuccess) {
+                    this.showToast('登入失敗', '需要登入 Google Drive 才能自動同步', 'error');
+                    return;
+                }
+            }
+
+            this.showToast('同步中', '正在儲存資料到 Google Drive...', 'info');
+
+            // 準備要儲存的資料
+            const dataToSave = {
+                members: this.teamConfig.members,
+                groups: this.teamConfig.groups,
+                assignments: this.assignments,
+                customizations: this.collectLocalChanges()
+            };
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T');
+            const dateStr = timestamp[0];
+            const timeStr = timestamp[1].split('-')[0];
+
+            // 逐一儲存各類型資料
+            const savePromises = Object.keys(dataToSave).map(async (type) => {
+                const fileName = `ErDashboard_${type.charAt(0).toUpperCase() + type.slice(1)}_${dateStr}_${timeStr}.json`;
+                return await window.googleDriveAPI.saveFile(fileName, dataToSave[type], type);
+            });
+
+            await Promise.all(savePromises);
+
+            // 更新版本檢查
+            this.updateVersionCheck();
+
+            this.showToast('同步完成', '所有資料已自動儲存到 Google Drive', 'success');
+
+        } catch (error) {
+            console.error('自動儲存失敗:', error);
+            this.showToast('同步失敗', error.message, 'error');
+        }
+    }
+
+    // 自動從 Google Drive 載入
+    async loadFromGoogleDrive() {
+        try {
+            if (!window.googleDriveAPI) {
+                throw new Error('Google Drive API 尚未載入');
+            }
+
+            // 檢查是否已登入
+            if (!window.googleDriveAPI.isSignedIn()) {
+                const signInSuccess = await window.googleDriveAPI.signIn();
+                if (!signInSuccess) {
+                    this.showToast('登入失敗', '需要登入 Google Drive 才能載入資料', 'error');
+                    return;
+                }
+            }
+
+            this.showToast('載入中', '正在從 Google Drive 載入最新資料...', 'info');
+
+            // 自動同步所有更新
+            const syncResults = await window.googleDriveAPI.autoSync();
+
+            if (syncResults.length === 0) {
+                this.showToast('已是最新', 'Google Drive 沒有新的更新', 'info');
+                return;
+            }
+
+            let loadedCount = 0;
+            let errorCount = 0;
+
+            // 處理同步結果
+            for (const result of syncResults) {
+                if (result.success) {
+                    // 套用資料更新
+                    this.applyGoogleDriveData(result.type, result.data);
+                    loadedCount++;
+                } else {
+                    console.error(`載入 ${result.type} 失敗:`, result.error);
+                    errorCount++;
+                }
+            }
+
+            // 儲存到本地
+            await this.saveAllData();
+
+            // 重新載入所有顯示
+            this.refreshAllDisplays();
+
+            // 顯示結果
+            if (loadedCount > 0) {
+                this.showToast('載入完成', `已載入 ${loadedCount} 個更新檔案`, 'success');
+            }
+
+            if (errorCount > 0) {
+                this.showToast('部分失敗', `${errorCount} 個檔案載入失敗`, 'warning');
+            }
+
+        } catch (error) {
+            console.error('自動載入失敗:', error);
+            this.showToast('載入失敗', error.message, 'error');
+        }
+    }
+
+    // 套用 Google Drive 資料
+    applyGoogleDriveData(type, fileData) {
+        if (!fileData || !fileData.data) return;
+
+        switch (type.toLowerCase()) {
+            case 'members':
+                this.teamConfig.members = fileData.data;
+                this.members = { ...fileData.data };
+                break;
+
+            case 'groups':
+                this.teamConfig.groups = fileData.data;
+                break;
+
+            case 'assignments':
+                this.assignments = fileData.data;
+                break;
+
+            case 'customizations':
+                this.applyCustomizations(fileData.data);
+                break;
+        }
+
+        // 更新版本資訊
+        localStorage.setItem(`ErDashboard_${type}_Version`, fileData.version + '_' + fileData.lastSync);
+    }
+
+    // 重新載入所有顯示
+    refreshAllDisplays() {
+        // 重新載入成員管理
+        if (document.querySelector('#memberManagementModal .modal-body')) {
+            this.loadMemberManagement();
+        }
+
+        // 重新載入專案管理
+        if (document.querySelector('#projectManagementModal .modal-body')) {
+            this.loadProjectManagement();
+        }
+
+        // 重新載入總覽統計
+        if (document.querySelector('#overviewStatsModal .modal-body')) {
+            this.loadOverviewStats();
+        }
+    }
+
+    // 增強版匯入功能 - 自動更新版本資訊
+    async importDataWithVersionUpdate(data, fileName) {
+        try {
+            // 驗證資料格式
+            if (!data.type || !data.version || !data.data) {
+                throw new Error('檔案格式不正確，缺少必要欄位');
+            }
+
+            // 更新對應的資料
+            switch (data.type) {
+                case 'members':
+                    this.teamConfig.members = data.data;
+                    this.members = { ...data.data };
+                    localStorage.setItem('ErDashboard_Members_Version', data.version + '_' + data.lastSync);
+                    break;
+
+                case 'groups':
+                    this.teamConfig.groups = data.data;
+                    localStorage.setItem('ErDashboard_Groups_Version', data.version + '_' + data.lastSync);
+                    break;
+
+                case 'assignments':
+                    this.assignments = data.data;
+                    localStorage.setItem('ErDashboard_Assignments_Version', data.version + '_' + data.lastSync);
+                    break;
+
+                case 'customizations':
+                    this.applyCustomizations(data.data);
+                    localStorage.setItem('ErDashboard_Customizations_Version', data.version + '_' + data.lastSync);
+                    break;
+
+                default:
+                    throw new Error(`未知的資料類型: ${data.type}`);
+            }
+
+            // 更新最後檢查時間
+            localStorage.setItem('ErDashboard_LastUpdate', new Date().toISOString());
+
+            // 儲存更新
+            await this.saveAllData();
+
+            this.showToast('匯入成功', `${data.type} 資料已更新 (版本: ${data.version})`, 'success');
+
+            // 重新載入相關顯示
+            this.refreshDisplay(data.type);
+
+        } catch (error) {
+            console.error('匯入失敗:', error);
+            this.showToast('匯入失敗', error.message, 'error');
+        }
+    }
+
+    // 重新載入顯示內容
+    refreshDisplay(dataType) {
+        switch (dataType) {
+            case 'members':
+            case 'groups':
+                // 重新載入成員管理頁面
+                if (document.querySelector('#memberManagementModal .modal-body')) {
+                    this.loadMemberManagement();
+                }
+                break;
+
+            case 'assignments':
+                // 重新載入專案管理頁面
+                if (document.querySelector('#projectManagementModal .modal-body')) {
+                    this.loadProjectManagement();
+                }
+                break;
+
+            case 'customizations':
+                // 重新載入所有顯示
+                if (document.querySelector('#memberManagementModal .modal-body')) {
+                    this.loadMemberManagement();
+                }
+                if (document.querySelector('#projectManagementModal .modal-body')) {
+                    this.loadProjectManagement();
+                }
+                break;
+        }
+    }
+
+    // 智能同步建議
+    showSyncSuggestion() {
+        const lastUpdate = localStorage.getItem('ErDashboard_LastUpdate');
+        if (!lastUpdate) return;
+
+        const lastUpdateTime = new Date(lastUpdate);
+        const now = new Date();
+        const hoursSinceUpdate = (now - lastUpdateTime) / (1000 * 60 * 60);
+
+        // 如果超過 24 小時沒有檢查更新，顯示建議
+        if (hoursSinceUpdate > 24) {
+            setTimeout(() => {
+                const suggestion = document.createElement('div');
+                suggestion.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+                suggestion.style.cssText = `
+                    bottom: 20px;
+                    left: 20px;
+                    z-index: 1050;
+                    max-width: 350px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                `;
+
+                suggestion.innerHTML = `
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                        <strong>同步建議</strong>
+                    </div>
+                    <div class="small mb-2">
+                        距離上次檢查已超過 ${Math.floor(hoursSinceUpdate)} 小時，建議檢查 Google Drive 是否有新的團隊設定。
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-warning btn-sm" onclick="window.teamManagement.checkForUpdates()">
+                            立即檢查
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="this.closest('.alert').remove()">
+                            稍後提醒
+                        </button>
+                    </div>
+                `;
+
+                document.body.appendChild(suggestion);
+
+                // 30 秒後自動移除
+                setTimeout(() => {
+                    if (suggestion.parentNode) {
+                        suggestion.remove();
+                    }
+                }, 30000);
+            }, 5000); // 延遲 5 秒顯示，避免影響初始載入
+        }
+    }
+
+    // 收集本地變更
+    collectLocalChanges() {
+        const localChanges = {
+            memberNames: {},
+            memberNotes: {},
+            groupNames: {}
+        };
+
+        // 收集成員變更
+        Object.keys(this.members).forEach(memberId => {
+            const member = this.members[memberId];
+            const original = this.teamConfig.members[memberId];
+
+            if (member && original) {
+                if (member.name !== original.name) {
+                    localChanges.memberNames[memberId] = member.name;
+                }
+                if (member.notes && member.notes !== original.notes && member.notes !== '備註') {
+                    localChanges.memberNotes[memberId] = member.notes;
+                }
+            }
+        });
+
+        // 收集組名變更
+        Object.keys(this.teamConfig.groups || {}).forEach(groupId => {
+            const currentName = this.teamConfig.groups[groupId].name;
+            const originalName = groupId === 'groupA' ? 'A組' : groupId === 'groupB' ? 'B組' : 'C組';
+            if (currentName !== originalName) {
+                localChanges.groupNames[groupId] = currentName;
+            }
+        });
+
+        return localChanges;
+    }
+
+    // 套用用戶自訂設定
+    applyCustomizations(customizations) {
+        // 套用成員名稱變更
+        Object.entries(customizations.memberNames || {}).forEach(([memberId, name]) => {
+            if (this.members[memberId]) {
+                this.members[memberId].name = name;
+            }
+        });
+
+        // 套用備註變更
+        Object.entries(customizations.memberNotes || {}).forEach(([memberId, notes]) => {
+            if (this.members[memberId]) {
+                this.members[memberId].notes = notes;
+            }
+        });
+
+        // 套用組名變更
+        Object.entries(customizations.groupNames || {}).forEach(([groupId, name]) => {
+            if (this.teamConfig.groups && this.teamConfig.groups[groupId]) {
+                this.teamConfig.groups[groupId].name = name;
+            }
+        });
     }
 
     // 編輯成員備註
@@ -1784,7 +2453,63 @@ class TeamManagement {
             }, { once: true });
         }
     }
+
+    // 儲存所有資料到本地
+    async saveAllData() {
+        try {
+            // 儲存成員變更
+            this.saveMemberChanges();
+
+            // 儲存組織變更
+            this.saveGroupChanges();
+
+            // 儲存到本地儲存
+            this.saveToLocal();
+
+            console.log('所有資料已儲存到本地');
+        } catch (error) {
+            console.error('儲存資料失敗:', error);
+            throw error;
+        }
+    }
+
+    // 啟動團隊管理系統
+    async init() {
+        try {
+            // 啟動自動同步檢查
+            this.startAutoSync();
+
+            // 顯示智能同步建議
+            this.showSyncSuggestion();
+
+            console.log('團隊管理系統已初始化');
+        } catch (error) {
+            console.error('團隊管理系統初始化失敗:', error);
+        }
+    }
+
+    // 關閉團隊管理系統
+    destroy() {
+        // 停止自動同步
+        this.stopAutoSync();
+
+        console.log('團隊管理系統已關閉');
+    }
 }
 
 // 全域實例
 window.teamManagement = new TeamManagement();
+
+// 當頁面載入完成時啟動自動同步
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.teamManagement) {
+        window.teamManagement.init();
+    }
+});
+
+// 當頁面關閉時停止自動同步
+window.addEventListener('beforeunload', () => {
+    if (window.teamManagement) {
+        window.teamManagement.destroy();
+    }
+});
