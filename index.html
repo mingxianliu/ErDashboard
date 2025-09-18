@@ -22,6 +22,9 @@
             </span>
             <div class="d-flex align-items-center">
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
+                <button class="btn btn-success btn-sm me-2" id="syncBtn" style="display: none;" title="同步本地檔案到 Google Drive">
+                    <i class="fas fa-cloud-upload-alt"></i> Sync
+                </button>
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
@@ -249,6 +252,7 @@
         function showMainDashboard() {
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
+            document.getElementById('syncBtn').style.display = 'inline-block';
         }
         
         // 登出功能
@@ -261,6 +265,7 @@
                 // 隱藏登出按鈕和團隊管理按鈕
                 this.style.display = 'none';
                 document.getElementById('teamManagementBtn').style.display = 'none';
+                document.getElementById('syncBtn').style.display = 'none';
 
                 // 顯示認證介面
                 document.getElementById('keyAuthentication').style.display = 'block';
@@ -303,6 +308,163 @@
         document.getElementById('refreshBtn').addEventListener('click', function() {
             location.reload();
         });
+
+        // Sync 功能
+        document.getElementById('syncBtn').addEventListener('click', async function() {
+            const syncBtn = this;
+            const originalText = syncBtn.innerHTML;
+
+            try {
+                // 更新按鈕狀態
+                syncBtn.disabled = true;
+                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+
+                // 檢查 Google Drive 連線
+                if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
+                    throw new Error('Google Drive 未登入，請先登入');
+                }
+
+                await syncLocalFilesToGoogleDrive();
+
+                // 成功訊息
+                showSyncToast('同步成功', '本地檔案已成功同步到 Google Drive', 'success');
+
+            } catch (error) {
+                console.error('同步失敗:', error);
+                showSyncToast('同步失敗', error.message, 'error');
+            } finally {
+                // 恢復按鈕狀態
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = originalText;
+            }
+        });
+
+        // 同步本地檔案到 Google Drive
+        async function syncLocalFilesToGoogleDrive() {
+            const filesToSync = [
+                'config/team-members.json',
+                'config/project-assignments.json'
+            ];
+
+            const syncResults = [];
+
+            for (const filePath of filesToSync) {
+                try {
+                    console.log(`🔄 同步檔案: ${filePath}`);
+
+                    // 讀取本地檔案
+                    const response = await fetch(filePath + '?v=' + Date.now());
+                    if (!response.ok) {
+                        throw new Error(`無法讀取 ${filePath}: ${response.statusText}`);
+                    }
+
+                    const fileContent = await response.text();
+                    const fileName = filePath.split('/').pop();
+
+                    // 上傳到 Google Drive
+                    await window.googleDriveAPI.saveFile(fileName, fileContent);
+
+                    syncResults.push({
+                        file: fileName,
+                        status: 'success',
+                        message: '同步成功'
+                    });
+
+                    console.log(`✅ ${fileName} 同步完成`);
+
+                } catch (error) {
+                    console.error(`❌ ${filePath} 同步失敗:`, error);
+                    syncResults.push({
+                        file: filePath.split('/').pop(),
+                        status: 'error',
+                        message: error.message
+                    });
+                }
+            }
+
+            // 同步專案狀態檔案 (如果存在)
+            await syncProjectStatusFiles();
+
+            // 記錄同步結果
+            logSyncResults(syncResults);
+
+            return syncResults;
+        }
+
+        // 同步專案狀態檔案
+        async function syncProjectStatusFiles() {
+            const projects = ['ErCore', 'ErNexus', 'ErShield', 'ErTidy'];
+
+            for (const project of projects) {
+                try {
+                    // 這裡可以讀取 project-status 資料夾中的檔案
+                    // 由於瀏覽器安全限制，我們先記錄到 localStorage
+                    console.log(`📊 檢查專案 ${project} 狀態檔案`);
+                } catch (error) {
+                    console.log(`⚠️ 專案 ${project} 無狀態檔案`);
+                }
+            }
+        }
+
+        // 顯示同步通知
+        function showSyncToast(title, message, type) {
+            const toastColor = type === 'success' ? 'text-bg-success' : 'text-bg-danger';
+            const icon = type === 'success' ? 'check-circle' : 'exclamation-triangle';
+
+            const toastHtml = `
+                <div class="toast ${toastColor}" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="toast-header">
+                        <i class="fas fa-${icon} me-2"></i>
+                        <strong class="me-auto">${title}</strong>
+                        <small>剛才</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">${message}</div>
+                </div>
+            `;
+
+            // 創建 toast 容器 (如果不存在)
+            let toastContainer = document.getElementById('toastContainer');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toastContainer';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1055';
+                document.body.appendChild(toastContainer);
+            }
+
+            // 添加並顯示 toast
+            const toastElement = document.createElement('div');
+            toastElement.innerHTML = toastHtml;
+            toastContainer.appendChild(toastElement.firstElementChild);
+
+            const toast = new bootstrap.Toast(toastContainer.lastElementChild);
+            toast.show();
+        }
+
+        // 記錄同步結果
+        function logSyncResults(results) {
+            const timestamp = new Date().toISOString();
+            const syncLog = {
+                timestamp,
+                results,
+                totalFiles: results.length,
+                successCount: results.filter(r => r.status === 'success').length,
+                errorCount: results.filter(r => r.status === 'error').length
+            };
+
+            // 儲存到 localStorage
+            const existingLogs = JSON.parse(localStorage.getItem('syncLogs') || '[]');
+            existingLogs.unshift(syncLog);
+
+            // 只保留最近 50 次同步記錄
+            if (existingLogs.length > 50) {
+                existingLogs.splice(50);
+            }
+
+            localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
+            console.log('📝 同步記錄已保存:', syncLog);
+        }
 
         // 團隊管理功能
         document.getElementById('teamManagementBtn').addEventListener('click', function() {

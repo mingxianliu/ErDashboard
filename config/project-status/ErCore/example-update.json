@@ -1,0 +1,82 @@
+{
+  "updateInfo": {
+    "date": "2025-01-18",
+    "updatedBy": "陳雲",
+    "memberId": "A-CC",
+    "projectId": "ErCore"
+  },
+
+  "progressUpdate": {
+    "overallProgress": 75,
+    "roleProgress": {
+      "frontend": 80,
+      "backend": 75,
+      "testing": 70
+    },
+    "coreMetrics": {
+      "frontend": {
+        "progress": 80,
+        "status": "進行中",
+        "notes": "完成主要 UI 組件開發，進行響應式設計優化"
+      },
+      "backend": {
+        "progress": 75,
+        "status": "進行中",
+        "notes": "核心 API 已完成，整合 AI 服務中"
+      },
+      "database": {
+        "progress": 90,
+        "status": "接近完成",
+        "notes": "資料庫架構已定案，索引優化完成"
+      },
+      "deployment": {
+        "progress": 60,
+        "status": "進行中",
+        "notes": "Docker 容器化完成，K8s 部署配置中"
+      },
+      "validation": {
+        "progress": 70,
+        "status": "進行中",
+        "notes": "單元測試覆蓋率達 70%，整合測試進行中"
+      }
+    }
+  },
+
+  "tasksCompleted": [
+    {
+      "taskId": "ERCORE-UI-001",
+      "description": "完成 Dashboard 主介面設計與實作",
+      "completedDate": "2025-01-17"
+    },
+    {
+      "taskId": "ERCORE-UI-002",
+      "description": "實作深色模式切換功能",
+      "completedDate": "2025-01-18"
+    }
+  ],
+
+  "currentTasks": [
+    {
+      "taskId": "ERCORE-UI-003",
+      "description": "優化行動裝置響應式設計",
+      "status": "進行中",
+      "expectedCompletion": "2025-01-22"
+    },
+    {
+      "taskId": "ERCORE-UI-004",
+      "description": "整合 AI 聊天組件",
+      "status": "進行中",
+      "expectedCompletion": "2025-01-25"
+    }
+  ],
+
+  "blockers": [],
+
+  "nextSteps": [
+    "完成響應式設計優化",
+    "整合 AI 服務 API",
+    "進行跨瀏覽器相容性測試"
+  ],
+
+  "notes": "本週專注於 UI 優化，下週將進行 AI 功能整合"
+}
