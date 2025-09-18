@@ -25,6 +25,7 @@ class TeamManagement {
         this.members = data.members;
         this.roles = data.roles;
         this.teamConfig = data; // 載入完整的團隊配置，包含 groups
+        console.log('團隊資料載入完成 - groups:', data.groups ? Object.keys(data.groups).length : 0);
     }
 
     async loadAssignments() {
@@ -1118,7 +1119,28 @@ class TeamManagement {
 
     // 載入成員管理
     loadMemberManagement() {
-        const groups = this.teamConfig.groups || {};
+        console.log('載入成員管理 - teamConfig:', this.teamConfig);
+        const groups = this.teamConfig?.groups || {};
+        console.log('找到的組織數量:', Object.keys(groups).length);
+
+        if (Object.keys(groups).length === 0) {
+            // 如果沒有組織資料，顯示錯誤訊息
+            document.getElementById('memberManagementContent').innerHTML = `
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-exclamation-triangle me-2"></i>組織資料載入失敗</h6>
+                    <p>無法載入團隊組織結構。請檢查以下項目：</p>
+                    <ul>
+                        <li>確認 config/team-members.json 檔案包含 groups 區段</li>
+                        <li>檢查瀏覽器開發者工具的 Console 是否有錯誤訊息</li>
+                        <li>嘗試重新整理頁面</li>
+                    </ul>
+                    <button class="btn btn-primary btn-sm" onclick="teamManagement.loadTeamData().then(() => teamManagement.loadMemberManagement())">
+                        <i class="fas fa-sync me-1"></i>重新載入組織資料
+                    </button>
+                </div>
+            `;
+            return;
+        }
 
         const content = `
             <div class="mb-3">
