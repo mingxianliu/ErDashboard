@@ -315,14 +315,7 @@ class TeamManagement {
         }
     }
 
-    // Google Drive 同步功能
-    syncToGoogleDrive() {
-        this.showToast('同步功能', '上傳到 Google Drive 功能開發中...', 'info');
-    }
-
-    syncFromGoogleDrive() {
-        this.showToast('同步功能', '從 Google Drive 下載功能開發中...', 'info');
-    }
+    // Google Drive 同步功能 - 已移除手動同步，系統現在自動處理
 
     checkGoogleDriveStatus() {
         if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
@@ -413,10 +406,22 @@ class TeamManagement {
                     ...memberData
                 };
 
-                // 儲存到本地儲存
+                // 儲存到本地儲存和 Google Drive
                 const savedMembers = JSON.parse(localStorage.getItem('teamMemberChanges') || '{}');
                 savedMembers[memberId] = memberData;
                 localStorage.setItem('teamMemberChanges', JSON.stringify(savedMembers));
+
+                // 同時更新 dataManager 中的資料
+                this.dataManager.members[memberId] = currentMembers[memberId];
+
+                // 儲存到 Google Drive
+                this.dataManager.saveMemberChanges().then(() => {
+                    console.log('☁️ 成員資料已同步到 Google Drive');
+                    this.showToast('儲存成功', '成員資料已儲存到 Google Drive', 'success');
+                }).catch(error => {
+                    console.error('❌ Google Drive 儲存失敗:', error);
+                    this.showToast('部分失敗', '資料已儲存到本地，但 Google Drive 同步失敗', 'warning');
+                });
 
                 // 關閉模態框
                 const modal = bootstrap.Modal.getInstance(document.getElementById('editMemberModal'));
@@ -426,8 +431,6 @@ class TeamManagement {
 
                 // 重新載入成員管理頁面
                 this.loadMemberManagement();
-
-                this.showToast('儲存成功', `成員 ${memberData.name} 的資料已更新`, 'success');
             } else {
                 this.showToast('儲存失敗', '找不到指定的成員', 'error');
             }

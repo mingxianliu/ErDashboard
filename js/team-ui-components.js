@@ -643,15 +643,13 @@ class TeamUIComponents {
                                 <small class="text-muted">每30分鐘自動檢查 Google Drive 更新</small>
                             </div>
                             <div class="d-grid gap-2">
-                                <button class="btn btn-outline-success" onclick="teamManagement.syncToGoogleDrive()">
-                                    <i class="fas fa-cloud-upload-alt me-2"></i>上傳到 Google Drive
-                                </button>
-                                <button class="btn btn-outline-info" onclick="teamManagement.syncFromGoogleDrive()">
-                                    <i class="fas fa-cloud-download-alt me-2"></i>從 Google Drive 下載
-                                </button>
                                 <button class="btn btn-outline-primary" onclick="teamManagement.checkGoogleDriveStatus()">
-                                    <i class="fas fa-link me-2"></i>檢查連線狀態
+                                    <i class="fas fa-link me-2"></i>檢查 Google Drive 連線狀態
                                 </button>
+                                <div class="alert alert-info mt-2" style="font-size: 0.9em;">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    系統會自動從 Google Drive 載入資料，並在儲存時自動同步
+                                </div>
                             </div>
                         </div>
                     </div>

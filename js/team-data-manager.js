@@ -39,16 +39,27 @@ class TeamDataManager {
     async loadTeamData() {
         try {
             console.log('🔄 開始載入團隊成員資料...');
-            const response = await fetch('config/team-members.json?v=' + Date.now());
-            console.log('🔄 team-members.json 回應狀態:', response.status, response.statusText);
 
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // 檢查 Google Drive API 是否可用
+            if (!window.googleDriveAPI) {
+                throw new Error('Google Drive API 未載入，無法讀取資料');
             }
 
-            const data = await response.json();
-            console.log('🔄 team-members.json 資料載入成功:', data);
-            console.log('🔄 members 數量:', Object.keys(data.members || {}).length);
+            if (!window.googleDriveAPI.isAuthenticated) {
+                throw new Error('Google Drive 未登入，無法讀取資料');
+            }
+
+            // 強制從 Google Drive 載入
+            console.log('☁️ 從 Google Drive 載入 team-members.json...');
+            const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
+
+            if (!driveContent) {
+                throw new Error('Google Drive 中找不到 team-members.json 檔案');
+            }
+
+            const data = JSON.parse(driveContent);
+            console.log('☁️ Google Drive 團隊成員資料載入成功:', data);
+            console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
 
             // 先載入預設資料
             this.members = data.members;
@@ -104,19 +115,33 @@ class TeamDataManager {
 
     async loadAssignments() {
         try {
-            const response = await fetch('config/project-assignments.json?v=' + Date.now());
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            // 檢查 Google Drive API 是否可用
+            if (!window.googleDriveAPI) {
+                throw new Error('Google Drive API 未載入，無法讀取資料');
             }
-            const data = await response.json();
+
+            if (!window.googleDriveAPI.isAuthenticated) {
+                throw new Error('Google Drive 未登入，無法讀取資料');
+            }
+
+            // 強制從 Google Drive 載入
+            console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
+            const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
+
+            if (!driveContent) {
+                throw new Error('Google Drive 中找不到 project-assignments.json 檔案');
+            }
+
+            const data = JSON.parse(driveContent);
             this.assignments = data.assignments;
             this.constraints = data.constraints;
-            console.log('✅ 成功載入專案分配資料:', Object.keys(this.assignments).length, '個專案');
-            console.log('✅ assignments 內容:', this.assignments);
+            console.log('☁️ 成功載入專案分配資料:', Object.keys(this.assignments).length, '個專案');
+            console.log('☁️ assignments 內容:', this.assignments);
         } catch (error) {
             console.error('❌ 載入專案分配資料失敗:', error);
             this.assignments = {};
             this.constraints = {};
+            throw error; // 重新拋出錯誤，因為現在必須從 Google Drive 載入
         }
     }
 
@@ -157,25 +182,66 @@ class TeamDataManager {
         }
     }
 
-    // 儲存本地變更
-    saveLocalChanges() {
+    // 儲存專案分配變更
+    async saveLocalChanges() {
         try {
+            // 儲存到 localStorage（作為備份）
             localStorage.setItem('teamAssignments', JSON.stringify(this.assignments));
-            console.log('本地變更已儲存');
+            console.log('📁 本地變更已儲存');
+
+            // 同時儲存到 Google Drive
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                console.log('☁️ 儲存專案分配到 Google Drive...');
+                const assignmentData = {
+                    assignments: this.assignments,
+                    constraints: this.constraints,
+                    statistics: {
+                        totalAssignments: Object.values(this.assignments).reduce((sum, project) => sum + Object.keys(project.members || {}).length, 0),
+                        activeProjects: Object.values(this.assignments).filter(p => p.status === 'active').length,
+                        completedProjects: Object.values(this.assignments).filter(p => p.status === 'completed').length,
+                        membersInUse: new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size,
+                        availableMembers: Object.keys(this.members).length - new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size
+                    }
+                };
+
+                await window.googleDriveAPI.saveFile('project-assignments.json', JSON.stringify(assignmentData, null, 2));
+                console.log('☁️ 專案分配已儲存到 Google Drive');
+            } else {
+                console.log('⚠️ Google Drive 未登入，僅儲存到本地');
+            }
         } catch (error) {
-            console.error('儲存本地變更失敗:', error);
+            console.error('❌ 儲存專案分配失敗:', error);
+            throw error;
         }
     }
 
     // 儲存成員變更
-    saveMemberChanges() {
+    async saveMemberChanges() {
         try {
             const memberChanges = {};
             // 這裡可以比較原始資料和當前資料，只儲存變更
             localStorage.setItem('teamMemberChanges', JSON.stringify(memberChanges));
-            console.log('成員變更已儲存');
+            console.log('📁 成員變更已儲存');
+
+            // 同時儲存完整的團隊成員資料到 Google Drive
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                console.log('☁️ 儲存團隊成員到 Google Drive...');
+                const teamData = {
+                    members: this.members,
+                    roles: this.roles,
+                    groups: this.teamConfig.groups || {},
+                    version: new Date().toISOString(),
+                    lastUpdated: new Date().toISOString()
+                };
+
+                await window.googleDriveAPI.saveFile('team-members.json', JSON.stringify(teamData, null, 2));
+                console.log('☁️ 團隊成員已儲存到 Google Drive');
+            } else {
+                console.log('⚠️ Google Drive 未登入，僅儲存到本地');
+            }
         } catch (error) {
-            console.error('儲存成員變更失敗:', error);
+            console.error('❌ 儲存成員變更失敗:', error);
+            throw error;
         }
     }
 
