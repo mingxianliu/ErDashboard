@@ -1,31 +1,23 @@
 {
   "members": {
-    "A": { "id": "A", "name": "成員A", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A", "joinDate": "2025-01-01" },
-    "B": { "id": "B", "name": "成員B", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B", "joinDate": "2025-01-01" },
-    "C": { "id": "C", "name": "成員C", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C", "joinDate": "2025-01-01" },
-    "D": { "id": "D", "name": "成員D", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "D", "joinDate": "2025-01-01" },
-    "E": { "id": "E", "name": "成員E", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "E", "joinDate": "2025-01-01" },
-    "F": { "id": "F", "name": "成員F", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "F", "joinDate": "2025-01-01" },
-    "G": { "id": "G", "name": "成員G", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "G", "joinDate": "2025-01-01" },
-    "H": { "id": "H", "name": "成員H", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "H", "joinDate": "2025-01-01" },
-    "I": { "id": "I", "name": "成員I", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "I", "joinDate": "2025-01-01" },
-    "J": { "id": "J", "name": "成員J", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "J", "joinDate": "2025-01-01" },
-    "K": { "id": "K", "name": "成員K", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "K", "joinDate": "2025-01-01" },
-    "L": { "id": "L", "name": "成員L", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "L", "joinDate": "2025-01-01" },
-    "M": { "id": "M", "name": "成員M", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "M", "joinDate": "2025-01-01" },
-    "N": { "id": "N", "name": "成員N", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "N", "joinDate": "2025-01-01" },
-    "O": { "id": "O", "name": "成員O", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "O", "joinDate": "2025-01-01" },
-    "P": { "id": "P", "name": "成員P", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "P", "joinDate": "2025-01-01" },
-    "Q": { "id": "Q", "name": "成員Q", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "Q", "joinDate": "2025-01-01" },
-    "R": { "id": "R", "name": "成員R", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "R", "joinDate": "2025-01-01" },
-    "S": { "id": "S", "name": "成員S", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "S", "joinDate": "2025-01-01" },
-    "T": { "id": "T", "name": "成員T", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "T", "joinDate": "2025-01-01" },
-    "U": { "id": "U", "name": "成員U", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "U", "joinDate": "2025-01-01" },
-    "V": { "id": "V", "name": "成員V", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "V", "joinDate": "2025-01-01" },
-    "W": { "id": "W", "name": "成員W", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "W", "joinDate": "2025-01-01" },
-    "X": { "id": "X", "name": "成員X", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "X", "joinDate": "2025-01-01" },
-    "Y": { "id": "Y", "name": "成員Y", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "Y", "joinDate": "2025-01-01" },
-    "Z": { "id": "Z", "name": "成員Z", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "Z", "joinDate": "2025-01-01" }
+    "A-CC": { "id": "A-CC", "name": "A-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CC", "joinDate": "2025-01-01" },
+    "A-CA": { "id": "A-CA", "name": "A-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CA", "joinDate": "2025-01-01" },
+    "A-GI": { "id": "A-GI", "name": "A-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-GI", "joinDate": "2025-01-01" },
+    "A-CI": { "id": "A-CI", "name": "A-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CI", "joinDate": "2025-01-01" },
+    "A-CS": { "id": "A-CS", "name": "A-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-CS", "joinDate": "2025-01-01" },
+    "A-VC": { "id": "A-VC", "name": "A-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "A-VC", "joinDate": "2025-01-01" },
+    "B-CC": { "id": "B-CC", "name": "B-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CC", "joinDate": "2025-01-01" },
+    "B-CA": { "id": "B-CA", "name": "B-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CA", "joinDate": "2025-01-01" },
+    "B-GI": { "id": "B-GI", "name": "B-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-GI", "joinDate": "2025-01-01" },
+    "B-CI": { "id": "B-CI", "name": "B-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CI", "joinDate": "2025-01-01" },
+    "B-CS": { "id": "B-CS", "name": "B-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-CS", "joinDate": "2025-01-01" },
+    "B-VC": { "id": "B-VC", "name": "B-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "B-VC", "joinDate": "2025-01-01" },
+    "C-CC": { "id": "C-CC", "name": "C-CC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CC", "joinDate": "2025-01-01" },
+    "C-CA": { "id": "C-CA", "name": "C-CA", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CA", "joinDate": "2025-01-01" },
+    "C-GI": { "id": "C-GI", "name": "C-GI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-GI", "joinDate": "2025-01-01" },
+    "C-CI": { "id": "C-CI", "name": "C-CI", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CI", "joinDate": "2025-01-01" },
+    "C-CS": { "id": "C-CS", "name": "C-CS", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-CS", "joinDate": "2025-01-01" },
+    "C-VC": { "id": "C-VC", "name": "C-VC", "skills": ["frontend", "backend", "testing"], "primaryRole": "fullstack", "avatar": "C-VC", "joinDate": "2025-01-01" }
   },
   "roles": {
     "frontend": {
@@ -48,40 +40,26 @@
     }
   },
   "groups": {
-    "group1": {
-      "id": "group1",
-      "name": "前端開發組",
-      "description": "專責前端技術開發",
-      "members": ["A", "B", "C", "D", "E"],
+    "groupA": {
+      "id": "groupA",
+      "name": "A組",
+      "description": "A組團隊成員",
+      "members": ["A-CC", "A-CA", "A-GI", "A-CI", "A-CS", "A-VC"],
       "color": "#3b82f6"
     },
-    "group2": {
-      "id": "group2",
-      "name": "後端開發組",
-      "description": "專責後端服務開發",
-      "members": ["F", "G", "H", "I", "J"],
+    "groupB": {
+      "id": "groupB",
+      "name": "B組",
+      "description": "B組團隊成員",
+      "members": ["B-CC", "B-CA", "B-GI", "B-CI", "B-CS", "B-VC"],
       "color": "#ef4444"
     },
-    "group3": {
-      "id": "group3",
-      "name": "測試品保組",
-      "description": "專責測試與品質保證",
-      "members": ["K", "L", "M", "N", "O"],
+    "groupC": {
+      "id": "groupC",
+      "name": "C組",
+      "description": "C組團隊成員",
+      "members": ["C-CC", "C-CA", "C-GI", "C-CI", "C-CS", "C-VC"],
       "color": "#10b981"
-    },
-    "group4": {
-      "id": "group4",
-      "name": "架構設計組",
-      "description": "專責系統架構設計",
-      "members": ["P", "Q", "R", "S", "T"],
-      "color": "#f59e0b"
-    },
-    "group5": {
-      "id": "group5",
-      "name": "專案管理組",
-      "description": "專責專案協調管理",
-      "members": ["U", "V", "W", "X", "Y", "Z"],
-      "color": "#8b5cf6"
     }
   }
 }
