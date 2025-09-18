@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>修復成員數據</title>
+</head>
+<body>
+    <h1>修復成員數據</h1>
+    <button onclick="fixData()">清除所有本地數據並重置</button>
+    <div id="result"></div>
+
+    <script>
+        function fixData() {
+            // 清除所有相關的localStorage
+            localStorage.removeItem('teamMemberChanges');
+            localStorage.removeItem('teamAssignments');
+            localStorage.removeItem('teamGroupChanges');
+            localStorage.removeItem('autoSyncEnabled');
+
+            document.getElementById('result').innerHTML = `
+                <p style="color: green;">✅ 已清除所有本地數據</p>
+                <p>請回到主頁面重新載入</p>
+                <a href="index.html">回到主頁面</a>
+            `;
+        }
+    </script>
+</body>
+</html>

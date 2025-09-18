@@ -20,7 +20,7 @@
         "C-CA": { "memberId": "C-CA", "role": "testing", "assignedDate": "2025-02-10", "tasks": ["整合測試", "API 測試", "自動化測試"] }
       },
       "lastUpdated": "2025-09-18",
-      "status": "completed"
+      "status": "active"
     },
     "ErShield": {
       "projectId": "ErShield",
