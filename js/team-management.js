@@ -1213,7 +1213,7 @@ class TeamManagement {
                                         <div class="col-md-6 col-lg-3 mb-3">
                                             <div class="card border-0 shadow-sm">
                                                 <div class="card-body text-center p-3">
-                                                    <div style="font-size: 2em;">${member.avatar}</div>
+                                                    <div style="font-size: 2em;">👤</div>
 
                                                     <!-- 可編輯的成員名稱 -->
                                                     <div class="mt-2 mb-1">
@@ -1234,9 +1234,9 @@ class TeamManagement {
                                                     <!-- 可編輯的備註 -->
                                                     <div class="mt-1 mb-2">
                                                         <div class="editable-member-notes" data-member-id="${memberId}">
-                                                            <small class="member-notes-display text-muted">${member.notes || '備註'}</small>
+                                                            <small class="member-notes-display text-muted">${member.notes && member.notes !== '備註' ? member.notes : '點擊新增備註'}</small>
                                                             <input type="text" class="form-control form-control-sm member-notes-input d-none"
-                                                                   value="${member.notes || '備註'}" style="display: none;">
+                                                                   value="${member.notes || ''}" style="display: none;" placeholder="輸入備註...">
                                                         </div>
                                                         <button class="btn btn-link btn-sm p-0" style="font-size: 0.6em;"
                                                                 onclick="teamManagement.editMemberNotes('${memberId}')">
