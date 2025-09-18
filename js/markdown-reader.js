@@ -90,17 +90,17 @@ class MarkdownProjectReader {
             }
 
             // 解析核心完整度指標區塊
-            if (line.includes('🎨 前端開發') || line.includes('前端開發')) {
+            if (line.includes('[UI] 前端開發') || line.includes('前端開發')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'frontend';
                 continue;
             }
-            if (line.includes('⚙️ 後端開發') || line.includes('後端開發')) {
+            if (line.includes('[API] 後端開發') || line.includes('後端開發')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'backend';
                 continue;
             }
-            if (line.includes('🗃️ 資料庫') || line.includes('資料庫')) {
+            if (line.includes('[DB] 資料庫') || line.includes('資料庫')) {
                 currentSection = 'coreMetrics';
                 currentMetric = 'database';
                 continue;
@@ -293,11 +293,11 @@ class MarkdownProjectReader {
     // 取得專案狀態圖示
     getStatusIcon(status) {
         const statusMap = {
-            '✅ 已完成': 'fa-check-circle text-success',
-            '🚧 進行中': 'fa-cog fa-spin text-warning', 
-            '🎯 規劃中': 'fa-bullseye text-info',
-            '⏸️ 暫停': 'fa-pause-circle text-secondary',
-            '❌ 取消': 'fa-times-circle text-danger'
+            '[OK] 已完成': 'fa-check-circle text-success',
+            '[WIP] 進行中': 'fa-cog fa-spin text-warning',
+            '[PLAN] 規劃中': 'fa-bullseye text-info',
+            '[PAUSE] 暫停': 'fa-pause-circle text-secondary',
+            '[CANCEL] 取消': 'fa-times-circle text-danger'
         };
 
         // 移除表情符號，只保留狀態文字

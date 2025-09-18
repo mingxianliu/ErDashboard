@@ -523,9 +523,9 @@ class MarkdownProjectDashboard {
     generateMockDetailedProgress(projectId) {
         if (!window.teamManagement) {
             return {
-                frontend: { name: '前端開發', icon: '🎨', color: '#3b82f6', progress: 85, assignee: '前端A', tasks: ['UI 組件開發', '狀態管理', '響應式設計'] },
-                backend: { name: '後端開發', icon: '⚙️', color: '#ef4444', progress: 75, assignee: '後端A', tasks: ['API 開發', '資料庫設計', '服務架構'] },
-                testing: { name: '測試驗證', icon: '🧪', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] }
+                frontend: { name: '前端開發', icon: '[UI]', color: '#3b82f6', progress: 85, assignee: '前端A', tasks: ['UI 組件開發', '狀態管理', '響應式設計'] },
+                backend: { name: '後端開發', icon: '[API]', color: '#ef4444', progress: 75, assignee: '後端A', tasks: ['API 開發', '資料庫設計', '服務架構'] },
+                testing: { name: '測試驗證', icon: '[TEST]', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] }
             };
         }
 

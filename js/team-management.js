@@ -843,7 +843,7 @@ class TeamManagement {
                                 ${Object.entries(stats.memberUtilization).map(([memberId, data]) => `
                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                         <div class="d-flex align-items-center">
-                                            <span class="me-2">${this.members[memberId]?.avatar || '👤'}</span>
+                                            <span class="me-2">${this.members[memberId]?.avatar || '[U]'}</span>
                                             <span>${data.name}</span>
                                         </div>
                                         <div>
