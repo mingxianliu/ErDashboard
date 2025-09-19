@@ -1091,7 +1091,7 @@ class TeamUIComponents {
 
                             ${memberProjects.length === 0 ?
                                 '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>此成員目前未參與任何專案</div>' :
-                                this.generateDetailedProjectsList(memberProjects)
+                                this.generateDetailedProjectsList(memberProjects, memberId)
                             }
 
                             <!-- 時間軸 -->
@@ -1108,6 +1108,9 @@ class TeamUIComponents {
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="fas fa-times me-2"></i>關閉
                             </button>
+                            <button type="button" class="btn btn-success me-2" onclick="teamManagement.assignMemberToProject('${memberId}')">
+                                <i class="fas fa-plus me-2"></i>分配專案
+                            </button>
                             <button type="button" class="btn btn-primary" onclick="teamManagement.editMember('${memberId}')">
                                 <i class="fas fa-edit me-2"></i>編輯成員資料
                             </button>
@@ -1119,7 +1122,7 @@ class TeamUIComponents {
     }
 
     // 生成詳細專案列表
-    generateDetailedProjectsList(memberProjects) {
+    generateDetailedProjectsList(memberProjects, memberId) {
         let content = '<div class="row g-3">';
 
         memberProjects.forEach(project => {
@@ -1179,11 +1182,32 @@ class TeamUIComponents {
                                     </ul>
                                 </div>
                             ` : `
-                                <div class="alert alert-light mb-0">
+                                <div class="alert alert-light mb-3">
                                     <i class="fas fa-info-circle me-2"></i>
                                     尚未指派具體任務
                                 </div>
                             `}
+
+                            <!-- 專案操作按鈕 -->
+                            <div class="border-top pt-3 mt-3">
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            onclick="teamManagement.changeMemberRole('${memberId}', '${project.projectId}', '${project.role}')"
+                                            title="變更角色">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-info btn-sm"
+                                            onclick="teamManagement.editMemberTasks('${memberId}', '${project.projectId}')"
+                                            title="編輯任務">
+                                        <i class="fas fa-tasks"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm"
+                                            onclick="teamManagement.removeMemberFromProject('${memberId}', '${project.projectId}')"
+                                            title="移除專案">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

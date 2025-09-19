@@ -140,3 +140,43 @@ body {
     100% { transform: scale(1); }
 }
 
+/* 彈出視窗寬度調整 */
+.modal-dialog.modal-xl {
+    max-width: calc(90vw * 1.33 * 1.33) !important;
+}
+
+.modal-dialog.modal-lg {
+    max-width: calc(800px * 1.33 * 1.33) !important;
+}
+
+.modal-dialog {
+    max-width: calc(500px * 1.33 * 1.33) !important;
+}
+
+/* 減少下滑幅度 - 優化 modal 內容佈局 */
+.modal-body {
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 1rem 1.5rem;
+}
+
+.modal-content {
+    max-height: 90vh;
+    overflow: hidden;
+}
+
+/* 優化表格和卡片佈局以減少滾動 */
+.modal-body .table-responsive {
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.modal-body .card {
+    margin-bottom: 0.75rem;
+}
+
+.modal-body .list-group {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+

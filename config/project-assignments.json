@@ -47,7 +47,7 @@
   },
   "constraints": {
     "oneRolePerProject": "每個成員在單一專案中只能擔任一個角色",
-    "availableRoles": ["frontend", "backend", "testing"],
+    "availableRoles": ["frontend", "backend", "testing", "deployment"],
     "minMembersPerRole": 1,
     "maxMembersPerRole": 3
   },

@@ -41,24 +41,43 @@ class TeamDataManager {
             console.log('🔄 開始載入團隊成員資料...');
             let data = null;
 
-            // 優先嘗試從 Google Drive 載入
-            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+            // 1. 優先從本地快取載入（最新的儲存資料）
+            const cachedData = localStorage.getItem('cachedTeamMembers');
+            if (cachedData) {
+                try {
+                    data = JSON.parse(cachedData);
+                    console.log('💾 從本地快取載入團隊成員資料');
+                    console.log('💾 快取資料大小:', cachedData.length, 'bytes');
+                    console.log('💾 members 數量:', Object.keys(data.members || {}).length);
+                    console.log('💾 快取中的成員資料:', data.members);
+                } catch (e) {
+                    console.error('💾 本地快取資料解析失敗:', e);
+                    data = null; // 確保重置 data
+                }
+            } else {
+                console.log('💾 沒有找到本地快取資料');
+            }
+
+            // 2. 如果沒有快取，嘗試從 Google Drive 載入
+            if (!data && window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                 try {
                     console.log('☁️ 從 Google Drive 載入 team-members.json...');
                     const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
                     if (driveContent) {
                         data = JSON.parse(driveContent);
-                        console.log('☁️ Google Drive 團隊成員資料載入成功:', data);
+                        console.log('☁️ Google Drive 團隊成員資料載入成功');
                         console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
+                        // 儲存到本地快取
+                        localStorage.setItem('cachedTeamMembers', driveContent);
                     }
                 } catch (driveError) {
-                    console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                    console.log('☁️ Google Drive 載入失敗:', driveError.message);
                 }
             }
 
-            // 如果 Google Drive 沒有資料或未登入，載入本地檔案
+            // 3. 如果還是沒有資料，載入本地檔案
             if (!data) {
-                console.log('📁 從本地載入 team-members.json...');
+                console.log('📁 從本地檔案載入 team-members.json...');
                 const response = await fetch('config/team-members.json?v=' + Date.now());
                 console.log('📁 team-members.json 回應狀態:', response.status, response.statusText);
 
@@ -67,37 +86,28 @@ class TeamDataManager {
                 }
 
                 data = await response.json();
-                console.log('📁 team-members.json 資料載入成功:', data);
+                console.log('📁 team-members.json 資料載入成功');
                 console.log('📁 members 數量:', Object.keys(data.members || {}).length);
+                // 儲存到本地快取
+                localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
             }
 
             // 先載入預設資料
-            this.members = data.members;
-            this.roles = data.roles;
+            this.members = data.members || {};
+            this.roles = data.roles || {};
             this.teamConfig = data; // 載入完整的團隊配置，包含 groups
 
-            // 然後覆蓋本地儲存的變更（如果有的話）
-            const savedMembers = localStorage.getItem('teamMemberChanges');
-            if (savedMembers) {
-                const localMembers = JSON.parse(savedMembers);
-                console.log('🔄 本地成員變更:', localMembers);
-                // 合併本地變更到成員資料，但跳過已刪除的成員
-                Object.keys(localMembers).forEach(memberId => {
-                    const localChange = localMembers[memberId];
-                    if (localChange.deleted) {
-                        console.log('⚠️ 跳過已刪除的成員:', memberId);
-                        delete this.members[memberId];
-                        if (this.teamConfig.members) {
-                            delete this.teamConfig.members[memberId];
-                        }
-                    } else if (this.members[memberId]) {
-                        this.members[memberId] = { ...this.members[memberId], ...localChange };
-                        if (this.teamConfig.members) {
-                            this.teamConfig.members[memberId] = { ...this.teamConfig.members[memberId], ...localChange };
-                        }
-                    }
-                });
-                console.log('已載入本地成員變更');
+            // 確保 teamConfig.members 存在並與 this.members 同步
+            if (!this.teamConfig.members) {
+                this.teamConfig.members = this.members;
+            }
+
+            // 檢查並清理舊的臨時變更記錄（如果有的話）
+            const oldChanges = localStorage.getItem('teamMemberChanges');
+            if (oldChanges) {
+                console.log('🔄 發現舊的臨時變更記錄，將移除...');
+                localStorage.removeItem('teamMemberChanges');
+                console.log('✅ 已清理舊的臨時變更記錄');
             }
 
             // 載入本地儲存的組名變更
@@ -184,8 +194,9 @@ class TeamDataManager {
     }
 
     async loadLocalMemberChanges() {
-        // 這裡可以加入更多本地成員變更的處理邏輯
-        console.log('本地成員變更載入完成');
+        // 這個方法現在由 loadTeamData 中的邏輯處理
+        // 保留空實作以避免破壞既有呼叫
+        console.log('📁 本地成員變更已在 loadTeamData 中處理');
     }
 
     // 重新載入專案分配資料
@@ -236,27 +247,51 @@ class TeamDataManager {
     // 儲存成員變更
     async saveMemberChanges() {
         try {
-            const memberChanges = {};
-            // 這裡可以比較原始資料和當前資料，只儲存變更
-            localStorage.setItem('teamMemberChanges', JSON.stringify(memberChanges));
-            console.log('📁 成員變更已儲存');
+            console.log('📁 開始儲存成員資料...');
+            console.log('📁 當前 members 數量:', Object.keys(this.members).length);
+            console.log('📁 當前 members:', this.members);
 
-            // 同時儲存完整的團隊成員資料到 Google Drive
-            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
-                console.log('☁️ 儲存團隊成員到 Google Drive...');
-                const teamData = {
-                    members: this.members,
-                    roles: this.roles,
-                    groups: this.teamConfig.groups || {},
-                    version: new Date().toISOString(),
-                    lastUpdated: new Date().toISOString()
-                };
+            // 準備完整的團隊資料
+            const teamData = {
+                members: this.members,
+                roles: this.roles,
+                groups: this.teamConfig.groups || {},
+                version: new Date().toISOString(),
+                lastUpdated: new Date().toISOString()
+            };
 
-                await window.googleDriveAPI.saveFile('team-members.json', JSON.stringify(teamData, null, 2));
-                console.log('☁️ 團隊成員已儲存到 Google Drive');
-            } else {
-                console.log('⚠️ Google Drive 未登入，僅儲存到本地');
+            console.log('📁 準備儲存的完整資料:', teamData);
+
+            // 1. 儲存到本地快取 (localStorage) 作為主要資料
+            const dataString = JSON.stringify(teamData);
+            localStorage.setItem('cachedTeamMembers', dataString);
+            console.log('✅ 團隊成員已儲存到本地快取，大小:', dataString.length, 'bytes');
+
+            // 驗證儲存
+            const savedData = localStorage.getItem('cachedTeamMembers');
+            if (savedData) {
+                const parsed = JSON.parse(savedData);
+                console.log('✅ 驗證：本地快取已成功儲存，members 數量:', Object.keys(parsed.members).length);
             }
+
+            // 2. 清除臨時變更記錄（因為已經儲存為主要資料）
+            localStorage.removeItem('teamMemberChanges');
+            console.log('✅ 已清除臨時變更記錄');
+
+            // 3. 同步到 Google Drive
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                console.log('☁️ 開始同步到 Google Drive...');
+                await window.googleDriveAPI.saveFile('team-members.json', JSON.stringify(teamData, null, 2));
+                console.log('☁️ 團隊成員已同步到 Google Drive');
+            } else {
+                console.log('⚠️ Google Drive 未登入，資料已儲存到本地');
+            }
+
+            // 4. 嘗試更新本地檔案（透過伺服器 API，如果有的話）
+            // 注意：瀏覽器無法直接寫入本地檔案系統，需要後端 API
+            console.log('ℹ️ 瀏覽器無法直接更新 config/team-members.json，需要手動下載或使用後端 API');
+
+            return true;
         } catch (error) {
             console.error('❌ 儲存成員變更失敗:', error);
             throw error;

@@ -204,7 +204,9 @@ class TeamManagement {
 
     // 編輯成員
     editMember(memberId) {
+        console.log('🔵 editMember 被呼叫，memberId:', memberId);
         const modalContent = this.uiComponents.generateMemberEditModal(memberId);
+        console.log('🔵 生成的 modal 內容長度:', modalContent.length);
 
         // 移除舊的模態框
         const existingModal = document.getElementById('editMemberModal');
@@ -373,6 +375,8 @@ class TeamManagement {
     // 儲存成員編輯
     saveMemberEdit(memberId) {
         try {
+            console.log('🔵 開始儲存成員編輯:', memberId);
+
             // 收集表單資料
             const memberData = {
                 id: memberId,
@@ -382,6 +386,8 @@ class TeamManagement {
                 avatar: document.getElementById('memberAvatar')?.value || '',
                 notes: document.getElementById('memberNotes')?.value || ''
             };
+
+            console.log('🔵 收集到的成員資料:', memberData);
 
             // 收集技能資料
             const skills = [];
@@ -399,28 +405,39 @@ class TeamManagement {
 
             // 更新資料管理器中的成員資料
             const currentMembers = this.dataManager.getAllMembers();
+            console.log('🔵 現有成員資料:', currentMembers[memberId]);
+
             if (currentMembers[memberId]) {
                 // 保留原有資料，僅更新修改的欄位
-                currentMembers[memberId] = {
+                const updatedMember = {
                     ...currentMembers[memberId],
                     ...memberData
                 };
 
-                // 儲存到本地儲存和 Google Drive
-                const savedMembers = JSON.parse(localStorage.getItem('teamMemberChanges') || '{}');
-                savedMembers[memberId] = memberData;
-                localStorage.setItem('teamMemberChanges', JSON.stringify(savedMembers));
+                console.log('🔵 更新後的成員資料:', updatedMember);
 
-                // 同時更新 dataManager 中的資料
-                this.dataManager.members[memberId] = currentMembers[memberId];
+                // 直接更新 dataManager 中的資料
+                this.dataManager.members[memberId] = updatedMember;
 
-                // 儲存到 Google Drive
+                // 同步更新 teamConfig.members
+                if (!this.dataManager.teamConfig) {
+                    this.dataManager.teamConfig = {};
+                }
+                if (!this.dataManager.teamConfig.members) {
+                    this.dataManager.teamConfig.members = {};
+                }
+                this.dataManager.teamConfig.members[memberId] = updatedMember;
+
+                console.log('🔵 dataManager.members[memberId]:', this.dataManager.members[memberId]);
+                console.log('🔵 teamConfig.members[memberId]:', this.dataManager.teamConfig.members[memberId]);
+
+                // 儲存到 Google Drive 和本地
                 this.dataManager.saveMemberChanges().then(() => {
-                    console.log('☁️ 成員資料已同步到 Google Drive');
-                    this.showToast('儲存成功', '成員資料已儲存到 Google Drive', 'success');
+                    console.log('☁️ 成員資料已同步');
+                    this.showToast('儲存成功', '成員資料已儲存', 'success');
                 }).catch(error => {
-                    console.error('❌ Google Drive 儲存失敗:', error);
-                    this.showToast('部分失敗', '資料已儲存到本地，但 Google Drive 同步失敗', 'warning');
+                    console.error('❌ 儲存失敗:', error);
+                    this.showToast('儲存失敗', error.message, 'error');
                 });
 
                 // 關閉模態框
@@ -503,6 +520,340 @@ class TeamManagement {
             console.error('刪除成員失敗:', error);
             this.showToast('刪除失敗', error.message, 'error');
         }
+    }
+
+    // ========== 成員專案 CRUD 功能 ==========
+
+    // 分配成員到專案
+    assignMemberToProject(memberId) {
+        const member = this.dataManager.getAllMembers()[memberId];
+        if (!member) {
+            this.showToast('錯誤', '找不到指定成員', 'error');
+            return;
+        }
+
+        const allProjects = this.dataManager.getAllAssignments();
+        const availableProjects = Object.keys(allProjects);
+
+        if (availableProjects.length === 0) {
+            this.showToast('無可用專案', '目前沒有可分配的專案', 'warning');
+            return;
+        }
+
+        // 創建分配專案的 modal
+        const modalHtml = `
+            <div class="modal fade" id="assignProjectModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-plus me-2"></i>分配專案給 ${member.name}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="assignProjectForm">
+                                <div class="mb-3">
+                                    <label for="projectSelect" class="form-label">選擇專案</label>
+                                    <select class="form-select" id="projectSelect" required>
+                                        <option value="">請選擇專案...</option>
+                                        ${availableProjects.map(projectId => {
+                                            const project = allProjects[projectId];
+                                            return `<option value="${projectId}">${project.projectName}</option>`;
+                                        }).join('')}
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="roleSelect" class="form-label">選擇角色</label>
+                                    <select class="form-select" id="roleSelect" required>
+                                        <option value="">請選擇角色...</option>
+                                        <option value="frontend">前端開發</option>
+                                        <option value="backend">後端開發</option>
+                                        <option value="testing">測試驗證</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="assignDate" class="form-label">分配日期</label>
+                                    <input type="date" class="form-control" id="assignDate" value="${new Date().toISOString().split('T')[0]}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="memberTasks" class="form-label">負責任務（可選）</label>
+                                    <textarea class="form-control" id="memberTasks" rows="3" placeholder="請輸入具體任務，每行一個任務"></textarea>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-success" onclick="teamManagement.confirmAssignProject('${memberId}')">確認分配</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 modal
+        const existingModal = document.getElementById('assignProjectModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的 modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('assignProjectModal'));
+        modal.show();
+    }
+
+    // 確認分配專案
+    confirmAssignProject(memberId) {
+        const projectId = document.getElementById('projectSelect').value;
+        const role = document.getElementById('roleSelect').value;
+        const assignDate = document.getElementById('assignDate').value;
+        const tasksText = document.getElementById('memberTasks').value;
+
+        if (!projectId || !role || !assignDate) {
+            this.showToast('輸入錯誤', '請填寫所有必填欄位', 'error');
+            return;
+        }
+
+        // 處理任務列表
+        const tasks = tasksText ? tasksText.split('\n').filter(task => task.trim()) : [];
+
+        // 更新專案分配資料
+        const assignments = this.dataManager.getAllAssignments();
+        if (!assignments[projectId]) {
+            assignments[projectId] = { members: {} };
+        }
+        if (!assignments[projectId].members) {
+            assignments[projectId].members = {};
+        }
+
+        assignments[projectId].members[memberId] = {
+            memberId: memberId,
+            role: role,
+            assignedDate: assignDate,
+            tasks: tasks
+        };
+
+        // 更新最後修改時間
+        assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+        // 儲存變更
+        this.dataManager.saveLocalChanges().then(() => {
+            this.showToast('分配成功', `已將 ${this.dataManager.getAllMembers()[memberId].name} 分配到專案`, 'success');
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('assignProjectModal'));
+            modal.hide();
+
+            // 重新載入成員專案檢視
+            this.viewMemberProjects(memberId);
+        }).catch(error => {
+            console.error('儲存失敗:', error);
+            this.showToast('儲存失敗', '無法儲存專案分配變更', 'error');
+        });
+    }
+
+    // 移除成員從專案
+    removeMemberFromProject(memberId, projectId) {
+        const member = this.dataManager.getAllMembers()[memberId];
+        const project = this.dataManager.getAllAssignments()[projectId];
+
+        if (!member || !project) {
+            this.showToast('錯誤', '找不到指定成員或專案', 'error');
+            return;
+        }
+
+        if (confirm(`確定要將 ${member.name} 從專案「${project.projectName}」中移除嗎？`)) {
+            // 從專案中移除成員
+            delete project.members[memberId];
+
+            // 更新最後修改時間
+            project.lastUpdated = new Date().toISOString().split('T')[0];
+
+            // 儲存變更
+            this.dataManager.saveLocalChanges().then(() => {
+                this.showToast('移除成功', `已將 ${member.name} 從專案中移除`, 'success');
+
+                // 重新載入成員專案檢視
+                this.viewMemberProjects(memberId);
+            }).catch(error => {
+                console.error('儲存失敗:', error);
+                this.showToast('儲存失敗', '無法儲存專案變更', 'error');
+            });
+        }
+    }
+
+    // 變更成員在專案中的角色
+    changeMemberRole(memberId, projectId, currentRole) {
+        const member = this.dataManager.getAllMembers()[memberId];
+        const project = this.dataManager.getAllAssignments()[projectId];
+
+        if (!member || !project) {
+            this.showToast('錯誤', '找不到指定成員或專案', 'error');
+            return;
+        }
+
+        // 創建角色變更的 modal
+        const modalHtml = `
+            <div class="modal fade" id="changeRoleModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning text-dark">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exchange-alt me-2"></i>變更 ${member.name} 的角色
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>專案：</strong>${project.projectName}</p>
+                            <p><strong>目前角色：</strong><span class="badge bg-secondary">${currentRole}</span></p>
+
+                            <form id="changeRoleForm">
+                                <div class="mb-3">
+                                    <label for="newRoleSelect" class="form-label">新角色</label>
+                                    <select class="form-select" id="newRoleSelect" required>
+                                        <option value="">請選擇新角色...</option>
+                                        <option value="frontend" ${currentRole === 'frontend' ? 'disabled' : ''}>前端開發</option>
+                                        <option value="backend" ${currentRole === 'backend' ? 'disabled' : ''}>後端開發</option>
+                                        <option value="testing" ${currentRole === 'testing' ? 'disabled' : ''}>測試驗證</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-warning" onclick="teamManagement.confirmChangeRole('${memberId}', '${projectId}')">確認變更</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 modal
+        const existingModal = document.getElementById('changeRoleModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的 modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('changeRoleModal'));
+        modal.show();
+    }
+
+    // 確認變更角色
+    confirmChangeRole(memberId, projectId) {
+        const newRole = document.getElementById('newRoleSelect').value;
+
+        if (!newRole) {
+            this.showToast('輸入錯誤', '請選擇新角色', 'error');
+            return;
+        }
+
+        const project = this.dataManager.getAllAssignments()[projectId];
+        const member = this.dataManager.getAllMembers()[memberId];
+
+        // 更新成員角色
+        project.members[memberId].role = newRole;
+        project.lastUpdated = new Date().toISOString().split('T')[0];
+
+        // 儲存變更
+        this.dataManager.saveLocalChanges().then(() => {
+            this.showToast('變更成功', `已變更 ${member.name} 的角色為 ${newRole}`, 'success');
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('changeRoleModal'));
+            modal.hide();
+
+            // 重新載入成員專案檢視
+            this.viewMemberProjects(memberId);
+        }).catch(error => {
+            console.error('儲存失敗:', error);
+            this.showToast('儲存失敗', '無法儲存角色變更', 'error');
+        });
+    }
+
+    // 編輯成員任務
+    editMemberTasks(memberId, projectId) {
+        const member = this.dataManager.getAllMembers()[memberId];
+        const project = this.dataManager.getAllAssignments()[projectId];
+
+        if (!member || !project || !project.members[memberId]) {
+            this.showToast('錯誤', '找不到指定成員或專案', 'error');
+            return;
+        }
+
+        const currentTasks = project.members[memberId].tasks || [];
+
+        // 創建任務編輯的 modal
+        const modalHtml = `
+            <div class="modal fade" id="editTasksModal" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-tasks me-2"></i>編輯 ${member.name} 的任務
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>專案：</strong>${project.projectName}</p>
+
+                            <form id="editTasksForm">
+                                <div class="mb-3">
+                                    <label for="tasksList" class="form-label">負責任務</label>
+                                    <textarea class="form-control" id="tasksList" rows="6" placeholder="請輸入具體任務，每行一個任務">${currentTasks.join('\n')}</textarea>
+                                    <div class="form-text">每行輸入一個任務</div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-info" onclick="teamManagement.confirmEditTasks('${memberId}', '${projectId}')">儲存任務</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 modal
+        const existingModal = document.getElementById('editTasksModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的 modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('editTasksModal'));
+        modal.show();
+    }
+
+    // 確認編輯任務
+    confirmEditTasks(memberId, projectId) {
+        const tasksText = document.getElementById('tasksList').value;
+        const tasks = tasksText ? tasksText.split('\n').filter(task => task.trim()) : [];
+
+        const project = this.dataManager.getAllAssignments()[projectId];
+        const member = this.dataManager.getAllMembers()[memberId];
+
+        // 更新任務列表
+        project.members[memberId].tasks = tasks;
+        project.lastUpdated = new Date().toISOString().split('T')[0];
+
+        // 儲存變更
+        this.dataManager.saveLocalChanges().then(() => {
+            this.showToast('更新成功', `已更新 ${member.name} 的任務列表`, 'success');
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editTasksModal'));
+            modal.hide();
+
+            // 重新載入成員專案檢視
+            this.viewMemberProjects(memberId);
+        }).catch(error => {
+            console.error('儲存失敗:', error);
+            this.showToast('儲存失敗', '無法儲存任務變更', 'error');
+        });
     }
 }
 

@@ -410,11 +410,21 @@ class MarkdownProjectDashboard {
     // 載入團隊成員分工
     loadTeamAssignments(projectId) {
         const section = document.getElementById('teamAssignmentSection');
-        if (!section || !window.teamManagement) return;
+        if (!section) return;
 
         try {
-            const teamCard = window.teamManagement.renderProjectTeamCard(projectId);
-            section.innerHTML = teamCard;
+            // 使用 teamDataManager 獲取專案資料
+            if (window.teamDataManager && window.teamDataManager.isReady()) {
+                const projectAssignment = window.teamDataManager.getProjectAssignments(projectId);
+                if (projectAssignment) {
+                    const teamCard = this.generateProjectTeamCard(projectId, projectAssignment);
+                    section.innerHTML = teamCard;
+                } else {
+                    throw new Error('無法獲取專案分配資料');
+                }
+            } else {
+                throw new Error('團隊資料管理器未就緒');
+            }
         } catch (error) {
             console.error('載入團隊分工失敗:', error);
             section.innerHTML = `
@@ -527,9 +537,9 @@ class MarkdownProjectDashboard {
 
     // 生成模擬驗測報告
     generateMockTestingReports(projectId) {
-        if (!window.teamManagement) return [];
+        if (!window.teamDataManager || !window.teamDataManager.isReady()) return [];
 
-        const assignment = window.teamManagement.getProjectAssignments(projectId);
+        const assignment = window.teamDataManager.getProjectAssignments(projectId);
         if (!assignment) return [];
 
         const testerAssignment = Object.values(assignment.members).find(m => m.role === 'testing');
@@ -565,12 +575,13 @@ class MarkdownProjectDashboard {
             return {
                 frontend: { name: '前端開發', icon: '[UI]', color: '#3b82f6', progress: 85, assignee: '前端A', tasks: ['UI 組件開發', '狀態管理', '響應式設計'] },
                 backend: { name: '後端開發', icon: '[API]', color: '#ef4444', progress: 75, assignee: '後端A', tasks: ['API 開發', '資料庫設計', '服務架構'] },
-                testing: { name: '測試驗證', icon: '[TEST]', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] }
+                testing: { name: '測試驗證', icon: '[TEST]', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] },
+                deployment: { name: '安裝部署', icon: '[DEPLOY]', color: '#f59e0b', progress: 70, assignee: '部署A', tasks: ['環境配置', '容器化部署', '運維監控'] }
             };
         }
 
-        const assignment = window.teamManagement.getProjectAssignments(projectId);
-        const roles = window.teamManagement.roles;
+        const assignment = window.teamDataManager ? window.teamDataManager.getProjectAssignments(projectId) : null;
+        const roles = window.teamDataManager ? window.teamDataManager.getAllRoles() : {};
         const progress = {};
 
         if (assignment) {
@@ -588,6 +599,56 @@ class MarkdownProjectDashboard {
         }
 
         return progress;
+    }
+
+    // 生成專案團隊卡片
+    generateProjectTeamCard(projectId, projectAssignment) {
+        if (!projectAssignment || !projectAssignment.members) {
+            return `
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="fas fa-users me-2"></i>
+                            專案團隊
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">尚無團隊成員分配</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        const members = Object.entries(projectAssignment.members)
+            .map(([memberId, memberData]) => {
+                const allMembers = window.teamDataManager.getAllMembers();
+                const memberInfo = allMembers[memberId] || { name: memberId };
+                return `
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar-placeholder me-3" style="width: 40px; height: 40px; background: #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 16px; font-weight: bold;">
+                            ${memberInfo.name.charAt(0)}
+                        </div>
+                        <div>
+                            <div class="fw-bold">${memberInfo.name}</div>
+                            <small class="text-muted">${memberData.role || '未指定角色'}</small>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        return `
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        專案團隊 (${Object.keys(projectAssignment.members).length} 人)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    ${members}
+                </div>
+            </div>
+        `;
     }
 }
 
