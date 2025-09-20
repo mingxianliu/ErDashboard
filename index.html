@@ -247,15 +247,9 @@
                                         </div>
                                 `;
                                 Object.values(project.members).forEach(member => {
-                                    const memberNames = {
-                                        'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
-                                        'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
-                                        'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
-                                        'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
-                                        'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
-                                        'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
-                                    };
-                                    const memberName = memberNames[member.memberId] || member.memberId;
+                                    // 從實際成員資料取得名稱
+                                    const allMembers = projects[0] ? teamDataManager.getAllMembers() : {};
+                                    const memberName = allMembers[member.memberId]?.name || member.memberId;
                                     const roleColors = {
                                         'frontend': '#007bff',
                                         'backend': '#28a745',
@@ -375,16 +369,12 @@
                     return;
                 }
 
-                // 成員名稱映射
-                const memberNames = {
-                    'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
-                    'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
-                    'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
-                    'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
-                    'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
-                    'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
+                // 從 teamDataManager 取得實際的成員名稱
+                const allMembers = teamDataManager.getAllMembers();
+                const getMemberName = (memberId) => {
+                    return allMembers[memberId]?.name || memberId;
                 };
-                const memberName = memberNames[memberId] || memberId;
+                const memberName = getMemberName(memberId);
 
                 // 從 TeamDataManager 載入任務範本
                 let taskTemplate = '';
@@ -423,15 +413,8 @@
                 const project = assignments[projectId];
                 const member = project.members[memberId];
 
-                const memberNames = {
-                    'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
-                    'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
-                    'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
-                    'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
-                    'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
-                    'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
-                };
-                const memberName = memberNames[memberId] || memberId;
+                // 移除硬編碼的成員名稱映射，改用實際資料
+                const memberName = getMemberName(memberId);
 
                 // 獲取任務範本
                 let taskTemplate = '';
