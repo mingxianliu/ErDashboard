@@ -248,7 +248,7 @@
                                 `;
                                 Object.values(project.members).forEach(member => {
                                     // 從實際成員資料取得名稱
-                                    const allMembers = projects[0] ? teamDataManager.getAllMembers() : {};
+                                    const allMembers = teamDataManager.getAllMembers() || {};
                                     const memberName = allMembers[member.memberId]?.name || member.memberId;
                                     const roleColors = {
                                         'frontend': '#007bff',
@@ -370,11 +370,8 @@
                 }
 
                 // 從 teamDataManager 取得實際的成員名稱
-                const allMembers = teamDataManager.getAllMembers();
-                const getMemberName = (memberId) => {
-                    return allMembers[memberId]?.name || memberId;
-                };
-                const memberName = getMemberName(memberId);
+                const allMembers = teamDataManager.getAllMembers() || {};
+                const memberName = allMembers[memberId]?.name || memberId;
 
                 // 從 TeamDataManager 載入任務範本
                 let taskTemplate = '';
@@ -414,7 +411,8 @@
                 const member = project.members[memberId];
 
                 // 移除硬編碼的成員名稱映射，改用實際資料
-                const memberName = getMemberName(memberId);
+                const allMembers = teamDataManager.getAllMembers() || {};
+                const memberName = allMembers[memberId]?.name || memberId;
 
                 // 獲取任務範本
                 let taskTemplate = '';
