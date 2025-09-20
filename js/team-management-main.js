@@ -103,9 +103,16 @@ class TeamManagement {
 
     // 載入專案管理（簡化版）
     loadProjectManagement() {
-        console.log('🎯 載入專案管理，assignments 資料:', this.dataManager.assignments);
+        // 確保資料管理器已初始化
+        if (!this.dataManager.isInitialized) {
+            console.log('⏳ 等待資料管理器初始化完成...');
+            setTimeout(() => this.loadProjectManagement(), 100);
+            return;
+        }
 
-        const assignments = this.dataManager.assignments;
+        console.log('🎯 載入專案管理，assignments 資料:', Object.keys(this.dataManager.assignments || {}).length, '個專案');
+
+        const assignments = this.dataManager.assignments || {};
 
         // 添加新增專案按鈕
         let content = `
