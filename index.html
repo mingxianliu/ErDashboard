@@ -192,7 +192,7 @@
                             <div class="col-md-3">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h5 class="card-title">總成員數</h5>
+                                        <h5 class="card-title">總參與成員數</h5>
                                         <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
                                     </div>
                                 </div>
@@ -212,11 +212,7 @@
                     // 顯示專案列表
                     if (projectsList) {
                         console.log('📝 開始生成專案列表 HTML...');
-                        let html = `
-                            <div class="col-12 mb-3">
-                                <h4>專案列表</h4>
-                            </div>
-                        `;
+                        let html = '';
 
                         projects.forEach(project => {
                             console.log('專案:', project.projectName);
@@ -250,20 +246,31 @@
                                     };
                                     const roleColor = roleColors[member.role] || '#6c757d';
 
+                                    // 根據組別設定背景色
+                                    const memberGroup = member.memberId.split('-')[0]; // A, B, C
+                                    const groupColors = {
+                                        'A': '#e3f2fd', // 淺藍
+                                        'B': '#e8f5e8', // 淺綠
+                                        'C': '#fff3e0'  // 淺橙
+                                    };
+                                    const groupBgColor = groupColors[memberGroup] || '#f8f9fa';
+
                                     membersHtml += `
-                                        <div class="d-flex justify-content-between align-items-center p-2 mb-2 border rounded"
-                                             style="background-color: rgba(${roleColor.slice(1).match(/.{2}/g).map(x => parseInt(x, 16)).join(', ')}, 0.1);">
-                                            <div class="d-flex align-items-center">
-                                                <div class="me-3">
-                                                    <div class="fw-bold">${memberName}</div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 border rounded"
+                                             style="background-color: ${groupBgColor};">
+                                            <div class="d-flex align-items-center flex-grow-1">
+                                                <div class="d-flex flex-column me-3" style="min-width: 80px;">
+                                                    <div class="fw-bold mb-1">${memberName}</div>
                                                     <small class="text-muted">${member.memberId}</small>
                                                 </div>
-                                                <span class="badge me-2" style="background-color: ${roleColor};">
-                                                    ${member.role}
-                                                </span>
+                                                <div class="d-flex align-items-center justify-content-end flex-grow-1 me-3">
+                                                    <span class="badge px-3 py-2" style="background-color: ${roleColor}; font-size: 0.85em;">
+                                                        ${member.role}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="changeMember('${project.projectId}', '${member.memberId}')" title="變更成員">
@@ -288,7 +295,7 @@
 
                             html += `
                                 <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
-                                    <div class="card mb-3" style="min-height: 280px;">
+                                    <div class="card mb-3" style="height: 420px;">
                                         <div class="card-body d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-start mb-2">
                                                 <h5 class="card-title text-truncate me-2" title="${project.projectName}">${project.projectName}</h5>
@@ -431,7 +438,7 @@
                                 <div class="modal-body">
                                     <div class="mb-3">
                                         <label for="taskContent" class="form-label">任務小卡內容</label>
-                                        <textarea class="form-control" id="taskContent" rows="15" style="min-height: 400px;">${taskCardContent}</textarea>
+                                        <textarea class="form-control" id="taskContent" rows="20" style="min-height: 500px;">${taskCardContent}</textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -468,6 +475,10 @@
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
 
+                // 設定當前專案資料供其他函數使用
+                window.currentProject = project;
+                window.currentProjectId = projectId;
+
                 // 顯示進度編輯模態框
                 const progressModalHtml = `
                     <div class="modal fade" id="progressModal" tabindex="-1">
@@ -487,7 +498,22 @@
                                     </div>
                                     <div class="mb-3">
                                         <label for="projectNotes" class="form-label">專案備註</label>
-                                        <textarea class="form-control" id="projectNotes" rows="4" placeholder="輸入專案備註...">${project.notes || ''}</textarea>
+                                        <div class="mb-2">
+                                            <textarea class="form-control" id="newNote" rows="3" placeholder="輸入新的備註..."></textarea>
+                                        </div>
+                                        <div class="mb-2">
+                                            <button type="button" class="btn btn-sm btn-primary me-2" onclick="addNote()">
+                                                <i class="fas fa-plus"></i> 新增備註
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="clearAllNotes()">
+                                                <i class="fas fa-trash"></i> 清除所有備註
+                                            </button>
+                                        </div>
+                                        <div class="border rounded p-3" style="max-height: 300px; overflow-y: auto; background-color: #f8f9fa;">
+                                            <div id="notesList">
+                                                ${formatNotes(project.notes || '')}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -519,22 +545,192 @@
             document.getElementById('progressDisplay').textContent = value + '%';
         }
 
+        // 格式化備註顯示
+        function formatNotes(notes) {
+            if (!notes) return '<p class="text-muted m-0">尚無備註</p>';
+
+            try {
+                const notesList = JSON.parse(notes);
+                if (Array.isArray(notesList) && notesList.length > 0) {
+                    return notesList.map(note =>
+                        `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
+                            <div class="fw-bold small text-muted">${note.timestamp}</div>
+                            <div>${note.content}</div>
+                        </div>`
+                    ).join('');
+                }
+            } catch (e) {
+                // 如果不是 JSON 格式，當作舊格式的純文字
+                if (notes.trim()) {
+                    return `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
+                                <div class="fw-bold small text-muted">舊備註</div>
+                                <div>${notes}</div>
+                            </div>`;
+                }
+            }
+            return '<p class="text-muted m-0">尚無備註</p>';
+        }
+
+        // 新增備註
+        async function addNote() {
+            const newNoteInput = document.getElementById('newNote');
+            const noteContent = newNoteInput.value.trim();
+
+            if (!noteContent) {
+                alert('請輸入備註內容');
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString('zh-TW');
+            const newNote = {
+                timestamp: timestamp,
+                content: noteContent
+            };
+
+            // 獲取現有備註
+            let existingNotes = [];
+            try {
+                const currentProject = getCurrentProject();
+                if (currentProject && currentProject.notes) {
+                    existingNotes = JSON.parse(currentProject.notes);
+                }
+            } catch (e) {
+                // 如果解析失敗，建立新陣列
+                existingNotes = [];
+            }
+
+            if (!Array.isArray(existingNotes)) {
+                existingNotes = [];
+            }
+
+            // 新增到陣列開頭（最新的在上面）
+            existingNotes.unshift(newNote);
+
+            // 立即儲存到 TeamDataManager
+            try {
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+
+                if (assignments[window.currentProjectId]) {
+                    assignments[window.currentProjectId].notes = JSON.stringify(existingNotes);
+                    assignments[window.currentProjectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
+
+                    // 更新當前專案資料
+                    window.currentProject.notes = JSON.stringify(existingNotes);
+                }
+            } catch (error) {
+                console.error('儲存備註失敗:', error);
+                alert('儲存備註失敗: ' + error.message);
+                return;
+            }
+
+            // 更新顯示
+            updateNotesDisplay(existingNotes);
+
+            // 清空輸入框
+            newNoteInput.value = '';
+        }
+
+        // 清除所有備註
+        async function clearAllNotes() {
+            if (confirm('確定要清除所有備註嗎？此操作無法復原。')) {
+                try {
+                    // 立即儲存到 TeamDataManager
+                    const teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                    const assignments = teamDataManager.getAllAssignments();
+
+                    if (assignments[window.currentProjectId]) {
+                        assignments[window.currentProjectId].notes = JSON.stringify([]);
+                        assignments[window.currentProjectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                        // 儲存變更
+                        await teamDataManager.saveLocalChanges();
+
+                        // 更新當前專案資料
+                        window.currentProject.notes = JSON.stringify([]);
+                    }
+
+                    // 更新顯示
+                    updateNotesDisplay([]);
+                } catch (error) {
+                    console.error('清除備註失敗:', error);
+                    alert('清除備註失敗: ' + error.message);
+                }
+            }
+        }
+
+        // 更新備註顯示
+        function updateNotesDisplay(notesList) {
+            const notesListDiv = document.getElementById('notesList');
+            if (notesList.length === 0) {
+                notesListDiv.innerHTML = '<p class="text-muted m-0">尚無備註</p>';
+            } else {
+                notesListDiv.innerHTML = notesList.map(note =>
+                    `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
+                        <div class="fw-bold small text-muted">${note.timestamp}</div>
+                        <div>${note.content}</div>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        // 獲取當前專案（輔助函數）
+        function getCurrentProject() {
+            // 這個函數需要在模態框開啟時設定當前專案資料
+            return window.currentProject || null;
+        }
+
         // 儲存專案進度
         async function saveProjectProgress(projectId) {
             try {
                 const progress = parseInt(document.getElementById('projectProgress').value);
-                const notes = document.getElementById('projectNotes').value;
 
-                // 這裡應該要呼叫 TeamDataManager 的方法來儲存
-                // 暫時先顯示成功訊息
-                alert(`進度已更新為 ${progress}%\n備註: ${notes}`);
+                // 獲取當前備註列表
+                const notesListDiv = document.getElementById('notesList');
+                let notesList = [];
+
+                // 從顯示的備註中提取資料
+                const noteElements = notesListDiv.querySelectorAll('.border-start');
+                noteElements.forEach(element => {
+                    const timestamp = element.querySelector('.text-muted').textContent;
+                    const content = element.querySelector('div:last-child').textContent;
+                    if (timestamp !== '尚無備註') {
+                        notesList.push({ timestamp, content });
+                    }
+                });
+
+                // 使用 TeamDataManager 更新資料
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+
+                // 更新專案進度和備註
+                if (assignments[projectId]) {
+                    assignments[projectId].progress = progress;
+                    assignments[projectId].notes = JSON.stringify(notesList);
+                    assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
+
+                    alert(`專案進度已更新為 ${progress}%\n備註已儲存 (共 ${notesList.length} 筆)`);
+                } else {
+                    throw new Error('找不到指定的專案');
+                }
 
                 // 關閉模態框
                 const progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
                 if (progressModal) progressModal.hide();
 
                 // 重新載入頁面資料
-                loadDataDirectly();
+                setTimeout(() => {
+                    loadDataDirectly();
+                }, 500);
 
             } catch (error) {
                 console.error('儲存專案進度失敗:', error);
