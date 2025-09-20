@@ -148,10 +148,20 @@
                 // 載入任務範本資料（如果還沒載入）
                 if (!window.taskTemplatesData) {
                     try {
-                        const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
-                        if (templateResponse.ok) {
-                            window.taskTemplatesData = await templateResponse.json();
-                            console.log('✅ 任務範本載入完成:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
+                        // 1. 優先從本地快取載入
+                        const cachedTemplates = localStorage.getItem('cachedTaskTemplates');
+                        if (cachedTemplates) {
+                            window.taskTemplatesData = JSON.parse(cachedTemplates);
+                            console.log('✅ 從快取載入任務範本:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
+                        } else {
+                            // 2. 從本地檔案載入
+                            const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
+                            if (templateResponse.ok) {
+                                window.taskTemplatesData = await templateResponse.json();
+                                console.log('✅ 從本地檔案載入任務範本:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
+                                // 儲存到快取
+                                localStorage.setItem('cachedTaskTemplates', JSON.stringify(window.taskTemplatesData));
+                            }
                         }
                     } catch (templateError) {
                         console.warn('載入任務範本失敗:', templateError);
@@ -1143,6 +1153,9 @@
 
                 await pullFilesFromGoogleDrive();
 
+                // 清除記憶體中的資料以強制重新載入
+                window.taskTemplatesData = null;
+
                 // 成功訊息
                 showSyncToast('拉取成功', '已從 Google Drive 拉取最新資料', 'success');
 
@@ -1167,7 +1180,8 @@
         async function pushLocalFilesToGoogleDrive() {
             const filesToSync = [
                 'config/team-members.json',
-                'config/project-assignments.json'
+                'config/project-assignments.json',
+                'config/task-templates.json'
             ];
 
             const syncResults = [];
@@ -1175,15 +1189,54 @@
             for (const filePath of filesToSync) {
                 try {
                     console.log(`🔄 同步檔案: ${filePath}`);
-
-                    // 讀取本地檔案
-                    const response = await fetch(filePath + '?v=' + Date.now());
-                    if (!response.ok) {
-                        throw new Error(`無法讀取 ${filePath}: ${response.statusText}`);
-                    }
-
-                    const fileContent = await response.text();
                     const fileName = filePath.split('/').pop();
+                    let fileContent;
+
+                    // 根據檔案類型選擇資料來源
+                    if (fileName === 'team-members.json') {
+                        // 使用 TeamDataManager 中的資料
+                        const teamDataManager = new window.TeamDataManager();
+                        await teamDataManager.init();
+                        const teamConfig = teamDataManager.teamConfig;
+                        fileContent = JSON.stringify(teamConfig, null, 2);
+                    } else if (fileName === 'project-assignments.json') {
+                        // 使用 TeamDataManager 中的分配資料
+                        const teamDataManager = new window.TeamDataManager();
+                        await teamDataManager.init();
+                        const assignments = teamDataManager.getAllAssignments();
+                        const constraints = teamDataManager.constraints;
+                        const assignmentData = {
+                            assignments: assignments,
+                            constraints: constraints,
+                            statistics: {
+                                totalAssignments: Object.values(assignments).reduce((sum, project) => sum + Object.keys(project.members || {}).length, 0),
+                                activeProjects: Object.values(assignments).filter(p => p.status === 'active').length,
+                                completedProjects: Object.values(assignments).filter(p => p.status === 'completed').length,
+                                membersInUse: new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size,
+                                availableMembers: Object.keys(teamDataManager.getAllMembers()).length - new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size
+                            }
+                        };
+                        fileContent = JSON.stringify(assignmentData, null, 2);
+                    } else if (fileName === 'task-templates.json') {
+                        // 使用記憶體中的任務範本資料
+                        if (window.taskTemplatesData) {
+                            fileContent = JSON.stringify(window.taskTemplatesData, null, 2);
+                        } else {
+                            // 如果記憶體中沒有，讀取本地檔案
+                            const response = await fetch(filePath + '?v=' + Date.now());
+                            if (!response.ok) {
+                                throw new Error(`無法讀取 ${filePath}: ${response.statusText}`);
+                            }
+                            fileContent = await response.text();
+                        }
+                    } else {
+                        // 其他檔案直接讀取本地檔案
+                        const response = await fetch(filePath + '?v=' + Date.now());
+                        if (!response.ok) {
+                            throw new Error(`無法讀取 ${filePath}: ${response.statusText}`);
+                        }
+                        fileContent = await response.text();
+                    }
 
                     // 上傳到 Google Drive
                     await window.googleDriveAPI.saveFile(fileName, fileContent);
@@ -1219,7 +1272,8 @@
         async function pullFilesFromGoogleDrive() {
             const filesToPull = [
                 'team-members.json',
-                'project-assignments.json'
+                'project-assignments.json',
+                'task-templates.json'
             ];
 
             const pullResults = [];
@@ -1253,8 +1307,18 @@
                     }
 
                     // 儲存到 localStorage（模擬下載到本地）
-                    const storageKey = fileName === 'team-members.json' ? 'cachedTeamMembers' : 'cachedProjectAssignments';
-                    localStorage.setItem(storageKey, JSON.stringify(actualData));
+                    let storageKey;
+                    if (fileName === 'team-members.json') {
+                        storageKey = 'cachedTeamMembers';
+                    } else if (fileName === 'project-assignments.json') {
+                        storageKey = 'cachedProjectAssignments';
+                    } else if (fileName === 'task-templates.json') {
+                        storageKey = 'cachedTaskTemplates';
+                    }
+
+                    if (storageKey) {
+                        localStorage.setItem(storageKey, JSON.stringify(actualData));
+                    }
 
                     pullResults.push({
                         file: fileName,
