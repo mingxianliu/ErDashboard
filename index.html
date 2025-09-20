@@ -1092,6 +1092,115 @@
             }
         }
 
+        // 更新任務小卡 modal 內容（不重新創建 modal）
+        async function updateTaskCardModal(projectId, memberId) {
+            try {
+                // 重新載入專案資料
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+                const project = assignments[projectId];
+                const member = project.members[memberId];
+                const taskCard = member.taskCard;
+
+                // 重新生成專案備註歷程 HTML
+                let projectNotesHtml = '';
+                if (project.notes) {
+                    try {
+                        const projectNotes = JSON.parse(project.notes);
+                        if (Array.isArray(projectNotes) && projectNotes.length > 0) {
+                            projectNotesHtml = `
+                                <div class="mb-3">
+                                    <label class="form-label">專案備註歷程</label>
+                                    <div class="card" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="card-body p-2">
+                                            ${projectNotes.map((note, index) => `
+                                                <div class="border-bottom mb-2 pb-2 ${index === projectNotes.length - 1 ? 'border-0 mb-0 pb-0' : ''}">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-muted">${note.author || 'System'}</small>
+                                                        <small class="text-muted">${note.timestamp}</small>
+                                                    </div>
+                                                    <div class="small">${note.content}</div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } catch (e) {
+                    }
+                }
+
+                // 重新生成任務小卡歷程記錄 HTML
+                let taskHistoryHtml = '';
+                if (taskCard && taskCard.history && taskCard.history.length > 0) {
+                    taskHistoryHtml = `
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label class="form-label mb-0">任務小卡歷程</label>
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearTaskHistory('${projectId}', '${memberId}')" title="清空所有歷程">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="card" style="max-height: 400px; overflow-y: auto;">
+                                <div class="card-body p-2">
+                                    ${taskCard.history.slice().reverse().map((record, index) => `
+                                        <div class="border-bottom mb-2 pb-2 ${index === taskCard.history.length - 1 ? 'border-0 mb-0 pb-0' : ''}">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">${record.version} - ${record.author}</small>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    <small class="text-muted">${new Date(record.timestamp).toLocaleString('zh-TW')}</small>
+                                                    <button class="btn btn-sm btn-outline-danger p-1" onclick="deleteTaskHistoryItem('${projectId}', '${memberId}', '${record.timestamp}')" title="刪除此記錄">
+                                                        <i class="fas fa-times" style="font-size: 10px;"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="small text-info">${record.note}</div>
+                                            <details class="mt-1">
+                                                <summary class="small text-secondary" style="cursor: pointer;">查看內容</summary>
+                                                <div class="mt-1">
+                                                    <pre class="small mb-2" style="max-height: 100px; overflow-y: auto; white-space: pre-wrap;">${record.content}</pre>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="restoreHistoryVersion('${record.timestamp}', \`${record.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                                                        <i class="fas fa-history"></i> 恢復此版本
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    taskHistoryHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">任務小卡歷程</label>
+                            <div class="card">
+                                <div class="card-body p-2 text-center text-muted">
+                                    <small>尚無歷程記錄</small>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 更新現有 modal 中的專案備註歷程和任務小卡歷程欄位
+                const projectNotesColumn = document.querySelector('#taskCardModal .col-lg-3:nth-child(2)');
+                const taskHistoryColumn = document.querySelector('#taskCardModal .col-lg-3:nth-child(3)');
+
+                if (projectNotesColumn) {
+                    projectNotesColumn.innerHTML = projectNotesHtml;
+                }
+                if (taskHistoryColumn) {
+                    taskHistoryColumn.innerHTML = taskHistoryHtml;
+                }
+
+            } catch (error) {
+                console.error('更新任務小卡 modal 內容失敗:', error);
+            }
+        }
+
         // 刪除單筆任務小卡歷程記錄
         async function deleteTaskHistoryItem(projectId, memberId, timestamp) {
             try {
@@ -1120,8 +1229,8 @@
 
                         alert('歷程記錄已刪除');
 
-                        // 重新載入任務小卡編輯介面
-                        editTaskCard(projectId, memberId);
+                        // 更新現有 modal 的內容而不重新創建
+                        await updateTaskCardModal(projectId, memberId);
                     }
                 }
             } catch (error) {
@@ -1153,8 +1262,8 @@
 
                         alert('所有歷程記錄已清空');
 
-                        // 重新載入任務小卡編輯介面
-                        editTaskCard(projectId, memberId);
+                        // 更新現有 modal 的內容而不重新創建
+                        await updateTaskCardModal(projectId, memberId);
                     }
                 }
             } catch (error) {
