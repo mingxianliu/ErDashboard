@@ -296,12 +296,27 @@ ${templateContent}`,
                 memberCount: memberCount,
                 members: project.members || {},
                 memberDetails: memberDetails,
-                notes: project.notes || [],
+                notes: this.parseNotes(project.notes),
                 memberHistory: project.memberHistory || []
             };
         });
 
         console.log(`✅ 載入了 ${this.data.projects.length} 個專案`);
+    }
+
+    // 解析備註資料（可能是字串或陣列）
+    parseNotes(notes) {
+        if (!notes) return [];
+        if (Array.isArray(notes)) return notes;
+        if (typeof notes === 'string') {
+            try {
+                const parsed = JSON.parse(notes);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return [];
+            }
+        }
+        return [];
     }
 
     render() {
@@ -477,7 +492,7 @@ ${templateContent}`,
                             `}
 
                             <!-- 備註摘要 -->
-                            ${project.notes.length > 0 ? `
+                            ${(project.notes && project.notes.length > 0) ? `
                                 <div class="mt-2">
                                     <small class="text-muted">
                                         <i class="fas fa-sticky-note me-1"></i>
