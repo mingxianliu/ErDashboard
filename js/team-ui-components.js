@@ -13,12 +13,23 @@ class TeamUIComponents {
 
     async loadSkillsData() {
         try {
-            const response = await fetch('/config/skills.json');
+            const response = await fetch('config/skills.json');
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             this.skillsData = await response.json();
             console.log('✅ 技能資料載入完成');
         } catch (error) {
             console.error('載入技能資料失敗:', error);
-            this.skillsData = { skills: {} };
+            // 提供預設的技能資料
+            this.skillsData = {
+                skills: {
+                    frontend: { name: "前端開發", color: "#3b82f6" },
+                    backend: { name: "後端開發", color: "#ef4444" },
+                    fullstack: { name: "全端開發", color: "#8b5cf6" },
+                    testing: { name: "驗證測試", color: "#10b981" }
+                }
+            };
         }
     }
 
