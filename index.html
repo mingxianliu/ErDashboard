@@ -1021,28 +1021,10 @@
                 await teamDataManager.init();
                 const assignments = teamDataManager.getAllAssignments();
 
-                // 檢查新成員是否已經在其他專案中
-                let alreadyAssigned = false;
-                let assignedProject = '';
-                for (const [projId, project] of Object.entries(assignments)) {
-                    if (project.members && project.members[newMemberId]) {
-                        alreadyAssigned = true;
-                        assignedProject = project.projectName;
-                        break;
-                    }
-                }
-
-                if (alreadyAssigned && newMemberId !== oldMemberId) {
-                    if (!confirm(`${newMemberId} 已經被分配到「${assignedProject}」專案。\n確定要將他重新分配到此專案嗎？`)) {
-                        return;
-                    }
-                    // 從舊專案移除
-                    for (const [projId, project] of Object.entries(assignments)) {
-                        if (project.members && project.members[newMemberId]) {
-                            delete project.members[newMemberId];
-                            break;
-                        }
-                    }
+                // 檢查新成員是否已經在當前專案中（避免重複）
+                if (assignments[projectId].members && assignments[projectId].members[newMemberId] && newMemberId !== oldMemberId) {
+                    alert(`${newMemberId} 已經在此專案中！\n一個專案內不能有重複的成員。`);
+                    return;
                 }
 
                 // 取得舊成員資料
