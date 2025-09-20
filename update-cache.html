@@ -68,6 +68,15 @@
             localStorage.removeItem('cachedProjectAssignments');
             localStorage.removeItem('projectAssignmentChanges');
 
+            // 清除所有可能的專案相關快取
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('project') || key.includes('Project'))) {
+                    localStorage.removeItem(key);
+                    i--; // 調整索引因為項目被移除
+                }
+            }
+
             document.getElementById('status').innerHTML =
                 '<div class="alert alert-success">所有快取已清除！正在重新載入...</div>';
 

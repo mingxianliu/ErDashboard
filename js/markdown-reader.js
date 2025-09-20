@@ -19,7 +19,7 @@ class MarkdownProjectReader {
                 frontend: { progress: 0, status: '', tasks: [] },
                 backend: { progress: 0, status: '', tasks: [] },
                 database: { progress: 0, status: '', tasks: [] },
-                deployment: { progress: 0, status: '', tasks: [] },
+                testing: { progress: 0, status: '', tasks: [] },
                 validation: { progress: 0, status: '', tasks: [] }
             },
             features: {
@@ -105,9 +105,9 @@ class MarkdownProjectReader {
                 currentMetric = 'database';
                 continue;
             }
-            if (line.includes('🚀 部署') || line.includes('部署')) {
+            if (line.includes('🚀 部署') || line.includes('部署') || line.includes('驗測')) {
                 currentSection = 'coreMetrics';
-                currentMetric = 'deployment';
+                currentMetric = 'testing';
                 continue;
             }
             if (line.includes('[TEST] 驗證') || line.includes('驗證')) {
@@ -240,14 +240,12 @@ class MarkdownProjectReader {
     // 讀取所有專案檔案
     async loadAllProjects() {
         try {
-            // 獲取專案檔案列表
-            const projectFiles = [
-                'ErCore.md',
-                'ErNexus.md',
-                'ErTidy.md',
-                'ErShield.md'
-                // 未來可以動態獲取 projects/ 目錄下的所有 .md 檔案
-            ];
+            // 從 teamDataManager 動態獲取專案列表
+            const assignments = window.teamDataManager && window.teamDataManager.isReady()
+                ? window.teamDataManager.getAllAssignments()
+                : {};
+
+            const projectFiles = Object.keys(assignments).map(projectId => `${projectId}.md`);
 
             const projects = [];
 
@@ -258,9 +256,19 @@ class MarkdownProjectReader {
                         const content = await response.text();
                         const project = this.parseMarkdown(content, filename);
                         projects.push(project);
+                    } else {
+                        console.warn(`無法載入專案檔案: ${filename}，創建預設專案資料`);
+                        // 創建預設專案資料
+                        const projectId = filename.replace('.md', '');
+                        const defaultProject = this.createDefaultProject(projectId);
+                        projects.push(defaultProject);
                     }
                 } catch (error) {
-                    console.warn(`無法載入專案檔案: ${filename}`, error);
+                    console.warn(`載入專案檔案 ${filename} 失敗，使用預設資料:`, error.message);
+                    // 創建預設專案資料
+                    const projectId = filename.replace('.md', '');
+                    const defaultProject = this.createDefaultProject(projectId);
+                    projects.push(defaultProject);
                 }
             }
 
@@ -271,23 +279,85 @@ class MarkdownProjectReader {
         }
     }
 
-    // 計算專案統計資訊
-    calculateProjectStats(project) {
-        const totalFeatures = 
-            project.features.completed.length + 
-            project.features.inProgress.length + 
-            project.features.planned.length;
+    // 創建預設專案資料
+    createDefaultProject(projectId) {
+        // 從 teamDataManager 獲取專案基本資訊
+        const assignments = window.teamDataManager && window.teamDataManager.isReady()
+            ? window.teamDataManager.getAllAssignments()
+            : {};
 
-        const completedFeatures = project.features.completed.length;
-        const inProgressFeatures = project.features.inProgress.length;
+        const projectInfo = assignments[projectId];
 
         return {
-            totalFeatures,
-            completedFeatures,
-            inProgressFeatures,
-            completionRate: totalFeatures > 0 ? Math.round((completedFeatures / totalFeatures) * 100) : 0,
-            issuesCount: project.issues.length
+            id: projectId,
+            name: projectInfo?.projectName || `${projectId} - 專案`,
+            status: projectInfo?.status || 'active',
+            progress: 0,
+            content: `# ${projectInfo?.projectName || projectId}\n\n## 專案概覽\n- **狀態**: ${projectInfo?.status || 'active'}\n- **進度**: 0%\n\n## 功能清單\n- [ ] 待定義\n\n## 備註\n此專案缺少 markdown 檔案，使用預設資料顯示。`,
+            features: {
+                completed: [],
+                inProgress: [
+                    { name: '待定義功能', category: '規劃' }
+                ],
+                planned: []
+            },
+            issues: []
         };
+    }
+
+    // 計算專案統計資訊
+    calculateProjectStats(project) {
+        // 安全檢查：確保 features 存在且有正確結構
+        if (!project.features) {
+            return {
+                totalFeatures: 0,
+                completedFeatures: 0,
+                inProgressFeatures: 0,
+                completionRate: 0,
+                issuesCount: 0
+            };
+        }
+
+        // 檢查是否為新格式（有 completed, inProgress, planned 屬性）
+        if (project.features.completed !== undefined) {
+            const totalFeatures =
+                (project.features.completed?.length || 0) +
+                (project.features.inProgress?.length || 0) +
+                (project.features.planned?.length || 0);
+
+            const completedFeatures = project.features.completed?.length || 0;
+            const inProgressFeatures = project.features.inProgress?.length || 0;
+
+            return {
+                totalFeatures,
+                completedFeatures,
+                inProgressFeatures,
+                completionRate: totalFeatures > 0 ? Math.round((completedFeatures / totalFeatures) * 100) : 0,
+                issuesCount: project.issues?.length || 0
+            };
+        } else if (Array.isArray(project.features)) {
+            // 處理簡單陣列格式
+            const totalFeatures = project.features.length;
+            const completedFeatures = project.features.filter(f => f.completed === true).length;
+            const inProgressFeatures = project.features.filter(f => f.completed === false && f.category !== '已完成').length;
+
+            return {
+                totalFeatures,
+                completedFeatures,
+                inProgressFeatures,
+                completionRate: totalFeatures > 0 ? Math.round((completedFeatures / totalFeatures) * 100) : 0,
+                issuesCount: project.issues?.length || 0
+            };
+        } else {
+            // 預設值
+            return {
+                totalFeatures: 0,
+                completedFeatures: 0,
+                inProgressFeatures: 0,
+                completionRate: 0,
+                issuesCount: 0
+            };
+        }
     }
 
     // 取得專案狀態圖示

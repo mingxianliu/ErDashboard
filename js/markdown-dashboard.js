@@ -69,10 +69,78 @@ class MarkdownProjectDashboard {
     }
 
     async loadProjectsFromMarkdown() {
-        console.log('📖 載入 Markdown 專案檔案...');
-        this.data.projects = await this.reader.loadAllProjects();
-        // 移除硬編碼的進度覆蓋，使用 Markdown 檔案中的實際進度資料
-        console.log(`[OK] 載入了 ${this.data.projects.length} 個專案，使用 Markdown 檔案中的實際進度資料`);
+        console.log('📖 直接從 JSON 配置載入專案...');
+
+        // 等待 teamDataManager 初始化完成（最多等待5秒）
+        if (window.teamDataManager && !window.teamDataManager.isReady()) {
+            console.log('⏳ 等待 teamDataManager 初始化...');
+            let attempts = 0;
+            const maxAttempts = 50; // 5秒
+
+            await new Promise(resolve => {
+                const checkReady = () => {
+                    attempts++;
+                    if (window.teamDataManager && window.teamDataManager.isReady()) {
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.warn('⚠️ teamDataManager 初始化超時，繼續載入');
+                        resolve();
+                    } else {
+                        setTimeout(checkReady, 100);
+                    }
+                };
+                checkReady();
+            });
+        }
+
+        // 直接從 JSON 配置生成專案資料
+        this.data.projects = this.generateProjectsFromJSON();
+        console.log(`[OK] 載入了 ${this.data.projects.length} 個專案，使用 JSON 配置資料`);
+        console.log('專案資料:', this.data.projects);
+    }
+
+    // 從 JSON 配置生成專案資料
+    generateProjectsFromJSON() {
+        console.log('🔍 檢查 teamDataManager 狀態:');
+        console.log('  - window.teamDataManager 存在:', !!window.teamDataManager);
+        console.log('  - isReady():', window.teamDataManager ? window.teamDataManager.isReady() : 'N/A');
+
+        const assignments = window.teamDataManager && window.teamDataManager.isReady()
+            ? window.teamDataManager.getAllAssignments()
+            : {};
+
+        console.log('  - assignments 資料:', assignments);
+        console.log('  - assignments 數量:', Object.keys(assignments).length);
+
+        return Object.values(assignments).map(project => {
+            const memberCount = Object.keys(project.members || {}).length;
+            const progress = memberCount > 0 ? Math.min(Math.round((memberCount / 4) * 100), 100) : 0;
+
+            return {
+                id: project.projectId,
+                name: project.projectName,
+                status: this.mapStatus(project.status),
+                progress: progress,
+                content: `# ${project.projectName}\n\n專案狀態: ${project.status}\n團隊成員: ${memberCount} 人`,
+                features: {
+                    completed: [],
+                    inProgress: memberCount > 0 ? [{ name: '團隊組建', category: '進行中' }] : [],
+                    planned: memberCount < 4 ? [{ name: '人員擴充', category: '規劃中' }] : []
+                },
+                issues: []
+            };
+        });
+    }
+
+    // 狀態映射
+    mapStatus(status) {
+        const statusMap = {
+            'active': '[WIP] 進行中',
+            'completed': '[OK] 已完成',
+            'paused': '[PAUSE] 暫停',
+            'planning': '[PLAN] 規劃中'
+        };
+        return statusMap[status] || '[WIP] 進行中';
     }
 
     calculateSummary() {
@@ -109,24 +177,94 @@ class MarkdownProjectDashboard {
         
         // 更新最後更新時間
         this.updateLastUpdateTime();
+
+        // 隱藏載入狀態
+        document.getElementById('loadingSpinner').style.display = 'none';
     }
 
     renderSummaryCards() {
         const summaryCards = document.getElementById('summaryCards');
         const projects = this.data.projects;
 
-        // 計算各領域進度最落後的3個專案
-        const getBottomProjects = (metricKey, count = 3) => {
-            return projects
-                .filter(p => p.coreMetrics && p.coreMetrics[metricKey])
-                .sort((a, b) => a.coreMetrics[metricKey].progress - b.coreMetrics[metricKey].progress)
-                .slice(0, count);
-        };
+        console.log('🎨 開始渲染 Summary Cards, 專案數量:', projects.length);
 
-        const frontendBottom = getBottomProjects('frontend');
-        const backendBottom = getBottomProjects('backend');
-        const databaseBottom = getBottomProjects('database');
-        const deploymentBottom = getBottomProjects('deployment');
+        // 簡化統計，直接使用 progress 屬性
+        const totalProjects = projects.length;
+        const activeProjects = projects.filter(p => p.status.includes('進行中')).length;
+        const completedProjects = projects.filter(p => p.status.includes('已完成')).length;
+        const avgProgress = projects.length > 0 ?
+            Math.round(projects.reduce((sum, p) => sum + (p.progress || 0), 0) / projects.length) : 0;
+
+        summaryCards.innerHTML = `
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="h4 mb-0">${totalProjects}</div>
+                                <div>總專案數</div>
+                            </div>
+                            <div class="h1 opacity-50">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="h4 mb-0">${activeProjects}</div>
+                                <div>進行中專案</div>
+                            </div>
+                            <div class="h1 opacity-50">
+                                <i class="fas fa-cog fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="h4 mb-0">${completedProjects}</div>
+                                <div>已完成專案</div>
+                            </div>
+                            <div class="h1 opacity-50">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
+                <div class="card bg-warning text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="h4 mb-0">${avgProgress}%</div>
+                                <div>平均進度</div>
+                            </div>
+                            <div class="h1 opacity-50">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        summaryCards.style.display = 'flex';
+        console.log('✅ Summary Cards 渲染完成');
+    }
+        const testingBottom = getBottomProjects('testing');
         const validationBottom = getBottomProjects('validation');
         const totalProjects = projects.length;
         
@@ -313,7 +451,7 @@ class MarkdownProjectDashboard {
                                     frontend: '前端',
                                     backend: '後端',
                                     database: '資料庫',
-                                    deployment: '部署',
+                                    testing: '驗測部署',
                                     validation: '驗證'
                                 };
                                 const progressColor = metric.progress === 100 ? 'bg-success' :
@@ -575,8 +713,7 @@ class MarkdownProjectDashboard {
             return {
                 frontend: { name: '前端開發', icon: '[UI]', color: '#3b82f6', progress: 85, assignee: '前端A', tasks: ['UI 組件開發', '狀態管理', '響應式設計'] },
                 backend: { name: '後端開發', icon: '[API]', color: '#ef4444', progress: 75, assignee: '後端A', tasks: ['API 開發', '資料庫設計', '服務架構'] },
-                testing: { name: '測試驗證', icon: '[TEST]', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試'] },
-                deployment: { name: '安裝部署', icon: '[DEPLOY]', color: '#f59e0b', progress: 70, assignee: '部署A', tasks: ['環境配置', '容器化部署', '運維監控'] }
+                testing: { name: '驗測部署', icon: '[TEST]', color: '#10b981', progress: 60, assignee: '驗測A', tasks: ['功能測試', '效能測試', '安全測試', '系統部署'] },
             };
         }
 
@@ -692,8 +829,8 @@ function showProjectDetails(projectId) {
                             <ul class="list-group list-group-flush mb-3">
                                 ${project.features.completed.map(f => `
                                     <li class="list-group-item">
-                                        <strong>${f.code}</strong> - ${f.name}
-                                        ${f.details.length > 0 ? `<ul class="mt-2">${f.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
+                                        <strong>${f.code || 'N/A'}</strong> - ${f.name || '已完成功能'}
+                                        ${f.details && f.details.length > 0 ? `<ul class="mt-2">${f.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
                                     </li>
                                 `).join('')}
                             </ul>
@@ -706,8 +843,8 @@ function showProjectDetails(projectId) {
                                     <li class="list-group-item">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
-                                                <strong>${f.code}</strong> - ${f.name}
-                                                ${f.details.length > 0 ? `<ul class="mt-2">${f.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
+                                                <strong>${f.code || 'N/A'}</strong> - ${f.name || '待定義功能'}
+                                                ${f.details && f.details.length > 0 ? `<ul class="mt-2">${f.details.map(d => `<li>${d}</li>`).join('')}</ul>` : ''}
                                             </div>
                                             ${f.progress ? `<span class="badge bg-warning">${f.progress}%</span>` : ''}
                                         </div>
@@ -721,7 +858,7 @@ function showProjectDetails(projectId) {
                             <ul class="list-group list-group-flush mb-3">
                                 ${project.features.planned.map(f => `
                                     <li class="list-group-item">
-                                        <strong>${f.code}</strong> - ${f.name}
+                                        <strong>${f.code || 'N/A'}</strong> - ${f.name || '待開發功能'}
                                     </li>
                                 `).join('')}
                             </ul>

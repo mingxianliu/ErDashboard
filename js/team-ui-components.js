@@ -1470,6 +1470,96 @@ class TeamUIComponents {
             toastElement.remove();
         });
     }
+
+    // 生成新增專案模態框
+    generateAddProjectModal() {
+        return `
+            <div class="modal fade" id="addProjectModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-plus-circle me-2"></i>新增專案
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addProjectForm">
+                                <div class="row g-3">
+                                    <!-- 基本資訊 -->
+                                    <div class="col-12">
+                                        <h6 class="text-primary border-bottom pb-2">
+                                            <i class="fas fa-info-circle me-2"></i>專案基本資訊
+                                        </h6>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">專案 ID <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="projectId" required
+                                               placeholder="例：ErExample"
+                                               pattern="[A-Za-z][A-Za-z0-9]*"
+                                               title="請輸入以字母開頭的專案ID">
+                                        <small class="text-muted">唯一識別碼，建議使用英文字母開頭</small>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">專案狀態</label>
+                                        <select class="form-select" id="projectStatus">
+                                            <option value="active">進行中</option>
+                                            <option value="planning">規劃中</option>
+                                            <option value="completed">已完成</option>
+                                            <option value="suspended">暫停</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">專案名稱 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="projectName" required
+                                               placeholder="例：ErExample - 範例專案系統">
+                                        <small class="text-muted">建議格式：專案代號 - 專案描述</small>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label class="form-label">專案描述</label>
+                                        <textarea class="form-control" id="projectDescription" rows="3"
+                                                  placeholder="請描述專案的目標、功能和技術特色..."></textarea>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">開始日期</label>
+                                        <input type="date" class="form-control" id="projectStartDate"
+                                               value="${new Date().toISOString().split('T')[0]}">
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label class="form-label">預計完成日期</label>
+                                        <input type="date" class="form-control" id="projectEndDate">
+                                        <small class="text-muted">可選，用於專案排程規劃</small>
+                                    </div>
+
+                                    <!-- 提示資訊 -->
+                                    <div class="col-12">
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-lightbulb me-2"></i>
+                                            <strong>提示：</strong>專案建立後，您可以在專案管理中為其分配團隊成員和角色。
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="fas fa-times me-2"></i>取消
+                            </button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.saveNewProject()">
+                                <i class="fas fa-save me-2"></i>創建專案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
 }
 
 // 匯出給其他模組使用

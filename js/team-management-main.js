@@ -105,7 +105,17 @@ class TeamManagement {
         console.log('🎯 載入專案管理，assignments 資料:', this.dataManager.assignments);
 
         const assignments = this.dataManager.assignments;
-        let content = '<div class="row g-4">';
+
+        // 添加新增專案按鈕
+        let content = `
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0">專案管理</h5>
+                <button class="btn btn-primary" onclick="teamManagement.addNewProject()">
+                    <i class="fas fa-plus me-2"></i>新增專案
+                </button>
+            </div>
+            <div class="row g-4">
+        `;
 
         Object.values(assignments).forEach(project => {
             const overview = this.statistics.getProjectTeamOverview(project.projectId);
@@ -113,13 +123,33 @@ class TeamManagement {
                 content += `
                     <div class="col-md-6">
                         <div class="card">
-                            <div class="card-header">
-                                <h6 class="card-title mb-0">${overview.projectName}</h6>
-                                <small class="text-muted">狀態: ${overview.status}</small>
+                            <div class="card-header d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title mb-0">${overview.projectName}</h6>
+                                    <small class="text-muted">狀態: ${overview.status}</small>
+                                </div>
+                                <div class="btn-group">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="teamManagement.editProject('${project.projectId}')" title="編輯專案">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="teamManagement.deleteProject('${project.projectId}')" title="刪除專案">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                             <div class="card-body">
                                 <div class="mb-2">
                                     <strong>團隊成員:</strong> ${overview.totalMembers} 人
+                                </div>
+                                <div class="mb-2">
+                                    <strong>專案進度:</strong>
+                                    <div class="d-flex align-items-center">
+                                        <input type="range" class="form-range me-2" min="0" max="100"
+                                               value="${project.progress || 0}"
+                                               id="progress-${project.projectId}"
+                                               onchange="teamManagement.updateProjectProgress('${project.projectId}', this.value)">
+                                        <span class="badge bg-info" id="progress-value-${project.projectId}">${project.progress || 0}%</span>
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <strong>角色分配:</strong>
@@ -569,7 +599,8 @@ class TeamManagement {
                                         <option value="">請選擇角色...</option>
                                         <option value="frontend">前端開發</option>
                                         <option value="backend">後端開發</option>
-                                        <option value="testing">測試驗證</option>
+                                        <option value="fullstack">全端開發</option>
+                                        <option value="testing">驗測部署</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -715,7 +746,8 @@ class TeamManagement {
                                         <option value="">請選擇新角色...</option>
                                         <option value="frontend" ${currentRole === 'frontend' ? 'disabled' : ''}>前端開發</option>
                                         <option value="backend" ${currentRole === 'backend' ? 'disabled' : ''}>後端開發</option>
-                                        <option value="testing" ${currentRole === 'testing' ? 'disabled' : ''}>測試驗證</option>
+                                        <option value="fullstack" ${currentRole === 'fullstack' ? 'disabled' : ''}>全端開發</option>
+                                        <option value="testing" ${currentRole === 'testing' ? 'disabled' : ''}>驗測部署</option>
                                     </select>
                                 </div>
                             </form>
@@ -854,6 +886,412 @@ class TeamManagement {
             console.error('儲存失敗:', error);
             this.showToast('儲存失敗', '無法儲存任務變更', 'error');
         });
+    }
+
+    // ==================== 專案管理相關功能 ====================
+
+    // 新增專案
+    addNewProject() {
+        // 直接定義 modal HTML 避免依賴問題
+        const modalContent = `
+            <div class="modal fade" id="addProjectModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-plus-circle me-2"></i>新增專案
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addProjectForm" class="needs-validation" novalidate>
+                                <div class="mb-3">
+                                    <label for="projectId" class="form-label">專案 ID *</label>
+                                    <input type="text" class="form-control" id="projectId" required
+                                           placeholder="例如: ErCore, ErNexus" pattern="[A-Za-z][A-Za-z0-9]*">
+                                    <div class="invalid-feedback">請輸入有效的專案 ID（字母開頭，僅包含字母和數字）</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="projectName" class="form-label">專案名稱 *</label>
+                                    <input type="text" class="form-control" id="projectName" required
+                                           placeholder="例如: ErCore - 企業級 AI 統一平台">
+                                    <div class="invalid-feedback">請輸入專案名稱</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="projectStatus" class="form-label">初始狀態</label>
+                                    <select class="form-select" id="projectStatus">
+                                        <option value="active" selected>進行中</option>
+                                        <option value="planning">規劃中</option>
+                                        <option value="paused">暫停</option>
+                                    </select>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    專案建立後，您可以在專案管理頁面中分配成員和設定任務。
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.saveNewProject()">
+                                <i class="fas fa-save me-2"></i>建立專案
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的模態框
+        const existingModal = document.getElementById('addProjectModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加新的模態框
+        document.body.insertAdjacentHTML('beforeend', modalContent);
+
+        // 顯示模態框
+        const modal = new bootstrap.Modal(document.getElementById('addProjectModal'));
+        modal.show();
+    }
+
+    // 儲存新專案
+    saveNewProject() {
+        try {
+            console.log('🔵 開始儲存新專案');
+
+            // 收集表單資料
+            const projectData = {
+                projectId: document.getElementById('projectId')?.value?.trim() || '',
+                projectName: document.getElementById('projectName')?.value?.trim() || '',
+                description: document.getElementById('projectDescription')?.value?.trim() || '',
+                status: document.getElementById('projectStatus')?.value || 'active',
+                startDate: document.getElementById('projectStartDate')?.value || new Date().toISOString().split('T')[0]
+            };
+
+            console.log('🔵 收集到的專案資料:', projectData);
+
+            // 驗證必填欄位
+            if (!projectData.projectId) {
+                this.showToast('驗證錯誤', '請輸入專案 ID', 'error');
+                return;
+            }
+
+            if (!projectData.projectName) {
+                this.showToast('驗證錯誤', '請輸入專案名稱', 'error');
+                return;
+            }
+
+            // 檢查專案 ID 是否已存在
+            const existingProjects = this.dataManager.getAllAssignments();
+            if (existingProjects[projectData.projectId]) {
+                this.showToast('驗證錯誤', `專案 ID "${projectData.projectId}" 已存在`, 'error');
+                return;
+            }
+
+            // 創建新專案
+            const newProject = {
+                projectId: projectData.projectId,
+                projectName: projectData.projectName,
+                description: projectData.description,
+                status: projectData.status,
+                startDate: projectData.startDate,
+                lastUpdated: new Date().toISOString().split('T')[0],
+                members: {}
+            };
+
+            console.log('🔵 新專案物件:', newProject);
+
+            // 添加到 dataManager
+            this.dataManager.assignments[projectData.projectId] = newProject;
+
+            // 儲存到本地和 Google Drive
+            this.dataManager.saveLocalChanges().then(async () => {
+                console.log('☁️ 專案資料已同步');
+
+                // 創建對應的 markdown 檔案（可選）
+                try {
+                    await this.createProjectMarkdownFile(projectData);
+                    console.log('📝 專案 markdown 檔案已創建');
+                } catch (markdownError) {
+                    console.warn('⚠️ markdown 檔案創建失敗，但專案已成功創建:', markdownError.message);
+                    // 提示用戶手動創建
+                    this.showToast('提醒', `專案已創建，請手動創建 ${projectData.projectId}.md 檔案`, 'warning');
+                }
+
+                this.showToast('創建成功', `專案 "${projectData.projectName}" 已創建`, 'success');
+
+                // 關閉模態框
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addProjectModal'));
+                if (modal) {
+                    modal.hide();
+                }
+
+                // 重新載入專案管理頁面
+                this.loadProjectManagement();
+            }).catch(error => {
+                console.error('❌ 儲存失敗:', error);
+                this.showToast('儲存失敗', error.message, 'error');
+            });
+
+        } catch (error) {
+            console.error('❌ 創建專案失敗:', error);
+            this.showToast('創建失敗', error.message, 'error');
+        }
+    }
+
+    // 創建專案 markdown 檔案
+    async createProjectMarkdownFile(projectData) {
+        const markdownContent = `# ${projectData.projectName}
+
+## 專案概覽
+- **狀態**: ${projectData.status}
+- **進度**: 0%
+- **開始日期**: ${projectData.startDate}
+- **描述**: ${projectData.description || '暫無描述'}
+
+## 功能清單
+
+### 核心功能
+- [ ] 功能規劃
+- [ ] 需求分析
+- [ ] 架構設計
+
+### 開發階段
+- [ ] 前端開發
+- [ ] 後端開發
+- [ ] 資料庫設計
+
+### 測試階段
+- [ ] 單元測試
+- [ ] 整合測試
+- [ ] 用戶測試
+
+## 技術棧
+- 待定
+
+## 里程碑
+1. **階段1**: 需求分析與規劃
+2. **階段2**: 核心功能開發
+3. **階段3**: 測試與優化
+4. **階段4**: 正式發布
+
+## 團隊成員
+- 待分配
+
+## 備註
+專案於 ${new Date().toLocaleDateString('zh-TW')} 創建
+`;
+
+        try {
+            // 嘗試使用 Google Drive API 創建檔案
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                const fileName = `${projectData.projectId}.md`;
+                await window.googleDriveAPI.createFile(fileName, markdownContent);
+                console.log(`✅ 已在 Google Drive 創建 ${fileName}`);
+            } else {
+                // 如果 Google Drive 不可用，創建本地檔案
+                console.log('📝 Google Drive 未認證，嘗試創建本地檔案');
+                await this.createLocalMarkdownFile(projectData.projectId, markdownContent);
+            }
+        } catch (error) {
+            console.error('❌ 創建 markdown 檔案失敗:', error);
+            // 嘗試本地備用方案
+            try {
+                await this.createLocalMarkdownFile(projectData.projectId, markdownContent);
+                console.log('✅ 已使用本地備用方案創建檔案');
+            } catch (localError) {
+                console.warn('⚠️ 本地檔案創建也失敗，但專案已成功創建');
+                throw error;
+            }
+        }
+    }
+
+    // 創建本地 markdown 檔案（備用方案）
+    async createLocalMarkdownFile(projectId, content) {
+        // 瀏覽器無法直接寫入本地檔案，但可以提供下載
+        const blob = new Blob([content], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+
+        // 創建下載連結
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${projectId}.md`;
+        a.style.display = 'none';
+
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        URL.revokeObjectURL(url);
+
+        this.showToast('檔案下載', `請將下載的 ${projectId}.md 檔案放入 projects/ 資料夾`, 'info');
+    }
+
+    // 編輯專案
+    editProject(projectId) {
+        const project = this.dataManager.getAllAssignments()[projectId];
+        if (!project) {
+            this.showToast('錯誤', '找不到指定專案', 'error');
+            return;
+        }
+
+        // 創建編輯專案的 modal
+        const modalHtml = `
+            <div class="modal fade" id="editProjectModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-primary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>編輯專案
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editProjectForm">
+                                <div class="mb-3">
+                                    <label for="editProjectId" class="form-label">專案 ID</label>
+                                    <input type="text" class="form-control" id="editProjectId" value="${project.projectId}" readonly>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editProjectName" class="form-label">專案名稱</label>
+                                    <input type="text" class="form-control" id="editProjectName" value="${project.projectName}" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="editProjectStatus" class="form-label">專案狀態</label>
+                                    <select class="form-select" id="editProjectStatus" required>
+                                        <option value="active" ${project.status === 'active' ? 'selected' : ''}>進行中</option>
+                                        <option value="completed" ${project.status === 'completed' ? 'selected' : ''}>已完成</option>
+                                        <option value="paused" ${project.status === 'paused' ? 'selected' : ''}>暫停</option>
+                                        <option value="cancelled" ${project.status === 'cancelled' ? 'selected' : ''}>已取消</option>
+                                    </select>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.saveEditProject('${projectId}')">儲存變更</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 modal
+        const existingModal = document.getElementById('editProjectModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的 modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('editProjectModal'));
+        modal.show();
+    }
+
+    // 儲存編輯專案
+    saveEditProject(projectId) {
+        const projectName = document.getElementById('editProjectName').value.trim();
+        const projectStatus = document.getElementById('editProjectStatus').value;
+
+        if (!projectName) {
+            this.showToast('輸入錯誤', '請輸入專案名稱', 'error');
+            return;
+        }
+
+        // 更新專案資料
+        const assignments = this.dataManager.getAllAssignments();
+        assignments[projectId].projectName = projectName;
+        assignments[projectId].status = projectStatus;
+        assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+        // 儲存變更
+        this.dataManager.saveLocalChanges().then(() => {
+            this.showToast('更新成功', '專案資料已更新', 'success');
+
+            // 關閉 modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editProjectModal'));
+            if (modal) {
+                modal.hide();
+            }
+
+            // 重新渲染專案列表
+            this.renderProjectManagement();
+        }).catch(error => {
+            this.showToast('儲存失敗', `無法儲存專案變更: ${error.message}`, 'error');
+        });
+    }
+
+    // 刪除專案
+    // 更新專案進度
+    updateProjectProgress(projectId, progress) {
+        try {
+            const project = this.dataManager.assignments[projectId];
+            if (!project) {
+                this.showToast('錯誤', '找不到指定專案', 'error');
+                return;
+            }
+
+            // 更新進度值
+            project.progress = parseInt(progress);
+            project.lastUpdated = new Date().toISOString().split('T')[0];
+
+            // 更新 UI 顯示
+            const progressValueElement = document.getElementById(`progress-value-${projectId}`);
+            if (progressValueElement) {
+                progressValueElement.textContent = `${progress}%`;
+            }
+
+            // 儲存變更
+            this.dataManager.saveLocalChanges().then(() => {
+                this.showToast('更新成功', `專案進度已更新為 ${progress}%`, 'success');
+            }).catch(error => {
+                console.error('❌ 儲存失敗:', error);
+                this.showToast('更新失敗', error.message, 'error');
+            });
+
+        } catch (error) {
+            console.error('❌ 更新專案進度失敗:', error);
+            this.showToast('更新失敗', error.message, 'error');
+        }
+    }
+
+    deleteProject(projectId) {
+        const project = this.dataManager.getAllAssignments()[projectId];
+        if (!project) {
+            this.showToast('錯誤', '找不到指定專案', 'error');
+            return;
+        }
+
+        const memberCount = Object.keys(project.members || {}).length;
+        let confirmMessage = `確定要刪除專案「${project.projectName}」嗎？`;
+
+        if (memberCount > 0) {
+            confirmMessage += `\n\n注意：此專案目前有 ${memberCount} 位成員參與，刪除後將移除所有成員的專案分配。`;
+        }
+
+        if (confirm(confirmMessage)) {
+            try {
+                // 從 dataManager 中移除專案
+                delete this.dataManager.assignments[projectId];
+
+                // 儲存變更
+                this.dataManager.saveLocalChanges().then(() => {
+                    this.showToast('刪除成功', `專案「${project.projectName}」已刪除`, 'success');
+
+                    // 重新載入專案管理頁面
+                    this.loadProjectManagement();
+                }).catch(error => {
+                    console.error('❌ 儲存失敗:', error);
+                    this.showToast('刪除失敗', error.message, 'error');
+                });
+
+            } catch (error) {
+                console.error('❌ 刪除專案失敗:', error);
+                this.showToast('刪除失敗', error.message, 'error');
+            }
+        }
     }
 }
 

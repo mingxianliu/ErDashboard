@@ -32,17 +32,17 @@
       "color": "#ef4444",
       "description": "負責伺服器邏輯、API 開發與資料庫設計"
     },
+    "fullstack": {
+      "name": "全端開發",
+      "icon": "[FULL]",
+      "color": "#8b5cf6",
+      "description": "負責前後端整合開發與系統架構設計"
+    },
     "testing": {
-      "name": "測試驗證",
+      "name": "驗測部署",
       "icon": "[TEST]",
       "color": "#10b981",
-      "description": "負責功能測試、品質保證與驗證報告"
-    },
-    "deployment": {
-      "name": "安裝部署",
-      "icon": "[DEPLOY]",
-      "color": "#f59e0b",
-      "description": "負責系統安裝、部署配置與運維管理"
+      "description": "負責功能測試、品質保證、驗證報告與系統部署"
     }
   },
   "groups": {
