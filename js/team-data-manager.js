@@ -161,8 +161,19 @@ class TeamDataManager {
             let data = null;
 
             // 優先嘗試從 Google Drive 載入
-            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
-                try {
+            if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
+                // 如果未登入，嘗試自動登入
+                if (!window.googleDriveAPI.isAuthenticated) {
+                    console.log('🔐 Google Drive 未登入，嘗試自動登入...');
+                    const loginSuccess = await window.googleDriveAPI.signIn();
+                    if (!loginSuccess) {
+                        console.log('❌ Google Drive 自動登入失敗，使用本地檔案');
+                    }
+                }
+
+                // 如果已登入，載入雲端資料
+                if (window.googleDriveAPI.isAuthenticated) {
+                    try {
                     console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
                     const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
                     if (driveContent) {
@@ -184,8 +195,9 @@ class TeamDataManager {
                             data = null; // 強制使用本地檔案
                         }
                     }
-                } catch (driveError) {
-                    console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                    } catch (driveError) {
+                        console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                    }
                 }
             }
 
