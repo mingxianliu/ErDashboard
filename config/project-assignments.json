@@ -59,9 +59,36 @@
     },
     "iFMS-frontend": {
       "projectId": "iFMS-frontend",
-      "projectName": "iFMS-frontend - 智能檔案管理前端",
-      "progress": 10,
-      "members": {},
+      "projectName": "iFMS-Frontend - 智能檔案管理前端",
+      "progress": 83,
+      "members": {
+        "A-CS": { "memberId": "A-CS", "role": "frontend", "assignedDate": "2025-09-19", "tasks": ["前端介面設計", "用戶體驗優化", "響應式布局"] },
+        "B-VC": { "memberId": "B-VC", "role": "testing", "assignedDate": "2025-09-19", "tasks": ["功能測試", "用戶測試", "性能驗證"] }
+      },
+      "lastUpdated": "2025-09-19",
+      "status": "active"
+    },
+    "EZOOM": {
+      "projectId": "EZOOM",
+      "projectName": "EZOOM - 企業視訊會議平台",
+      "progress": 0,
+      "members": {
+        "B-CC": { "memberId": "B-CC", "role": "frontend", "assignedDate": "2025-09-19", "tasks": ["視訊介面開發", "會議室功能", "即時通訊"] },
+        "C-CI": { "memberId": "C-CI", "role": "backend", "assignedDate": "2025-09-19", "tasks": ["視訊串流服務", "會議管理API", "用戶認證"] },
+        "A-CS": { "memberId": "A-CS", "role": "testing", "assignedDate": "2025-09-19", "tasks": ["視訊品質測試", "並發測試", "穩定性驗證"] }
+      },
+      "lastUpdated": "2025-09-19",
+      "status": "active"
+    },
+    "智慧監視系統": {
+      "projectId": "智慧監視系統",
+      "projectName": "智慧監視系統 - AI驅動監控平台",
+      "progress": 0,
+      "members": {
+        "C-CA": { "memberId": "C-CA", "role": "frontend", "assignedDate": "2025-09-19", "tasks": ["監控儀表板", "實時畫面顯示", "警報通知界面"] },
+        "B-CA": { "memberId": "B-CA", "role": "backend", "assignedDate": "2025-09-19", "tasks": ["AI識別引擎", "影像處理API", "資料分析服務"] },
+        "A-CS": { "memberId": "A-CS", "role": "testing", "assignedDate": "2025-09-19", "tasks": ["AI準確度測試", "系統穩定性", "效能優化"] }
+      },
       "lastUpdated": "2025-09-19",
       "status": "active"
     }
@@ -73,10 +100,10 @@
     "maxMembersPerRole": 3
   },
   "statistics": {
-    "totalAssignments": 12,
-    "activeProjects": 3,
-    "completedProjects": 1,
-    "membersInUse": 12,
-    "availableMembers": 6
+    "totalAssignments": 18,
+    "activeProjects": 8,
+    "completedProjects": 0,
+    "membersInUse": 15,
+    "availableMembers": 3
   }
 }
