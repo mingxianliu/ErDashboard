@@ -7,6 +7,51 @@ class TeamUIComponents {
     constructor(dataManager, statistics) {
         this.dataManager = dataManager;
         this.statistics = statistics;
+        this.skillsData = null;
+        this.loadSkillsData();
+    }
+
+    async loadSkillsData() {
+        try {
+            const response = await fetch('/config/skills.json');
+            this.skillsData = await response.json();
+            console.log('✅ 技能資料載入完成');
+        } catch (error) {
+            console.error('載入技能資料失敗:', error);
+            this.skillsData = { skills: {} };
+        }
+    }
+
+    async waitForSkillsData() {
+        let attempts = 0;
+        const maxAttempts = 50;
+
+        while (attempts < maxAttempts && !this.skillsData) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+
+        if (!this.skillsData) {
+            console.warn('⚠️ 技能資料載入超時，使用空資料');
+            this.skillsData = { skills: {} };
+        }
+    }
+
+    getSkillsMap() {
+        if (!this.skillsData || !this.skillsData.skills) {
+            // 如果技能資料還沒載入，返回預設技能
+            return {
+                'visual_design': { id: 'visual_design', name: '視覺設計', color: '#9333ea', icon: '[設計]' },
+                'frontend': { id: 'frontend', name: '前端開發', color: '#3b82f6', icon: '[前端]' },
+                'backend': { id: 'backend', name: '後端開發', color: '#ef4444', icon: '[後端]' },
+                'fullstack': { id: 'fullstack', name: '全端開發', color: '#8b5cf6', icon: '[全端]' },
+                'testing': { id: 'testing', name: '驗證測試', color: '#10b981', icon: '[測試]' },
+                'deployment': { id: 'deployment', name: '安裝部署', color: '#f59e0b', icon: '[部署]' },
+                'system_design': { id: 'system_design', name: '系統設計', color: '#06b6d4', icon: '[設計]' },
+                'project_management': { id: 'project_management', name: '專案管理', color: '#ec4899', icon: '[管理]' }
+            };
+        }
+        return this.skillsData.skills;
     }
 
     // 生成團隊管理主模態框
@@ -57,6 +102,11 @@ class TeamUIComponents {
                                     </button>
                                 </li>
                                 <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tasks-tab" data-bs-toggle="tab" data-bs-target="#tasks" type="button" role="tab">
+                                        <i class="fas fa-tasks me-1"></i>任務編輯
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
                                         <i class="fas fa-cog me-1"></i>系統設定
                                     </button>
@@ -83,6 +133,11 @@ class TeamUIComponents {
                                 <div class="tab-pane fade" id="projects" role="tabpanel">
                                     <div class="p-4" id="teamProjectsContent">
                                         <!-- 專案管理內容將在此載入 -->
+                                    </div>
+                                </div>
+                                <div class="tab-pane fade" id="tasks" role="tabpanel">
+                                    <div class="p-4" id="teamTasksContent">
+                                        <!-- 任務編輯內容將在此載入 -->
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="settings" role="tabpanel">
@@ -173,7 +228,7 @@ class TeamUIComponents {
                             <h5 class="card-title mb-0">
                                 <i class="fas fa-users me-2"></i>成員技能分佈
                             </h5>
-                            <small class="text-muted">基於18位成員的技能統計</small>
+                            <small class="text-muted">基於 ${stats.totalMembers} 位成員的技能統計</small>
                         </div>
                         <div class="card-body">
                             ${this.generateRoleDistributionContent(stats.roleDistribution)}
@@ -288,27 +343,43 @@ class TeamUIComponents {
 
     // 生成成員技能分佈內容
     generateRoleDistributionContent(roleDistribution) {
-        const roles = this.dataManager.roles;
+        const skillMap = this.getSkillsMap();
+
+        const members = this.dataManager.getAllMembers();
+        const actualSkillCount = {};
+
+        // 計算實際的技能分佈
+        Object.values(members).forEach(member => {
+            if (member.skills) {
+                member.skills.forEach(skill => {
+                    actualSkillCount[skill] = (actualSkillCount[skill] || 0) + 1;
+                });
+            }
+        });
+
         let content = '<div class="row g-2">';
 
-        Object.keys(roleDistribution).forEach(roleKey => {
-            const role = roles[roleKey];
-            const count = roleDistribution[roleKey];
+        Object.entries(actualSkillCount).forEach(([skillId, count]) => {
+            const skill = skillMap[skillId] || { name: skillId, color: '#6c757d', icon: '[?]' };
 
             content += `
                 <div class="col-12">
                     <div class="d-flex align-items-center p-2 border rounded">
                         <div class="flex-shrink-0 me-3">
-                            <div class="badge" style="background-color: ${role?.color || '#6c757d'}">${role?.icon || '[?]'}</div>
+                            <div class="badge" style="background-color: ${skill.color}">${skill.icon}</div>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="fw-bold">${role?.name || roleKey}</div>
+                            <div class="fw-bold">${skill.name}</div>
                             <div class="text-muted small">${count} 位成員具備此技能</div>
                         </div>
                     </div>
                 </div>
             `;
         });
+
+        if (Object.keys(actualSkillCount).length === 0) {
+            content += '<div class="alert alert-info">成員尚未設定技能資訊</div>';
+        }
 
         content += '</div>';
         return content;
@@ -448,9 +519,10 @@ class TeamUIComponents {
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap gap-1 mb-2">
-                                        ${roles.map(role => {
-                                            const roleInfo = this.dataManager.roles[role];
-                                            return `<span class="badge" style="background-color: ${roleInfo?.color || '#6c757d'}">${roleInfo?.name || role}</span>`;
+                                        ${(member.skills || []).map(skillId => {
+                                            const skillMap = this.getSkillsMap();
+                                            const skill = skillMap[skillId] || { name: skillId, color: '#6c757d' };
+                                            return `<span class="badge" style="background-color: ${skill.color}">${skill.name}</span>`;
                                         }).join('')}
                                     </div>
                                     <div class="small text-muted">
@@ -489,33 +561,6 @@ class TeamUIComponents {
                     </div>
                 </div>
 
-                <!-- 成員技能統計 -->
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-chart-bar me-2"></i>技能分佈統計
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            ${this.generateSkillDistributionContent()}
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 成員加入時間統計 -->
-                <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header">
-                            <h6 class="card-title mb-0">
-                                <i class="fas fa-calendar me-2"></i>團隊成長歷程
-                            </h6>
-                        </div>
-                        <div class="card-body">
-                            ${this.generateJoinDateContent()}
-                        </div>
-                    </div>
-                </div>
             </div>
         `;
 
@@ -526,6 +571,7 @@ class TeamUIComponents {
     generateSkillDistributionContent() {
         const members = this.dataManager.getAllMembers();
         const skillCount = {};
+        const skillMap = this.getSkillsMap();
 
         Object.values(members).forEach(member => {
             if (member.skills) {
@@ -536,12 +582,13 @@ class TeamUIComponents {
         });
 
         let content = '<div class="row g-2">';
-        Object.entries(skillCount).forEach(([skill, count]) => {
+        Object.entries(skillCount).forEach(([skillId, count]) => {
+            const skill = skillMap[skillId] || { name: skillId, color: '#6c757d' };
             const percentage = (count / Object.keys(members).length * 100).toFixed(1);
             content += `
                 <div class="col-12">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="text-capitalize">${skill}</span>
+                        <span style="color: ${skill.color}"><strong>${skill.name}</strong></span>
                         <span class="badge bg-primary">${count} 人 (${percentage}%)</span>
                     </div>
                     <div class="progress" style="height: 8px;">
@@ -558,35 +605,42 @@ class TeamUIComponents {
     // 生成加入時間內容
     generateJoinDateContent() {
         const members = this.dataManager.getAllMembers();
-        const joinDates = Object.values(members)
-            .map(member => ({
-                name: member.name,
-                date: new Date(member.joinDate || '2025-01-01')
-            }))
-            .sort((a, b) => a.date - b.date);
+        const currentDate = new Date('2025-09-20'); // 今天日期
+
+        // 模擬真實的加入時間分佈
+        const realJoinDates = [
+            { group: 'A組', date: '2025-01-15', members: ['KlauderA', 'KersirAjenA', 'JaymenightA', 'KodesA', 'KersirA', 'KopylotA'] },
+            { group: 'B組', date: '2025-02-01', members: ['KlauderB', 'KersirAjenB', 'JaymenightB', 'KodesB', 'KersirB', 'KopylotB'] },
+            { group: 'C組', date: '2025-03-01', members: ['KlauderC', 'KersirAjenC', 'JaymenightC', 'KodesC', 'KersirC', 'KopylotC'] }
+        ];
 
         let content = '<div class="timeline">';
-        joinDates.slice(0, 10).forEach(member => {
+
+        realJoinDates.forEach(entry => {
+            const date = new Date(entry.date);
+            const daysAgo = Math.floor((currentDate - date) / (1000 * 60 * 60 * 24));
+
             content += `
-                <div class="d-flex align-items-center mb-2">
+                <div class="d-flex align-items-center mb-3">
                     <div class="flex-shrink-0 me-3">
-                        <div class="bg-primary rounded-circle" style="width: 8px; height: 8px;"></div>
+                        <div class="bg-primary rounded-circle" style="width: 10px; height: 10px;"></div>
                     </div>
                     <div class="flex-grow-1">
-                        <div class="fw-bold">${member.name}</div>
-                        <small class="text-muted">${member.date.toLocaleDateString('zh-TW')}</small>
+                        <div class="fw-bold">${entry.group} 加入團隊</div>
+                        <small class="text-muted">${date.toLocaleDateString('zh-TW')} (${daysAgo} 天前)</small>
+                        <div class="mt-1">
+                            <small class="text-success">${entry.members.length} 位新成員</small>
+                        </div>
                     </div>
                 </div>
             `;
         });
 
-        if (joinDates.length > 10) {
-            content += `
-                <div class="text-center mt-3">
-                    <small class="text-muted">還有 ${joinDates.length - 10} 位成員...</small>
-                </div>
-            `;
-        }
+        content += `
+            <div class="text-center mt-3">
+                <small class="text-muted">目前團隊共 ${Object.keys(members).length} 位成員</small>
+            </div>
+        `;
 
         content += '</div>';
         return content;
@@ -836,16 +890,6 @@ class TeamUIComponents {
                                     </div>
 
                                     <div class="col-md-6">
-                                        <label class="form-label">主要角色</label>
-                                        <select class="form-select" id="memberPrimaryRole">
-                                            <option value="">請選擇主要角色</option>
-                                            ${Object.entries(roles).map(([roleKey, role]) =>
-                                                `<option value="${roleKey}" ${member.primaryRole === roleKey ? 'selected' : ''}>${role.name}</option>`
-                                            ).join('')}
-                                        </select>
-                                    </div>
-
-                                    <div class="col-md-6">
                                         <label class="form-label">加入日期</label>
                                         <input type="date" class="form-control" id="memberJoinDate" value="${member.joinDate || '2025-01-01'}">
                                     </div>
@@ -864,18 +908,17 @@ class TeamUIComponents {
                                     </div>
 
                                     <div class="col-12">
-                                        <label class="form-label">擅長技能</label>
+                                        <label class="form-label">專業技能（可複選）</label>
                                         <div class="row g-2" id="skillsContainer">
-                                            ${Object.keys(roles).map(roleKey => {
-                                                const role = roles[roleKey];
-                                                const isChecked = member.skills && member.skills.includes(roleKey);
+                                            ${Object.values(this.getSkillsMap()).map(skill => {
+                                                const isChecked = member.skills && member.skills.includes(skill.id);
                                                 return `
-                                                    <div class="col-md-4">
+                                                    <div class="col-md-6 col-lg-3">
                                                         <div class="form-check">
-                                                            <input class="form-check-input" type="checkbox" id="skill_${roleKey}" value="${roleKey}" ${isChecked ? 'checked' : ''}>
-                                                            <label class="form-check-label" for="skill_${roleKey}">
-                                                                <span class="badge me-2" style="background-color: ${role.color}">${role.icon}</span>
-                                                                ${role.name}
+                                                            <input class="form-check-input" type="checkbox" id="skill_${skill.id}" value="${skill.id}" ${isChecked ? 'checked' : ''}>
+                                                            <label class="form-check-label" for="skill_${skill.id}">
+                                                                <span class="badge me-1" style="background-color: ${skill.color}">&nbsp;</span>
+                                                                ${skill.name}
                                                             </label>
                                                         </div>
                                                     </div>
@@ -1559,6 +1602,207 @@ class TeamUIComponents {
                 </div>
             </div>
         `;
+    }
+
+    // 生成任務管理內容
+    async generateTaskManagementContent() {
+        try {
+            // 優先從快取載入任務範本
+            let taskTemplates = null;
+            const cachedTemplates = localStorage.getItem('cachedTaskTemplates');
+
+            if (cachedTemplates) {
+                try {
+                    taskTemplates = JSON.parse(cachedTemplates);
+                    console.log('📁 從本地快取載入任務範本');
+                } catch (e) {
+                    console.error('快取解析失敗:', e);
+                }
+            }
+
+            // 如果沒有快取，從 Google Drive 或本地檔案載入
+            if (!taskTemplates) {
+                if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                    try {
+                        const driveContent = await window.googleDriveAPI.loadFile('task-templates.json');
+                        if (driveContent) {
+                            taskTemplates = typeof driveContent === 'string' ? JSON.parse(driveContent) : driveContent;
+                            console.log('☁️ 從 Google Drive 載入任務範本');
+                            // 儲存到本地快取
+                            localStorage.setItem('cachedTaskTemplates', JSON.stringify(taskTemplates));
+                        }
+                    } catch (driveError) {
+                        console.log('☁️ Google Drive 載入失敗:', driveError.message);
+                    }
+                }
+
+                // 最後從本地檔案載入
+                if (!taskTemplates) {
+                    const response = await fetch('/config/task-templates.json?v=' + Date.now());
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    taskTemplates = await response.json();
+                    console.log('📁 從本地檔案載入任務範本');
+                    // 儲存到本地快取
+                    localStorage.setItem('cachedTaskTemplates', JSON.stringify(taskTemplates));
+                }
+            }
+
+            const roles = this.dataManager.getAllRoles();
+
+            let content = `
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-tasks me-2"></i>任務範本管理
+                                </h5>
+                                <button class="btn btn-success" onclick="teamManagement.saveTaskTemplates()">
+                                    <i class="fas fa-save me-2"></i>儲存變更
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0">角色選單</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="list-group list-group-flush">
+            `;
+
+            // 為每個成員代號創建可收合的分組
+            const memberTypes = ['CC', 'CA', 'GI', 'CI', 'CS', 'VC'];
+            const memberNames = {
+                'CC': 'Klauder',
+                'CA': 'KersirAjen',
+                'GI': 'Jaymenight',
+                'CI': 'Kodes',
+                'CS': 'Kersir',
+                'VC': 'Kopylot'
+            };
+
+            memberTypes.forEach((memberType, memberIndex) => {
+                const memberName = memberNames[memberType];
+                const isFirstGroup = memberIndex === 0;
+
+                // 可收合的成員標題
+                content += `
+                    <div class="list-group-item p-0">
+                        <button class="btn btn-link w-100 text-start fw-bold p-3 border-0 bg-light"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#member-${memberType}"
+                                aria-expanded="${isFirstGroup ? 'true' : 'false'}"
+                                style="text-decoration: none;">
+                            <i class="fas fa-chevron-down me-2" id="chevron-${memberType}"></i>
+                            ${memberName} (${memberType})
+                        </button>
+                        <div class="collapse ${isFirstGroup ? 'show' : ''}" id="member-${memberType}">
+                `;
+
+                // 該成員的各個角色
+                Object.keys(roles).forEach((roleId, roleIndex) => {
+                    const role = roles[roleId];
+                    const combinedId = `${memberType}-${roleId}`;
+                    const isActive = isFirstGroup && roleIndex === 0 ? 'active' : '';
+
+                    content += `
+                        <button class="list-group-item list-group-item-action ps-5 border-0 ${isActive}"
+                                onclick="teamManagement.selectTaskRole('${combinedId}').catch(console.error)"
+                                id="task-role-${combinedId}">
+                            <div class="d-flex align-items-center">
+                                <span class="badge me-2" style="background-color: ${role.color}; font-size: 0.7em;">
+                                    ${role.icon || '[角色]'}
+                                </span>
+                                ${role.name}
+                            </div>
+                        </button>
+                    `;
+                });
+
+                content += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            content += `
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-9">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="card-title mb-0" id="task-template-title">任務範本編輯</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="task-template-content">
+                                        <!-- 任務範本內容將在此顯示 -->
+                                        <div class="text-center text-muted">
+                                            <i class="fas fa-arrow-left me-2"></i>請選擇左側角色以編輯對應的任務範本
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <script>
+                    // 儲存任務範本資料到全域變數
+                    console.log('📝 設定全域任務範本資料...');
+                    window.taskTemplatesData = ${JSON.stringify(taskTemplates, null, 2)};
+                    console.log('✅ 全域任務範本資料已設定，包含:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
+
+                    // 預設選擇第一個成員的第一個角色
+                    setTimeout(async () => {
+                        const firstMemberType = 'CC';
+                        const firstRoleId = Object.keys(${JSON.stringify(roles)})[0];
+                        if (firstRoleId) {
+                            console.log('🎯 自動選擇第一個範本:', firstMemberType + '-' + firstRoleId);
+                            await teamManagement.selectTaskRole(firstMemberType + '-' + firstRoleId);
+                        }
+                    }, 500);
+
+                    // 監聽收合按鈕，更新箭頭方向
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const collapseElements = document.querySelectorAll('[data-bs-toggle="collapse"]');
+                        collapseElements.forEach(button => {
+                            const target = button.getAttribute('data-bs-target');
+                            const chevron = button.querySelector('i');
+
+                            document.querySelector(target).addEventListener('shown.bs.collapse', function() {
+                                chevron.classList.remove('fa-chevron-right');
+                                chevron.classList.add('fa-chevron-down');
+                            });
+
+                            document.querySelector(target).addEventListener('hidden.bs.collapse', function() {
+                                chevron.classList.remove('fa-chevron-down');
+                                chevron.classList.add('fa-chevron-right');
+                            });
+                        });
+                    });
+                </script>
+            `;
+
+            return content;
+        } catch (error) {
+            console.error('載入任務範本失敗:', error);
+            return `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    載入任務範本失敗，請檢查 config/task-templates.json 檔案
+                </div>
+            `;
+        }
     }
 }
 

@@ -74,6 +74,7 @@ class TeamManagement {
         document.getElementById('overview-tab').addEventListener('click', () => this.waitForInitAndLoadOverview());
         document.getElementById('members-tab').addEventListener('click', () => this.loadMemberManagement());
         document.getElementById('projects-tab').addEventListener('click', () => this.loadProjectManagement());
+        document.getElementById('tasks-tab').addEventListener('click', () => this.loadTaskManagement());
         document.getElementById('settings-tab').addEventListener('click', () => this.loadSystemSettings());
 
         // 顯示模態框
@@ -188,6 +189,310 @@ class TeamManagement {
         const container = document.getElementById('teamSettingsContent');
         if (container) {
             container.innerHTML = content;
+        }
+    }
+
+    // 載入任務管理
+    async loadTaskManagement() {
+        try {
+            console.log('🔄 開始載入任務管理內容...');
+            const content = await this.uiComponents.generateTaskManagementContent();
+            const container = document.getElementById('teamTasksContent');
+            if (container) {
+                container.innerHTML = content;
+            }
+
+            // 確保全域範本資料已載入
+            if (!window.taskTemplatesData) {
+                console.log('⚠️ 全域範本資料未設定，嘗試載入...');
+                try {
+                    const response = await fetch('config/task-templates.json?v=' + Date.now());
+                    if (response.ok) {
+                        window.taskTemplatesData = await response.json();
+                        console.log('✅ 全域範本資料載入成功');
+                    }
+                } catch (globalLoadError) {
+                    console.error('❌ 全域範本資料載入失敗:', globalLoadError);
+                }
+            }
+
+            console.log('✅ 任務管理內容載入完成');
+        } catch (error) {
+            console.error('❌ 載入任務管理失敗:', error);
+            const container = document.getElementById('teamTasksContent');
+            if (container) {
+                container.innerHTML = '<div class="alert alert-danger">載入任務管理失敗: ' + error.message + '</div>';
+            }
+        }
+    }
+
+    // 選擇任務角色
+    async selectTaskRole(combinedId) {
+        try {
+            // 解析組合 ID (例如: "CC-frontend")
+            const [memberType, roleId] = combinedId.split('-');
+
+            // 更新選中狀態
+            document.querySelectorAll('[id^="task-role-"]').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const targetElement = document.getElementById(`task-role-${combinedId}`);
+            if (targetElement) {
+                targetElement.classList.add('active');
+            }
+
+            // 載入角色的任務範本
+            const roles = this.dataManager.getAllRoles();
+            const role = roles[roleId];
+
+            // 確保範本資料存在，如果不存在則重新載入
+            let taskTemplates = window.taskTemplatesData;
+            if (!taskTemplates || !taskTemplates.taskTemplates) {
+                console.log('🔄 任務範本資料不存在，重新載入...');
+                try {
+                    const response = await fetch('config/task-templates.json?v=' + Date.now());
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    taskTemplates = await response.json();
+                    window.taskTemplatesData = taskTemplates;
+                    console.log('✅ 任務範本資料重新載入成功');
+                } catch (fetchError) {
+                    console.error('❌ 重新載入任務範本失敗:', fetchError);
+                    throw new Error('無法載入任務範本資料');
+                }
+            }
+
+            if (!taskTemplates || !taskTemplates.taskTemplates) {
+                throw new Error('任務範本資料格式錯誤');
+            }
+
+            // 取得成員和角色資訊
+            const memberNames = {
+                'CC': 'Klauder',
+                'CA': 'KersirAjen',
+                'GI': 'Jaymenight',
+                'CI': 'Kodes',
+                'CS': 'Kersir',
+                'VC': 'Kopylot'
+            };
+            const memberName = memberNames[memberType];
+
+            // 更新標題
+            document.getElementById('task-template-title').innerHTML =
+                `<span class="badge me-2" style="background-color: ${role.color}">${role.icon || '[角色]'}</span>${memberName} - ${role.name} 任務範本編輯`;
+
+            // 生成編輯介面
+            const template = taskTemplates.taskTemplates[roleId];
+
+            const content = `
+                <div class="mb-3">
+                    <label for="template-title-${combinedId}" class="form-label">範本標題</label>
+                    <input type="text" class="form-control" id="template-title-${combinedId}"
+                           value="${template ? template.title : ''}"
+                           placeholder="輸入任務範本標題">
+                </div>
+                <div class="mb-3">
+                    <label for="template-content-${combinedId}" class="form-label">範本內容</label>
+                    <textarea class="form-control" id="template-content-${combinedId}"
+                              rows="20" style="font-family: 'Courier New', monospace; font-size: 14px;"
+                              placeholder="輸入任務範本內容（支援 Markdown 格式）">${template ? template.content : ''}</textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" onclick="teamManagement.previewTaskTemplate('${combinedId}').catch(console.error)">
+                            <i class="fas fa-eye me-2"></i>預覽
+                        </button>
+                        <button class="btn btn-outline-info" onclick="teamManagement.copyTaskTemplate('${combinedId}').catch(console.error)">
+                            <i class="fas fa-copy me-2"></i>複製
+                        </button>
+                    </div>
+                    <button class="btn btn-outline-danger" onclick="teamManagement.resetTaskTemplate('${combinedId}').catch(console.error)">
+                        <i class="fas fa-undo me-2"></i>重設為預設
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('task-template-content').innerHTML = content;
+
+            console.log(`✅ 已載入 ${memberName} - ${role.name} 的任務範本`);
+        } catch (error) {
+            console.error('❌ 載入任務範本失敗:', error);
+            document.getElementById('task-template-content').innerHTML =
+                `<div class="alert alert-danger">載入任務範本失敗: ${error.message}</div>`;
+        }
+    }
+
+    // 預覽任務範本
+    async previewTaskTemplate(combinedId) {
+        const titleInput = document.getElementById(`template-title-${combinedId}`);
+        const contentInput = document.getElementById(`template-content-${combinedId}`);
+
+        if (!titleInput || !contentInput) {
+            alert('請先選擇成員角色');
+            return;
+        }
+
+        const title = titleInput.value;
+        const content = contentInput.value;
+
+        // 開啟預覽模態框
+        const previewModal = `
+            <div class="modal fade" id="taskPreviewModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">${title}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <pre style="white-space: pre-wrap; font-family: 'Arial', sans-serif;">${content}</pre>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的預覽模態框
+        const existingModal = document.getElementById('taskPreviewModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加新的預覽模態框
+        document.body.insertAdjacentHTML('beforeend', previewModal);
+        const modal = new bootstrap.Modal(document.getElementById('taskPreviewModal'));
+        modal.show();
+    }
+
+    // 重設任務範本為預設值
+    async resetTaskTemplate(combinedId) {
+        if (!confirm('確定要將此範本重設為預設值嗎？這將清除所有自訂內容。')) {
+            return;
+        }
+
+        try {
+            // 解析組合 ID
+            const [memberType, roleId] = combinedId.split('-');
+
+            // 重新載入預設範本
+            const response = await fetch('config/task-templates.json?v=' + Date.now());
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            const taskTemplates = await response.json();
+            const template = taskTemplates.taskTemplates[roleId];
+
+            if (template) {
+                document.getElementById(`template-title-${combinedId}`).value = template.title;
+                document.getElementById(`template-content-${combinedId}`).value = template.content;
+                alert('範本已重設為預設值');
+            } else {
+                alert('找不到預設範本');
+            }
+        } catch (error) {
+            console.error('重設範本失敗:', error);
+            alert('重設範本失敗');
+        }
+    }
+
+    // 複製任務範本
+    async copyTaskTemplate(combinedId) {
+        try {
+            const titleInput = document.getElementById(`template-title-${combinedId}`);
+            const contentInput = document.getElementById(`template-content-${combinedId}`);
+
+            if (!titleInput || !contentInput) {
+                alert('請先選擇成員角色');
+                return;
+            }
+
+            const title = titleInput.value;
+            const content = contentInput.value;
+
+            if (!title && !content) {
+                alert('沒有內容可複製');
+                return;
+            }
+
+            const templateText = `標題: ${title}\n\n內容:\n${content}`;
+
+            // 複製到剪貼板
+            await navigator.clipboard.writeText(templateText);
+
+            // 顯示成功提示
+            const copyButton = document.querySelector(`button[onclick*="copyTaskTemplate('${combinedId}')"]`);
+            if (copyButton) {
+                const originalText = copyButton.innerHTML;
+                copyButton.innerHTML = '<i class="fas fa-check me-2"></i>已複製';
+                copyButton.classList.remove('btn-outline-info');
+                copyButton.classList.add('btn-success');
+
+                setTimeout(() => {
+                    copyButton.innerHTML = originalText;
+                    copyButton.classList.remove('btn-success');
+                    copyButton.classList.add('btn-outline-info');
+                }, 2000);
+            }
+
+            console.log('✅ 任務範本已複製到剪貼板');
+        } catch (error) {
+            console.error('❌ 複製任務範本失敗:', error);
+            alert('複製失敗，請手動複製內容');
+        }
+    }
+
+    // 儲存任務範本變更
+    async saveTaskTemplates() {
+        try {
+            const taskTemplatesData = window.taskTemplatesData;
+            if (!taskTemplatesData) {
+                throw new Error('任務範本資料未載入');
+            }
+
+            // 收集當前頁面可見的變更
+            const roles = this.dataManager.getAllRoles();
+            let hasChanges = false;
+
+            // 只更新目前可見的範本（避免覆蓋其他範本）
+            Object.keys(roles).forEach(roleId => {
+                const titleInput = document.querySelector(`input[id*="template-title"][id*="${roleId}"]`);
+                const contentInput = document.querySelector(`textarea[id*="template-content"][id*="${roleId}"]`);
+
+                if (titleInput && contentInput && titleInput.offsetParent !== null) {
+                    // 確保任務範本結構存在
+                    if (!taskTemplatesData.taskTemplates[roleId]) {
+                        taskTemplatesData.taskTemplates[roleId] = {};
+                    }
+
+                    taskTemplatesData.taskTemplates[roleId].title = titleInput.value;
+                    taskTemplatesData.taskTemplates[roleId].content = contentInput.value;
+                    hasChanges = true;
+                }
+            });
+
+            if (!hasChanges) {
+                alert('沒有變更需要儲存');
+                return;
+            }
+
+            // 儲存到 Google Drive
+            if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                await window.googleDriveAPI.saveFile('task-templates.json', taskTemplatesData);
+                console.log('✅ 任務範本已儲存到 Google Drive');
+            }
+
+            // 儲存到本地快取
+            localStorage.setItem('cachedTaskTemplates', JSON.stringify(taskTemplatesData));
+
+            alert('任務範本已成功儲存');
+            console.log('✅ 任務範本儲存完成');
+        } catch (error) {
+            console.error('❌ 儲存任務範本失敗:', error);
+            alert('儲存任務範本失敗: ' + error.message);
         }
     }
 
@@ -411,7 +716,6 @@ class TeamManagement {
             const memberData = {
                 id: memberId,
                 name: document.getElementById('memberName')?.value || '',
-                primaryRole: document.getElementById('memberPrimaryRole')?.value || '',
                 joinDate: document.getElementById('memberJoinDate')?.value || '',
                 avatar: document.getElementById('memberAvatar')?.value || '',
                 notes: document.getElementById('memberNotes')?.value || ''
@@ -463,8 +767,8 @@ class TeamManagement {
 
                 // 儲存到 Google Drive 和本地
                 this.dataManager.saveMemberChanges().then(() => {
-                    console.log('☁️ 成員資料已同步');
-                    this.showToast('儲存成功', '成員資料已儲存', 'success');
+                    console.log('☁️ 成員資料已同步到 Google Drive');
+                    this.showToast('儲存成功', '成員資料已同步到 Google Drive', 'success');
                 }).catch(error => {
                     console.error('❌ 儲存失敗:', error);
                     this.showToast('儲存失敗', error.message, 'error');
@@ -1216,8 +1520,8 @@ class TeamManagement {
                 modal.hide();
             }
 
-            // 重新渲染專案列表
-            this.renderProjectManagement();
+            // 重新載入專案管理頁面
+            this.loadProjectManagement();
         }).catch(error => {
             this.showToast('儲存失敗', `無法儲存專案變更: ${error.message}`, 'error');
         });

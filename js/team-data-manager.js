@@ -18,12 +18,20 @@ class TeamDataManager {
         try {
             console.log('📊 步驟1: 載入團隊資料');
             await this.loadTeamData();
+            console.log('✅ 步驟1 完成');
+
             console.log('📊 步驟2: 載入專案分配');
             await this.loadAssignments();
+            console.log('✅ 步驟2 完成');
+
             console.log('📊 步驟3: 載入本地變更');
             await this.loadLocalChanges();
+            console.log('✅ 步驟3 完成');
+
             console.log('📊 步驟4: 載入本地成員變更');
             await this.loadLocalMemberChanges();
+            console.log('✅ 步驟4 完成');
+
             this.isInitialized = true;
             console.log('[OK] 團隊資料管理器初始化完成 ✅');
             console.log('📊 初始化後的資料狀態:');
@@ -32,7 +40,21 @@ class TeamDataManager {
         } catch (error) {
             console.error('[ERROR] 團隊資料管理器初始化失敗:', error);
             console.error('❌ 錯誤堆疊:', error.stack);
+            console.error('❌ 錯誤詳細資訊:', {
+                message: error.message,
+                name: error.name,
+                stack: error.stack
+            });
             this.isInitialized = false;
+
+            // 即使初始化失敗，也要確保基本結構存在
+            if (!this.members) this.members = {};
+            if (!this.roles) this.roles = {};
+            if (!this.assignments) this.assignments = {};
+            if (!this.constraints) this.constraints = {};
+            if (!this.teamConfig) this.teamConfig = {};
+
+            throw error; // 重新拋出錯誤以便上層處理
         }
     }
 
@@ -233,7 +255,7 @@ class TeamDataManager {
                     }
                 };
 
-                await window.googleDriveAPI.saveFile('project-assignments.json', JSON.stringify(assignmentData, null, 2));
+                await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
                 console.log('☁️ 專案分配已儲存到 Google Drive');
             } else {
                 console.log('⚠️ Google Drive 未登入，僅儲存到本地');
@@ -281,7 +303,7 @@ class TeamDataManager {
             // 3. 同步到 Google Drive
             if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                 console.log('☁️ 開始同步到 Google Drive...');
-                await window.googleDriveAPI.saveFile('team-members.json', JSON.stringify(teamData, null, 2));
+                await window.googleDriveAPI.saveFile('team-members.json', teamData);
                 console.log('☁️ 團隊成員已同步到 Google Drive');
             } else {
                 console.log('⚠️ Google Drive 未登入，資料已儲存到本地');

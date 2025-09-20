@@ -1,0 +1,78 @@
+{
+  "skills": {
+    "visual_design": {
+      "id": "visual_design",
+      "name": "視覺設計",
+      "color": "#9333ea",
+      "icon": "[設計]",
+      "description": "負責UI/UX設計、視覺規範制定"
+    },
+    "frontend": {
+      "id": "frontend",
+      "name": "前端開發",
+      "color": "#3b82f6",
+      "icon": "[前端]",
+      "description": "負責前端開發、用戶介面實作"
+    },
+    "backend": {
+      "id": "backend",
+      "name": "後端開發",
+      "color": "#ef4444",
+      "icon": "[後端]",
+      "description": "負責後端開發、API設計、資料庫管理"
+    },
+    "fullstack": {
+      "id": "fullstack",
+      "name": "全端開發",
+      "color": "#8b5cf6",
+      "icon": "[全端]",
+      "description": "負責前後端整合開發與系統架構"
+    },
+    "testing": {
+      "id": "testing",
+      "name": "驗證測試",
+      "color": "#10b981",
+      "icon": "[測試]",
+      "description": "負責功能測試、品質保證、驗證報告"
+    },
+    "deployment": {
+      "id": "deployment",
+      "name": "安裝部署",
+      "color": "#f59e0b",
+      "icon": "[部署]",
+      "description": "負責系統部署、環境配置、維運管理"
+    },
+    "system_design": {
+      "id": "system_design",
+      "name": "系統設計",
+      "color": "#06b6d4",
+      "icon": "[設計]",
+      "description": "負責系統架構設計、技術選型"
+    },
+    "project_management": {
+      "id": "project_management",
+      "name": "專案管理",
+      "color": "#ec4899",
+      "icon": "[管理]",
+      "description": "負責專案規劃、進度追蹤、團隊協調"
+    }
+  },
+  "categories": {
+    "development": {
+      "name": "開發技能",
+      "skills": ["frontend", "backend", "fullstack"]
+    },
+    "quality": {
+      "name": "品質技能",
+      "skills": ["testing", "deployment"]
+    },
+    "design": {
+      "name": "設計技能",
+      "skills": ["visual_design", "system_design"]
+    },
+    "management": {
+      "name": "管理技能",
+      "skills": ["project_management"]
+    }
+  }
+}

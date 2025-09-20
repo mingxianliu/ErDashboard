@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>多專案進度監控中心</title>
+    <title>任務編組系統</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="css/dashboard.css?v=20250918x" rel="stylesheet">
@@ -18,7 +18,7 @@
         <div class="container-fluid">
             <span class="navbar-brand mb-0 h1">
                 <i class="fas fa-tachometer-alt me-2"></i>
-                多專案進度監控中心
+                任務編組系統
             </span>
             <div class="d-flex align-items-center">
                 <span class="badge bg-light text-dark me-2" id="lastUpdate">載入中...</span>
@@ -100,23 +100,15 @@
             </div>
         </div>
 
-        <!-- 載入狀態 -->
-        <div id="loadingSpinner" class="text-center py-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">載入中...</span>
-            </div>
-            <div class="mt-3">正在載入專案資料...</div>
-        </div>
 
         <!-- 統計卡片 -->
         <div class="row" id="summaryCards" style="display: none;">
-            <!-- 動態載入 -->
+            <!-- 動態載入的統計內容會插入這裡 -->
         </div>
-
 
         <!-- 專案列表 -->
         <div class="row mt-4" id="projectsList" style="display: none;">
-            <!-- 動態載入 -->
+            <!-- 動態載入的專案內容會插入這裡 -->
         </div>
 
     </div>
@@ -136,17 +128,309 @@
     <script src="js/google-drive-api.js?v=20250918t"></script>
     <script src="js/team-data-manager.js?v=20250918u"></script>
     <script src="js/team-statistics.js?v=20250918u"></script>
-    <script src="js/team-ui-components.js?v=20250918u"></script>
-    <script src="js/team-management-main.js?v=20250919f"></script>
-    <script src="js/markdown-dashboard-simple.js?v=20250919a"></script>
+    <script src="js/team-ui-components.js?v=20250920k"></script>
+    <script src="js/team-management-main.js?v=20250920e"></script>
+    <script src="js/markdown-dashboard-simple.js?v=20250920b"></script>
     <script>
+        // 使用 TeamDataManager 載入資料
+        async function loadDataDirectly() {
+            console.log('🚀 使用 TeamDataManager 載入資料...');
+            try {
+                // 確保 TeamDataManager 存在
+                if (!window.TeamDataManager) {
+                    throw new Error('TeamDataManager 未載入');
+                }
+
+                // 初始化 TeamDataManager
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+
+                // 從 TeamDataManager 獲取資料
+                const assignments = teamDataManager.getAllAssignments();
+                console.log('📊 從 TeamDataManager 載入的資料:', assignments);
+
+                const summaryCards = document.getElementById('summaryCards');
+                const projectsList = document.getElementById('projectsList');
+
+                if (assignments && Object.keys(assignments).length > 0) {
+                    const projects = Object.values(assignments);
+                    console.log('✅ 專案數量:', projects.length);
+
+                    // 顯示統計
+                    if (summaryCards) {
+                        summaryCards.innerHTML = `
+                            <div class="col-12 mb-3">
+                                <h3>團隊專案總覽</h3>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">總專案數</h5>
+                                        <h2>${projects.length}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">進行中</h5>
+                                        <h2>${projects.filter(p => p.status === 'active').length}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">總成員數</h5>
+                                        <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title">平均進度</h5>
+                                        <h2>${Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)}%</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        summaryCards.style.display = 'flex';
+                    }
+
+                    // 顯示專案列表
+                    if (projectsList) {
+                        console.log('📝 開始生成專案列表 HTML...');
+                        let html = `
+                            <div class="col-12 mb-3">
+                                <h4>專案列表</h4>
+                            </div>
+                        `;
+
+                        projects.forEach(project => {
+                            console.log('專案:', project.projectName);
+                            const memberCount = Object.keys(project.members || {}).length;
+
+                            // 生成成員列表
+                            let membersHtml = '';
+                            if (project.members && Object.keys(project.members).length > 0) {
+                                membersHtml = '<div class="mt-3"><h6>團隊成員:</h6>';
+                                Object.values(project.members).forEach(member => {
+                                    const memberNames = {
+                                        'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
+                                        'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
+                                        'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
+                                        'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
+                                        'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
+                                        'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
+                                    };
+                                    const memberName = memberNames[member.memberId] || member.memberId;
+                                    const roleColors = {
+                                        'frontend': '#007bff',
+                                        'backend': '#28a745',
+                                        'fullstack': '#ffc107',
+                                        'testing': '#dc3545'
+                                    };
+                                    const roleColor = roleColors[member.role] || '#6c757d';
+
+                                    membersHtml += `
+                                        <span class="badge me-2 mb-1"
+                                              style="background-color: ${roleColor}; cursor: pointer;"
+                                              onclick="editProjectMember('${project.projectId}', '${member.memberId}')"
+                                              title="點擊編輯任務小卡">
+                                            ${memberName} (${member.role})
+                                        </span>
+                                    `;
+                                });
+                                membersHtml += '</div>';
+                            } else {
+                                membersHtml = '<div class="mt-3"><small class="text-muted">尚未分配成員</small></div>';
+                            }
+
+                            html += `
+                                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                                    <div class="card mb-3" style="min-height: 250px;">
+                                        <div class="card-body d-flex flex-column">
+                                            <h5 class="card-title text-truncate" title="${project.projectName}">${project.projectName}</h5>
+                                            <p class="text-muted">成員數: ${memberCount}</p>
+                                            <div class="progress mb-2">
+                                                <div class="progress-bar" style="width: ${project.progress}%">${project.progress}%</div>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                ${membersHtml}
+                                            </div>
+                                            <div class="mt-auto">
+                                                <small class="text-muted">狀態: ${project.status}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        console.log('🎨 設置專案列表 HTML...');
+                        projectsList.innerHTML = html;
+                        projectsList.style.display = 'flex';
+                        console.log('✅ 專案列表設置完成並顯示');
+                    }
+                } else {
+                    console.warn('⚠️ 資料格式不正確或沒有 assignments');
+                }
+            } catch (error) {
+                console.error('載入失敗:', error);
+                document.getElementById('projectsList').innerHTML = '<div class="alert alert-danger">載入失敗: ' + error.message + '</div>';
+            }
+        }
+
+        // 編輯專案成員任務小卡
+        async function editProjectMember(projectId, memberId) {
+            try {
+                console.log('🔧 開始編輯任務小卡:', projectId, memberId);
+
+                // 使用 TeamDataManager 載入專案資料
+                if (!window.TeamDataManager) {
+                    throw new Error('TeamDataManager 未載入');
+                }
+
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+
+                const assignments = teamDataManager.getAllAssignments();
+                const project = assignments[projectId];
+
+                if (!project) {
+                    throw new Error(`找不到專案: ${projectId}`);
+                }
+
+                const member = project.members[memberId];
+
+                if (!member) {
+                    alert('找不到成員資料');
+                    return;
+                }
+
+                // 成員名稱映射
+                const memberNames = {
+                    'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
+                    'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
+                    'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
+                    'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
+                    'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
+                    'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
+                };
+                const memberName = memberNames[memberId] || memberId;
+
+                // 載入任務範本
+                let taskTemplate = '';
+                try {
+                    const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
+                    const templateData = await templateResponse.json();
+                    const template = templateData.taskTemplates[member.role];
+                    if (template) {
+                        taskTemplate = template.content;
+                    }
+                } catch (templateError) {
+                    console.warn('載入任務範本失敗:', templateError);
+                }
+
+                // 生成任務小卡內容（正確格式）
+                const branchName = `${memberName}專案的${project.projectName}`;
+                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${branchName}」，若無則create，請依循下列的任務指引「${taskTemplate}」 進行任務。`;
+
+                // 建立模態框
+                const modalHtml = `
+                    <div class="modal fade" id="taskCardModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">任務小卡編輯 - ${memberName}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="branchName" class="form-label">分支名稱</label>
+                                        <input type="text" class="form-control" id="branchName" value="${branchName}">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="taskContent" class="form-label">任務小卡內容</label>
+                                        <textarea class="form-control" id="taskContent" rows="8">${taskCardContent}</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-success" onclick="copyTaskCard()">
+                                        <i class="fas fa-copy"></i> 複製
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 移除舊的模態框並加入新的
+                const oldModal = document.getElementById('taskCardModal');
+                if (oldModal) {
+                    oldModal.remove();
+                }
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // 顯示模態框
+                const modal = new bootstrap.Modal(document.getElementById('taskCardModal'));
+                modal.show();
+
+            } catch (error) {
+                console.error('編輯任務小卡失敗:', error);
+                alert('編輯任務小卡失敗: ' + error.message);
+            }
+        }
+
+        // 複製任務小卡內容
+        function copyTaskCard() {
+            try {
+                const branchName = document.getElementById('branchName').value;
+                const taskContent = document.getElementById('taskContent').value;
+                const textToCopy = `分支名稱: ${branchName}\n\n任務內容:\n${taskContent}`;
+
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    // 視覺回饋
+                    const button = event.target.closest('button');
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check"></i> 已複製';
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-info');
+
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.classList.remove('btn-info');
+                        button.classList.add('btn-success');
+                    }, 2000);
+                }).catch(err => {
+                    console.error('複製失敗:', err);
+                    alert('複製失敗，請手動複製內容');
+                });
+            } catch (error) {
+                console.error('複製任務小卡失敗:', error);
+                alert('複製失敗，請手動複製內容');
+            }
+        }
+
+        // 頁面載入時直接執行（延遲一下等認證通過）
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                // 只有在認證通過後才載入
+                const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
+                if (isAuthenticated) {
+                    loadDataDirectly();
+                }
+            }, 1000);
+        });
+
         // 嚴格的認證檢查 - 無繞過機制
         function checkAuthentication() {
             const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
             if (!isAuthenticated) {
                 // 確保未認證時完全隱藏所有資料
                 document.getElementById('keyAuthentication').style.display = 'block';
-                document.getElementById('loadingSpinner').style.display = 'none';
+                // loadingSpinner 已移除
                 document.getElementById('summaryCards').style.display = 'none';
                 document.getElementById('projectsList').style.display = 'none';
                 // 禁止初始化 Dashboard
@@ -217,8 +501,16 @@
                     setTimeout(() => {
                         document.getElementById('keyAuthentication').style.display = 'none';
                         showMainDashboard();
+
+                        // 直接載入資料
+                        loadDataDirectly();
+
                         // 啟動新的 Markdown Dashboard
-                        window.markdownDashboard = new MarkdownProjectDashboard();
+                        if (typeof MarkdownProjectDashboard !== 'undefined') {
+                            window.markdownDashboard = new MarkdownProjectDashboard();
+                        } else {
+                            console.error('MarkdownProjectDashboard 類別未定義');
+                        }
                     }, 1000);
                 } else {
                     document.getElementById('keyErrorText').textContent = '私鑰驗證失敗，請確認私鑰正確';
@@ -259,8 +551,8 @@
             document.getElementById('syncBtn').style.display = 'inline-block';
             document.getElementById('pullBtn').style.display = 'inline-block';
 
-            // 顯示載入狀態，內容區域由 Dashboard 控制
-            document.getElementById('loadingSpinner').style.display = 'block';
+            // 直接載入資料
+            setTimeout(loadDataDirectly, 500);
         }
         
         // 登出功能
@@ -278,7 +570,7 @@
 
                 // 顯示認證介面
                 document.getElementById('keyAuthentication').style.display = 'block';
-                document.getElementById('loadingSpinner').style.display = 'none';
+                // loadingSpinner 已移除
                 document.getElementById('summaryCards').style.display = 'none';
                 document.getElementById('projectsList').style.display = 'none';
                 
@@ -491,22 +783,32 @@
                     console.log(`🔄 從 Google Drive 拉取檔案: ${fileName}`);
 
                     // 從 Google Drive 下載檔案
-                    const fileContent = await window.googleDriveAPI.loadFile(fileName);
+                    const wrappedContent = await window.googleDriveAPI.loadFile(fileName);
 
-                    if (!fileContent) {
+                    if (!wrappedContent) {
                         throw new Error(`Google Drive 中找不到 ${fileName}`);
                     }
 
-                    // 驗證 JSON 格式
-                    try {
-                        JSON.parse(fileContent);
-                    } catch (parseError) {
-                        throw new Error(`${fileName} 格式錯誤: ${parseError.message}`);
+                    // 提取實際資料
+                    let actualData = wrappedContent.data || wrappedContent;
+
+                    // 如果 data 是字串，需要解析成物件
+                    if (typeof actualData === 'string') {
+                        try {
+                            actualData = JSON.parse(actualData);
+                        } catch (parseError) {
+                            throw new Error(`${fileName} JSON 解析失敗: ${parseError.message}`);
+                        }
+                    }
+
+                    // 驗證資料格式
+                    if (!actualData || typeof actualData !== 'object') {
+                        throw new Error(`${fileName} 資料格式錯誤`);
                     }
 
                     // 儲存到 localStorage（模擬下載到本地）
                     const storageKey = fileName === 'team-members.json' ? 'cachedTeamMembers' : 'cachedProjectAssignments';
-                    localStorage.setItem(storageKey, fileContent);
+                    localStorage.setItem(storageKey, JSON.stringify(actualData));
 
                     pullResults.push({
                         file: fileName,
@@ -653,13 +955,32 @@
 
                 // 初始化團隊資料管理器
                 if (!window.teamDataManager) {
+                    console.log('🔄 創建團隊資料管理器...');
                     window.teamDataManager = new TeamDataManager();
-                    window.teamDataManager.init().catch(error => {
-                        console.log('團隊資料管理器初始化失敗 (可能未登入 Google Drive):', error.message);
+
+                    // 非阻塞式初始化，讓 Dashboard 自己等待
+                    window.teamDataManager.init().then(() => {
+                        console.log('✅ 團隊資料管理器初始化完成');
+                    }).catch(error => {
+                        console.log('⚠️ 團隊資料管理器初始化失敗 (可能未登入 Google Drive):', error.message);
+                        // 確保標記為未初始化
+                        window.teamDataManager.isInitialized = false;
                     });
                 }
 
-                window.markdownDashboard = new MarkdownProjectDashboard();
+                // 立即初始化 Dashboard，讓它自己等待 teamDataManager
+                console.log('🔄 創建 Markdown Dashboard...');
+                if (typeof MarkdownProjectDashboard !== 'undefined') {
+                    window.markdownDashboard = new MarkdownProjectDashboard();
+                } else {
+                    console.error('MarkdownProjectDashboard 類別未定義，等待載入...');
+                    // 延遲重試
+                    setTimeout(() => {
+                        if (typeof MarkdownProjectDashboard !== 'undefined') {
+                            window.markdownDashboard = new MarkdownProjectDashboard();
+                        }
+                    }, 500);
+                }
             } catch (error) {
                 console.error('Dashboard 初始化失敗:', error);
             }

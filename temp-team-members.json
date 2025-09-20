@@ -1,0 +1,71 @@
+{
+  "members": {
+    "A-CC": { "id": "A-CC", "name": "KlauderA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-CC", "joinDate": "2025-01-01", "notes": "備註" },
+    "A-CA": { "id": "A-CA", "name": "KersirAjenA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-CA", "joinDate": "2025-01-01", "notes": "備註" },
+    "A-GI": { "id": "A-GI", "name": "JaymenightA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-GI", "joinDate": "2025-01-01", "notes": "備註" },
+    "A-CI": { "id": "A-CI", "name": "KodesA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-CI", "joinDate": "2025-01-01", "notes": "備註" },
+    "A-CS": { "id": "A-CS", "name": "KersirA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-CS", "joinDate": "2025-01-01", "notes": "備註" },
+    "A-VC": { "id": "A-VC", "name": "KopylotA", "skills": ["frontend", "backend", "fullstack", "system_design"], "avatar": "A-VC", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-CC": { "id": "B-CC", "name": "KlauderB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-CC", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-CA": { "id": "B-CA", "name": "KersirAjenB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-CA", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-GI": { "id": "B-GI", "name": "JaymenightB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-GI", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-CI": { "id": "B-CI", "name": "KodesB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-CI", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-CS": { "id": "B-CS", "name": "KersirB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-CS", "joinDate": "2025-01-01", "notes": "備註" },
+    "B-VC": { "id": "B-VC", "name": "KopylotB", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "B-VC", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-CC": { "id": "C-CC", "name": "KlauderC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-CC", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-CA": { "id": "C-CA", "name": "KersirAjenC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-CA", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-GI": { "id": "C-GI", "name": "JaymenightC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-GI", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-CI": { "id": "C-CI", "name": "KodesC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-CI", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-CS": { "id": "C-CS", "name": "KersirC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-CS", "joinDate": "2025-01-01", "notes": "備註" },
+    "C-VC": { "id": "C-VC", "name": "KopylotC", "skills": ["frontend", "deployment", "testing", "system_design"], "avatar": "C-VC", "joinDate": "2025-01-01", "notes": "備註" }
+  },
+  "roles": {
+    "frontend": {
+      "name": "前端開發",
+      "icon": "[UI]",
+      "color": "#3b82f6",
+      "description": "負責用戶介面設計與前端功能實作"
+    },
+    "backend": {
+      "name": "後端開發",
+      "icon": "[API]",
+      "color": "#ef4444",
+      "description": "負責伺服器邏輯、API 開發與資料庫設計"
+    },
+    "fullstack": {
+      "name": "全端開發",
+      "icon": "[FULL]",
+      "color": "#8b5cf6",
+      "description": "負責前後端整合開發與系統架構設計"
+    },
+    "testing": {
+      "name": "驗測部署",
+      "icon": "[TEST]",
+      "color": "#10b981",
+      "description": "負責功能測試、品質保證、驗證報告與系統部署"
+    }
+  },
+  "groups": {
+    "groupA": {
+      "id": "groupA",
+      "name": "A組",
+      "description": "A組團隊成員",
+      "members": ["A-CC", "A-CA", "A-GI", "A-CI", "A-CS", "A-VC"],
+      "color": "#3b82f6"
+    },
+    "groupB": {
+      "id": "groupB",
+      "name": "B組",
+      "description": "B組團隊成員",
+      "members": ["B-CC", "B-CA", "B-GI", "B-CI", "B-CS", "B-VC"],
+      "color": "#ef4444"
+    },
+    "groupC": {
+      "id": "groupC",
+      "name": "C組",
+      "description": "C組團隊成員",
+      "members": ["C-CC", "C-CA", "C-GI", "C-CI", "C-CS", "C-VC"],
+      "color": "#10b981"
+    }
+  }
+}

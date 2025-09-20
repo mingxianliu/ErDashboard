@@ -1,0 +1,110 @@
+{
+  "assignments": {
+    "ErCore": {
+      "projectId": "ErCore",
+      "projectName": "ErCore - 企業級 AI 統一平台",
+      "progress": 75,
+      "members": {
+        "A-CC": { "memberId": "A-CC", "role": "fullstack", "assignedDate": "2025-01-15", "tasks": ["全端開發", "系統整合"] },
+        "C-CS": { "memberId": "C-CS", "role": "testing", "assignedDate": "2025-01-15", "tasks": ["驗測部署", "品質保證"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "ErNexus": {
+      "projectId": "ErNexus",
+      "projectName": "ErNexus - 企業級統一平台",
+      "progress": 60,
+      "members": {
+        "C-CA": { "memberId": "C-CA", "role": "frontend", "assignedDate": "2025-02-01", "tasks": ["前端開發", "UI設計"] },
+        "B-GI": { "memberId": "B-GI", "role": "backend", "assignedDate": "2025-02-01", "tasks": ["後端開發", "API設計"] },
+        "A-VC": { "memberId": "A-VC", "role": "testing", "assignedDate": "2025-02-01", "tasks": ["驗測部署", "系統測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "ErShield": {
+      "projectId": "ErShield",
+      "projectName": "ErShield - 安全防護平台",
+      "progress": 45,
+      "members": {
+        "C-GI": { "memberId": "C-GI", "role": "frontend", "assignedDate": "2025-03-01", "tasks": ["前端開發", "安全介面"] },
+        "A-GI": { "memberId": "A-GI", "role": "backend", "assignedDate": "2025-03-01", "tasks": ["後端開發", "安全模組"] },
+        "B-CS": { "memberId": "B-CS", "role": "testing", "assignedDate": "2025-03-01", "tasks": ["驗測部署", "安全測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "ErTidy": {
+      "projectId": "ErTidy",
+      "projectName": "ErTidy",
+      "progress": 30,
+      "members": {
+        "C-CC": { "memberId": "C-CC", "role": "fullstack", "assignedDate": "2025-04-01", "tasks": ["全端開發", "智能工具"] },
+        "B-CS": { "memberId": "B-CS", "role": "testing", "assignedDate": "2025-04-01", "tasks": ["驗測部署", "工具測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "SyncBC-Monorepo": {
+      "projectId": "SyncBC-Monorepo",
+      "projectName": "SyncBC-Monorepo",
+      "progress": 20,
+      "members": {
+        "C-CA": { "memberId": "C-CA", "role": "frontend", "assignedDate": "2025-05-01", "tasks": ["前端開發", "區塊鏈介面"] },
+        "B-GI": { "memberId": "B-GI", "role": "backend", "assignedDate": "2025-05-01", "tasks": ["後端開發", "區塊鏈邏輯"] },
+        "C-VC": { "memberId": "C-VC", "role": "testing", "assignedDate": "2025-05-01", "tasks": ["驗測部署", "區塊鏈測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "iFMS-frontend": {
+      "projectId": "iFMS-frontend",
+      "projectName": "iFMS-Frontend",
+      "progress": 10,
+      "members": {
+        "A-CS": { "memberId": "A-CS", "role": "frontend", "assignedDate": "2025-06-01", "tasks": ["前端開發", "檔案管理介面"] },
+        "B-VC": { "memberId": "B-VC", "role": "testing", "assignedDate": "2025-06-01", "tasks": ["驗測部署", "檔案系統測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "EZOOM": {
+      "projectId": "EZOOM",
+      "projectName": "EZOOM",
+      "progress": 0,
+      "members": {
+        "B-CC": { "memberId": "B-CC", "role": "frontend", "assignedDate": "2025-07-01", "tasks": ["前端開發", "視訊介面"] },
+        "C-CI": { "memberId": "C-CI", "role": "backend", "assignedDate": "2025-07-01", "tasks": ["後端開發", "視訊邏輯"] },
+        "A-CS": { "memberId": "A-CS", "role": "testing", "assignedDate": "2025-07-01", "tasks": ["驗測部署", "視訊測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    },
+    "SmartMonitor": {
+      "projectId": "SmartMonitor",
+      "projectName": "智慧監視系統",
+      "progress": 0,
+      "members": {
+        "C-CA": { "memberId": "C-CA", "role": "frontend", "assignedDate": "2025-08-01", "tasks": ["前端開發", "監視介面"] },
+        "B-CA": { "memberId": "B-CA", "role": "backend", "assignedDate": "2025-08-01", "tasks": ["後端開發", "AI分析"] },
+        "A-CS": { "memberId": "A-CS", "role": "testing", "assignedDate": "2025-08-01", "tasks": ["驗測部署", "系統測試"] }
+      },
+      "lastUpdated": "2025-09-20",
+      "status": "active"
+    }
+  },
+  "constraints": {
+    "oneRolePerProject": "每個成員在單一專案中只能擔任一個角色",
+    "availableRoles": ["frontend", "backend", "fullstack", "testing"],
+    "minMembersPerRole": 1,
+    "maxMembersPerRole": 3
+  },
+  "statistics": {
+    "totalAssignments": 21,
+    "activeProjects": 8,
+    "completedProjects": 0,
+    "membersInUse": 15,
+    "availableMembers": 3
+  }
+}
