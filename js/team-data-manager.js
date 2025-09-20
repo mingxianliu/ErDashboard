@@ -85,7 +85,9 @@ class TeamDataManager {
             if (!data && window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                 try {
                     console.log('☁️ 從 Google Drive 載入 team-members.json...');
-                    const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
+                    const driveContent = await window.googleDriveAPI.retryWithReAuth(
+                        () => window.googleDriveAPI.loadFile('team-members.json')
+                    );
                     if (driveContent) {
                         // 處理包裝格式的資料 (從 saveFile 儲存的格式)
                         data = driveContent.data || driveContent;
@@ -176,7 +178,9 @@ class TeamDataManager {
                 if (window.googleDriveAPI.isAuthenticated) {
                     try {
                     console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
-                    const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
+                    const driveContent = await window.googleDriveAPI.retryWithReAuth(
+                        () => window.googleDriveAPI.loadFile('project-assignments.json')
+                    );
                     if (driveContent) {
                         // 處理包裝格式的資料 (從 saveFile 儲存的格式)
                         data = driveContent.data || driveContent;

@@ -927,13 +927,23 @@
         async function changeMember(projectId, memberId) {
             try {
 
-                // 載入團隊成員資料
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
                 const assignments = teamDataManager.getAllAssignments();
                 const members = teamDataManager.getAllMembers();
                 const project = assignments[projectId];
+
+                if (!project) {
+                    throw new Error(`找不到專案: ${projectId}`);
+                }
+
                 const currentMember = project.members[memberId];
+                if (!currentMember) {
+                    throw new Error(`找不到成員: ${memberId}`);
+                }
 
                 // 生成可用成員選項
                 let memberOptions = '';
