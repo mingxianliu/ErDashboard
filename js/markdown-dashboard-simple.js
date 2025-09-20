@@ -600,7 +600,7 @@ window.addProjectNote = function(projectId) {
     }
 };
 
-window.editProjectMember = function(projectId, memberId) {
+window.editProjectMember = async function(projectId, memberId) {
     try {
         const assignment = window.teamDataManager.getAllAssignments()[projectId];
         const allMembers = window.teamDataManager.getAllMembers();

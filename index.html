@@ -1454,7 +1454,7 @@
         });
 
         // 啟動 Dashboard
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             // 檢查是否已通過私鑰驗證
             if (!checkAuthentication()) {
                 // 未驗證禁止初始化 Dashboard
