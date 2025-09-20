@@ -243,7 +243,29 @@ class TeamManagement {
     // 選擇任務角色
     async selectTaskRole(combinedId) {
         try {
-            // 解析組合 ID (例如: "CC-frontend")
+            // 如果是新的範本key（4個範本），直接處理
+            const templateKeys = ['frontend', 'backend', 'fullstack', 'testing'];
+            const isTemplateKey = templateKeys.includes(combinedId);
+
+            if (isTemplateKey) {
+                // 新的範本key邏輯
+                const templateKey = combinedId;
+
+                // 更新選中狀態
+                document.querySelectorAll('[id^="task-role-"]').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                const targetElement = document.getElementById(`task-role-${templateKey}`);
+                if (targetElement) {
+                    targetElement.classList.add('active');
+                }
+
+                // 處理範本顯示邏輯...
+                await this.handleTemplateKeySelection(templateKey);
+                return;
+            }
+
+            // 舊的組合ID邏輯 (例如: "CC-frontend")
             const [memberType, roleId] = combinedId.split('-');
 
             // 更新選中狀態
@@ -309,7 +331,7 @@ class TeamManagement {
                 <div class="mb-3">
                     <label for="template-content-${combinedId}" class="form-label">範本內容</label>
                     <textarea class="form-control" id="template-content-${combinedId}"
-                              rows="20" style="font-family: 'Courier New', monospace; font-size: 14px;"
+                              rows="20" style="font-family: 'Courier New', monospace; font-size: 14px; height: 500px;"
                               placeholder="輸入任務範本內容（支援 Markdown 格式）">${template ? template.content : ''}</textarea>
                 </div>
                 <div class="d-flex justify-content-between">
@@ -337,13 +359,81 @@ class TeamManagement {
         }
     }
 
+    // 處理新的範本key選擇（只用於任務範本管理頁面）
+    async handleTemplateKeySelection(templateKey) {
+        try {
+            // 確保範本資料存在
+            let taskTemplates = window.taskTemplatesData;
+            if (!taskTemplates || !taskTemplates.taskTemplates) {
+                console.log('🔄 任務範本資料不存在，重新載入...');
+                const response = await fetch('config/task-templates.json?v=' + Date.now());
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                taskTemplates = await response.json();
+                window.taskTemplatesData = taskTemplates;
+            }
+
+            // 取得範本資訊
+            const templateRoles = {
+                'frontend': { name: '前端開發', icon: 'FE', color: '#007bff' },
+                'backend': { name: '後端開發', icon: 'BE', color: '#28a745' },
+                'fullstack': { name: '全端開發', icon: 'FS', color: '#fd7e14' },
+                'testing': { name: '測試與部署', icon: 'QA', color: '#6f42c1' }
+            };
+            const roleInfo = templateRoles[templateKey];
+
+            // 更新標題
+            document.getElementById('task-template-title').innerHTML =
+                `<span class="badge me-2" style="background-color: ${roleInfo.color}">${roleInfo.icon}</span>${roleInfo.name} 任務範本編輯`;
+
+            // 生成編輯介面
+            const template = taskTemplates.taskTemplates[templateKey];
+
+            const content = `
+                <div class="mb-3">
+                    <label for="template-title-${templateKey}" class="form-label">範本標題</label>
+                    <input type="text" class="form-control" id="template-title-${templateKey}"
+                           value="${template ? template.title : ''}"
+                           placeholder="輸入任務範本標題">
+                </div>
+                <div class="mb-3">
+                    <label for="template-content-${templateKey}" class="form-label">範本內容</label>
+                    <textarea class="form-control" id="template-content-${templateKey}"
+                              rows="20" style="font-family: 'Courier New', monospace; font-size: 14px; height: 500px;"
+                              placeholder="輸入任務範本內容（支援 Markdown 格式）">${template ? template.content : ''}</textarea>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <button class="btn btn-outline-secondary me-2" onclick="teamManagement.previewTaskTemplate('${templateKey}').catch(console.error)">
+                            <i class="fas fa-eye me-2"></i>預覽
+                        </button>
+                        <button class="btn btn-outline-info" onclick="teamManagement.copyTaskTemplate('${templateKey}').catch(console.error)">
+                            <i class="fas fa-copy me-2"></i>複製
+                        </button>
+                    </div>
+                    <button class="btn btn-outline-danger" onclick="teamManagement.resetTaskTemplate('${templateKey}').catch(console.error)">
+                        <i class="fas fa-undo me-2"></i>重設為預設
+                    </button>
+                </div>
+            `;
+
+            document.getElementById('task-template-content').innerHTML = content;
+            console.log(`✅ 已載入 ${roleInfo.name} 的任務範本`);
+        } catch (error) {
+            console.error('❌ 載入任務範本失敗:', error);
+            document.getElementById('task-template-content').innerHTML =
+                `<div class="alert alert-danger">載入任務範本失敗: ${error.message}</div>`;
+        }
+    }
+
     // 預覽任務範本
-    async previewTaskTemplate(combinedId) {
-        const titleInput = document.getElementById(`template-title-${combinedId}`);
-        const contentInput = document.getElementById(`template-content-${combinedId}`);
+    async previewTaskTemplate(idOrKey) {
+        const titleInput = document.getElementById(`template-title-${idOrKey}`);
+        const contentInput = document.getElementById(`template-content-${idOrKey}`);
 
         if (!titleInput || !contentInput) {
-            alert('請先選擇成員角色');
+            alert('請先選擇角色範本');
             return;
         }
 
@@ -383,26 +473,34 @@ class TeamManagement {
     }
 
     // 重設任務範本為預設值
-    async resetTaskTemplate(combinedId) {
+    async resetTaskTemplate(idOrKey) {
         if (!confirm('確定要將此範本重設為預設值嗎？這將清除所有自訂內容。')) {
             return;
         }
 
         try {
-            // 解析組合 ID
-            const [memberType, roleId] = combinedId.split('-');
-
             // 重新載入預設範本
             const response = await fetch('config/task-templates.json?v=' + Date.now());
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             const taskTemplates = await response.json();
-            const template = taskTemplates.taskTemplates[roleId];
+
+            // 判斷是新格式還是舊格式
+            let templateKey;
+            if (['frontend', 'backend', 'fullstack', 'testing'].includes(idOrKey)) {
+                templateKey = idOrKey;
+            } else {
+                // 舊格式：解析 combinedId
+                const [memberType, roleId] = idOrKey.split('-');
+                templateKey = roleId;
+            }
+
+            const template = taskTemplates.taskTemplates[templateKey];
 
             if (template) {
-                document.getElementById(`template-title-${combinedId}`).value = template.title;
-                document.getElementById(`template-content-${combinedId}`).value = template.content;
+                document.getElementById(`template-title-${idOrKey}`).value = template.title;
+                document.getElementById(`template-content-${idOrKey}`).value = template.content;
                 alert('範本已重設為預設值');
             } else {
                 alert('找不到預設範本');
@@ -414,13 +512,13 @@ class TeamManagement {
     }
 
     // 複製任務範本
-    async copyTaskTemplate(combinedId) {
+    async copyTaskTemplate(idOrKey) {
         try {
-            const titleInput = document.getElementById(`template-title-${combinedId}`);
-            const contentInput = document.getElementById(`template-content-${combinedId}`);
+            const titleInput = document.getElementById(`template-title-${idOrKey}`);
+            const contentInput = document.getElementById(`template-content-${idOrKey}`);
 
             if (!titleInput || !contentInput) {
-                alert('請先選擇成員角色');
+                alert('請先選擇角色範本');
                 return;
             }
 
@@ -438,7 +536,7 @@ class TeamManagement {
             await navigator.clipboard.writeText(templateText);
 
             // 顯示成功提示
-            const copyButton = document.querySelector(`button[onclick*="copyTaskTemplate('${combinedId}')"]`);
+            const copyButton = document.querySelector(`button[onclick*="copyTaskTemplate('${idOrKey}')"]`);
             if (copyButton) {
                 const originalText = copyButton.innerHTML;
                 copyButton.innerHTML = '<i class="fas fa-check me-2"></i>已複製';

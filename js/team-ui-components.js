@@ -1668,67 +1668,36 @@ class TeamUIComponents {
 
                     <div class="row">
                         <div class="col-md-3">
-                            <div class="card">
+                            <div class="card" style="height: 600px;">
                                 <div class="card-header">
                                     <h6 class="card-title mb-0">角色選單</h6>
                                 </div>
-                                <div class="card-body p-0">
+                                <div class="card-body p-0" style="height: 100%; overflow-y: auto;">
                                     <div class="list-group list-group-flush">
             `;
 
-            // 為每個成員代號創建可收合的分組
-            const memberTypes = ['CC', 'CA', 'GI', 'CI', 'CS', 'VC'];
-            const memberNames = {
-                'CC': 'Klauder',
-                'CA': 'KersirAjen',
-                'GI': 'Jaymenight',
-                'CI': 'Kodes',
-                'CS': 'Kersir',
-                'VC': 'Kopylot'
-            };
+            // 直接顯示4個範本角色，對應任務範本的key
+            const templateRoles = [
+                { key: 'frontend', name: '前端開發', icon: 'FE', color: '#007bff' },
+                { key: 'backend', name: '後端開發', icon: 'BE', color: '#28a745' },
+                { key: 'fullstack', name: '全端開發', icon: 'FS', color: '#fd7e14' },
+                { key: 'testing', name: '測試與部署', icon: 'QA', color: '#6f42c1' }
+            ];
 
-            memberTypes.forEach((memberType, memberIndex) => {
-                const memberName = memberNames[memberType];
-                const isFirstGroup = memberIndex === 0;
-
-                // 可收合的成員標題
-                content += `
-                    <div class="list-group-item p-0">
-                        <button class="btn btn-link w-100 text-start fw-bold p-3 border-0 bg-light"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#member-${memberType}"
-                                aria-expanded="${isFirstGroup ? 'true' : 'false'}"
-                                style="text-decoration: none;">
-                            <i class="fas fa-chevron-down me-2" id="chevron-${memberType}"></i>
-                            ${memberName} (${memberType})
-                        </button>
-                        <div class="collapse ${isFirstGroup ? 'show' : ''}" id="member-${memberType}">
-                `;
-
-                // 該成員的各個角色
-                Object.keys(roles).forEach((roleId, roleIndex) => {
-                    const role = roles[roleId];
-                    const combinedId = `${memberType}-${roleId}`;
-                    const isActive = isFirstGroup && roleIndex === 0 ? 'active' : '';
-
-                    content += `
-                        <button class="list-group-item list-group-item-action ps-5 border-0 ${isActive}"
-                                onclick="teamManagement.selectTaskRole('${combinedId}').catch(console.error)"
-                                id="task-role-${combinedId}">
-                            <div class="d-flex align-items-center">
-                                <span class="badge me-2" style="background-color: ${role.color}; font-size: 0.7em;">
-                                    ${role.icon || '[角色]'}
-                                </span>
-                                ${role.name}
-                            </div>
-                        </button>
-                    `;
-                });
+            templateRoles.forEach((role, index) => {
+                const isActive = index === 0 ? 'active' : '';
 
                 content += `
+                    <button class="list-group-item list-group-item-action border-0 ${isActive}"
+                            onclick="teamManagement.selectTaskRole('${role.key}').catch(console.error)"
+                            id="task-role-${role.key}">
+                        <div class="d-flex align-items-center">
+                            <span class="badge me-2" style="background-color: ${role.color}; font-size: 0.8em;">
+                                ${role.icon}
+                            </span>
+                            ${role.name}
                         </div>
-                    </div>
+                    </button>
                 `;
             });
 
@@ -1739,11 +1708,11 @@ class TeamUIComponents {
                         </div>
 
                         <div class="col-md-9">
-                            <div class="card">
+                            <div class="card" style="height: 600px;">
                                 <div class="card-header">
                                     <h6 class="card-title mb-0" id="task-template-title">任務範本編輯</h6>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" style="height: calc(100% - 60px); overflow-y: auto;">
                                     <div id="task-template-content">
                                         <!-- 任務範本內容將在此顯示 -->
                                         <div class="text-center text-muted">
@@ -1762,14 +1731,11 @@ class TeamUIComponents {
                     window.taskTemplatesData = ${JSON.stringify(taskTemplates, null, 2)};
                     console.log('✅ 全域任務範本資料已設定，包含:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
 
-                    // 預設選擇第一個成員的第一個角色
+                    // 預設選擇第一個範本角色
                     setTimeout(async () => {
-                        const firstMemberType = 'CC';
-                        const firstRoleId = Object.keys(${JSON.stringify(roles)})[0];
-                        if (firstRoleId) {
-                            console.log('🎯 自動選擇第一個範本:', firstMemberType + '-' + firstRoleId);
-                            await teamManagement.selectTaskRole(firstMemberType + '-' + firstRoleId);
-                        }
+                        const firstTemplateRole = 'frontend';
+                        console.log('🎯 自動選擇第一個範本角色:', firstTemplateRole);
+                        await teamManagement.selectTaskRole(firstTemplateRole);
                     }, 500);
 
                     // 監聽收合按鈕，更新箭頭方向
