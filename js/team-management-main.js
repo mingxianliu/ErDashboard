@@ -5,13 +5,15 @@
 
 class TeamManagement {
     constructor() {
-        // 初始化各個模組
-        this.dataManager = new TeamDataManager();
+        // 使用全域單例或創建新實例
+        this.dataManager = window.globalTeamDataManager || new TeamDataManager();
         this.statistics = new TeamStatistics(this.dataManager);
         this.uiComponents = new TeamUIComponents(this.dataManager, this.statistics);
 
-        // 初始化資料
-        this.dataManager.init();
+        // 如果不是全域實例，則初始化
+        if (!window.globalTeamDataManager) {
+            this.dataManager.init();
+        }
     }
 
     // 等待初始化完成並載入總覽
@@ -103,9 +105,17 @@ class TeamManagement {
 
     // 載入專案管理（簡化版）
     async loadProjectManagement() {
-        // 重新初始化以取得最新資料
-        console.log('🔄 重新載入最新專案資料...');
-        await this.dataManager.init();
+        // 如果資料過時或未載入，才重新載入
+        const lastUpdate = this.dataManager.lastUpdateTime || 0;
+        const now = Date.now();
+        const shouldRefresh = !this.dataManager.isInitialized || (now - lastUpdate > 30000); // 30秒快取
+
+        if (shouldRefresh) {
+            console.log('🔄 重新載入最新專案資料...');
+            await this.dataManager.init();
+        } else {
+            console.log('📋 使用快取的專案資料');
+        }
 
         console.log('🎯 載入專案管理，assignments 資料:', Object.keys(this.dataManager.assignments || {}).length, '個專案');
 

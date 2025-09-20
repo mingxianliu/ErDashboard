@@ -33,6 +33,7 @@ class TeamDataManager {
             console.log('✅ 步驟4 完成');
 
             this.isInitialized = true;
+            this.lastUpdateTime = Date.now(); // 記錄更新時間
             console.log('[OK] 團隊資料管理器初始化完成 ✅');
             console.log('📊 初始化後的資料狀態:');
             console.log('  - members:', Object.keys(this.members || {}).length, '個');

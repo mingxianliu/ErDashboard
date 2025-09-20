@@ -1486,16 +1486,12 @@
                 // 初始化團隊資料管理器
                 if (!window.teamDataManager) {
                     console.log('🔄 創建團隊資料管理器...');
-                    window.teamDataManager = new TeamDataManager();
-
-                    // 非阻塞式初始化，讓 Dashboard 自己等待
-                    window.teamDataManager.init().then(() => {
-                        console.log('✅ 團隊資料管理器初始化完成');
-                    }).catch(error => {
-                        console.log('⚠️ 團隊資料管理器初始化失敗 (可能未登入 Google Drive):', error.message);
-                        // 確保標記為未初始化
-                        window.teamDataManager.isInitialized = false;
-                    });
+                    // 建立全域單例
+                    if (!window.globalTeamDataManager) {
+                        window.globalTeamDataManager = new TeamDataManager();
+                        await window.globalTeamDataManager.init();
+                    }
+                    window.teamDataManager = window.globalTeamDataManager;
                 }
 
                 // 立即初始化 Dashboard，讓它自己等待 teamDataManager
