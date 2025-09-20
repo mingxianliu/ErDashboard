@@ -200,6 +200,17 @@
                 // 從 TeamDataManager 獲取資料
                 const assignments = teamDataManager.getAllAssignments();
 
+                // 確保所有成員都有 isExecuting 欄位
+                Object.values(assignments).forEach(project => {
+                    if (project.members) {
+                        Object.values(project.members).forEach(member => {
+                            if (member.isExecuting === undefined) {
+                                member.isExecuting = false; // 預設為未執行
+                            }
+                        });
+                    }
+                });
+
                 const summaryCards = document.getElementById('summaryCards');
                 const projectsList = document.getElementById('projectsList');
 
@@ -230,7 +241,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">總參與成員數</h5>
                                         <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
-                                        <small class="text-muted">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting).length, 0)}</span></small>
+                                        <small class="text-muted">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting === true).length, 0)}</span></small>
                                     </div>
                                 </div>
                             </div>
@@ -994,7 +1005,7 @@
                 let executingCount = 0;
                 Object.values(assignments).forEach(project => {
                     Object.values(project.members || {}).forEach(member => {
-                        if (member.isExecuting) {
+                        if (member.isExecuting === true) {
                             executingCount++;
                         }
                     });
