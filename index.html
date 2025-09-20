@@ -142,32 +142,27 @@
     <script>
         // 使用 TeamDataManager 載入資料
         async function loadDataDirectly() {
-            console.log('使用 TeamDataManager 載入資料...');
             try {
                 // 等待 Google Drive API 準備好
                 if (window.googleDriveAPI) {
                     let waitCount = 0;
                     while (!window.googleDriveAPI.isReady() && waitCount < 10) {
-                        console.log('⏳ 等待 Google Drive API 初始化...', waitCount + 1);
                         await new Promise(resolve => setTimeout(resolve, 500));
                         waitCount++;
                     }
 
                     // 檢查並嘗試 Google Drive 自動登入
                     if (window.googleDriveAPI.isReady() && !window.googleDriveAPI.isSignedIn()) {
-                        console.log('🔐 Google Drive 未登入，嘗試自動登入...');
                         try {
                             const loginSuccess = await window.googleDriveAPI.signIn();
                             if (loginSuccess) {
                                 console.log('✅ Google Drive 自動登入成功');
                             } else {
-                                console.log('⚠️ Google Drive 自動登入失敗或被取消');
                             }
                         } catch (loginError) {
                             console.log('❌ Google Drive 自動登入錯誤:', loginError);
                         }
                     } else if (!window.googleDriveAPI.isReady()) {
-                        console.log('❌ Google Drive API 初始化超時');
                     }
                 }
 
@@ -187,13 +182,11 @@
                         const cachedTemplates = localStorage.getItem('cachedTaskTemplates');
                         if (cachedTemplates) {
                             window.taskTemplatesData = JSON.parse(cachedTemplates);
-                            console.log('✅ 從快取載入任務範本:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
                         } else {
                             // 2. 從本地檔案載入
                             const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
                             if (templateResponse.ok) {
                                 window.taskTemplatesData = await templateResponse.json();
-                                console.log('✅ 從本地檔案載入任務範本:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
                                 // 儲存到快取
                                 localStorage.setItem('cachedTaskTemplates', JSON.stringify(window.taskTemplatesData));
                             }
@@ -206,14 +199,12 @@
 
                 // 從 TeamDataManager 獲取資料
                 const assignments = teamDataManager.getAllAssignments();
-                console.log('📊 從 TeamDataManager 載入的資料:', assignments);
 
                 const summaryCards = document.getElementById('summaryCards');
                 const projectsList = document.getElementById('projectsList');
 
                 if (assignments && Object.keys(assignments).length > 0) {
                     const projects = Object.values(assignments);
-                    console.log('✅ 專案數量:', projects.length);
 
                     // 顯示統計
                     if (summaryCards) {
@@ -256,11 +247,9 @@
 
                     // 顯示專案列表
                     if (projectsList) {
-                        console.log('📝 開始生成專案列表 HTML...');
                         let html = '';
 
                         projects.forEach(project => {
-                            console.log('專案:', project.projectName);
                             const memberCount = Object.keys(project.members || {}).length;
 
                             // 生成成員列表
@@ -355,10 +344,8 @@
                                 </div>
                             `;
                         });
-                        console.log('🎨 設置專案列表 HTML...');
                         projectsList.innerHTML = html;
                         projectsList.style.display = 'flex';
-                        console.log('✅ 專案列表設置完成並顯示');
                     }
                 } else {
                     console.warn('⚠️ 資料格式不正確或沒有 assignments');
@@ -372,7 +359,6 @@
         // 編輯專案成員任務小卡
         async function editProjectMember(projectId, memberId) {
             try {
-                console.log('🔧 開始編輯任務小卡:', projectId, memberId);
 
                 // 使用 TeamDataManager 載入專案資料
                 if (!window.TeamDataManager) {
@@ -497,7 +483,6 @@
                             `;
                         }
                     } catch (e) {
-                        console.log('解析專案備註失敗:', e);
                     }
                 }
 
@@ -1049,7 +1034,6 @@
                         }
                     }
                 } catch (e) {
-                    console.log('獲取專案備註失敗:', e);
                 }
 
                 const textToCopy = taskContent + projectNotesText;
@@ -1353,18 +1337,15 @@
                 }
 
                 if (!window.googleDriveAPI.isAuthenticated) {
-                    console.log('🔐 Google Drive 未登入，開始自動登入流程...');
                     // 自動觸發登入
                     syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
                     showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
 
                     try {
                         const loginSuccess = await window.googleDriveAPI.signIn();
-                        console.log('🔐 登入結果:', loginSuccess);
                         if (!loginSuccess) {
                             throw new Error('Google Drive 登入失敗或被取消');
                         }
-                        console.log('✅ Google Drive 登入成功，繼續推送操作');
                         syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上傳中...';
                     } catch (loginError) {
                         console.error('❌ 登入過程發生錯誤:', loginError);
@@ -1403,18 +1384,15 @@
                 }
 
                 if (!window.googleDriveAPI.isAuthenticated) {
-                    console.log('🔐 Google Drive 未登入，開始自動登入流程...');
                     // 自動觸發登入
                     pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
                     showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
 
                     try {
                         const loginSuccess = await window.googleDriveAPI.signIn();
-                        console.log('🔐 登入結果:', loginSuccess);
                         if (!loginSuccess) {
                             throw new Error('Google Drive 登入失敗或被取消');
                         }
-                        console.log('✅ Google Drive 登入成功，繼續拉取操作');
                         pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 下載中...';
                     } catch (loginError) {
                         console.error('❌ 登入過程發生錯誤:', loginError);
@@ -1459,7 +1437,6 @@
 
             for (const filePath of filesToSync) {
                 try {
-                    console.log(`🔄 同步檔案: ${filePath}`);
                     const fileName = filePath.split('/').pop();
                     let fileContent;
 
@@ -1525,7 +1502,6 @@
                         message: '同步成功'
                     });
 
-                    console.log(`✅ ${fileName} 同步完成`);
 
                 } catch (error) {
                     console.error(`❌ ${filePath} 同步失敗:`, error);
@@ -1558,7 +1534,6 @@
 
             for (const fileName of filesToPull) {
                 try {
-                    console.log(`🔄 從 Google Drive 拉取檔案: ${fileName}`);
 
                     // 從 Google Drive 下載檔案
                     const wrappedContent = await window.googleDriveAPI.loadFile(fileName);
@@ -1604,7 +1579,6 @@
                         message: '拉取成功'
                     });
 
-                    console.log(`✅ ${fileName} 拉取完成`);
 
                 } catch (error) {
                     console.error(`❌ ${fileName} 拉取失敗:`, error);
@@ -1630,9 +1604,7 @@
                 try {
                     // 這裡可以讀取 project-status 資料夾中的檔案
                     // 由於瀏覽器安全限制，我們先記錄到 localStorage
-                    console.log(`📊 檢查專案 ${project} 狀態檔案`);
                 } catch (error) {
-                    console.log(`⚠️ 專案 ${project} 無狀態檔案`);
                 }
             }
         }
@@ -1695,7 +1667,6 @@
             }
 
             localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
-            console.log('📝 推送記錄已保存:', syncLog);
         }
 
         // 記錄拉取結果
@@ -1720,7 +1691,6 @@
             }
 
             localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
-            console.log('📝 拉取記錄已保存:', pullLog);
         }
 
         // 團隊管理功能
@@ -1739,11 +1709,9 @@
             }
             // 僅在已驗證時初始化 Dashboard
             try {
-                console.log('開始初始化 Markdown Dashboard...');
 
                 // 初始化團隊資料管理器
                 if (!window.teamDataManager) {
-                    console.log('🔄 創建團隊資料管理器...');
                     // 建立全域單例
                     if (!window.globalTeamDataManager) {
                         window.globalTeamDataManager = new TeamDataManager();
@@ -1753,7 +1721,6 @@
                 }
 
                 // 立即初始化 Dashboard，讓它自己等待 teamDataManager
-                console.log('🔄 創建 Markdown Dashboard...');
                 if (typeof MarkdownProjectDashboard !== 'undefined') {
                     window.markdownDashboard = new MarkdownProjectDashboard();
                 } else {
