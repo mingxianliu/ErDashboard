@@ -705,25 +705,42 @@
         function formatNotes(notes) {
             if (!notes) return '<p class="text-muted m-0">尚無備註</p>';
 
-            try {
-                const notesList = JSON.parse(notes);
-                if (Array.isArray(notesList) && notesList.length > 0) {
-                    return notesList.map(note =>
+            // 如果 notes 已經是陣列（物件），直接處理
+            if (Array.isArray(notes)) {
+                if (notes.length > 0) {
+                    return notes.map(note =>
                         `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
                             <div class="fw-bold small text-muted">${note.timestamp}</div>
                             <div>${note.content}</div>
                         </div>`
                     ).join('');
                 }
-            } catch (e) {
-                // 如果不是 JSON 格式，當作舊格式的純文字
-                if (notes.trim()) {
-                    return `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
-                                <div class="fw-bold small text-muted">舊備註</div>
-                                <div>${notes}</div>
-                            </div>`;
+                return '<p class="text-muted m-0">尚無備註</p>';
+            }
+
+            // 如果是字串，嘗試解析 JSON
+            if (typeof notes === 'string') {
+                try {
+                    const notesList = JSON.parse(notes);
+                    if (Array.isArray(notesList) && notesList.length > 0) {
+                        return notesList.map(note =>
+                            `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
+                                <div class="fw-bold small text-muted">${note.timestamp}</div>
+                                <div>${note.content}</div>
+                            </div>`
+                        ).join('');
+                    }
+                } catch (e) {
+                    // 如果不是 JSON 格式，當作舊格式的純文字
+                    if (notes.trim()) {
+                        return `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
+                                    <div class="fw-bold small text-muted">舊備註</div>
+                                    <div>${notes}</div>
+                                </div>`;
+                    }
                 }
             }
+
             return '<p class="text-muted m-0">尚無備註</p>';
         }
 
