@@ -86,11 +86,12 @@ class TeamDataManager {
                     console.log('☁️ 從 Google Drive 載入 team-members.json...');
                     const driveContent = await window.googleDriveAPI.loadFile('team-members.json');
                     if (driveContent) {
-                        data = JSON.parse(driveContent);
+                        // 處理包裝格式的資料 (從 saveFile 儲存的格式)
+                        data = driveContent.data || driveContent;
                         console.log('☁️ Google Drive 團隊成員資料載入成功');
                         console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
-                        // 儲存到本地快取
-                        localStorage.setItem('cachedTeamMembers', driveContent);
+                        // 儲存到本地快取 (儲存原始格式)
+                        localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
                     }
                 } catch (driveError) {
                     console.log('☁️ Google Drive 載入失敗:', driveError.message);
@@ -165,7 +166,8 @@ class TeamDataManager {
                     console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
                     const driveContent = await window.googleDriveAPI.loadFile('project-assignments.json');
                     if (driveContent) {
-                        data = JSON.parse(driveContent);
+                        // 處理包裝格式的資料 (從 saveFile 儲存的格式)
+                        data = driveContent.data || driveContent;
                         console.log('☁️ 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
                         console.log('☁️ assignments 內容:', data.assignments);
                     }
