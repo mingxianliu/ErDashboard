@@ -59,18 +59,31 @@ class GoogleDriveAPI {
             // 從設定取得 Client ID
             const CLIENT_ID = config.CLIENT_ID;
             this.folderId = config.FOLDER_ID;
+            const SCOPES = config.SCOPES || 'https://www.googleapis.com/auth/drive.file';
 
-            if (!CLIENT_ID || CLIENT_ID === '你的-client-id.apps.googleusercontent.com') {
+            if (!CLIENT_ID || CLIENT_ID === '你的-client-id.apps.googleusercontent.com' || CLIENT_ID === 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com') {
                 console.warn('⚠️ Google Client ID 未設定，Google Drive 功能將被停用');
                 this.isConfigured = false;
                 return;
             }
 
+            if (!this.folderId || this.folderId === 'YOUR_FOLDER_ID_HERE') {
+                console.warn('⚠️ Google Drive 資料夾 ID 未設定，Google Drive 功能將被停用');
+                this.isConfigured = false;
+                return;
+            }
+
+            console.log('📝 使用設定:', {
+                clientId: CLIENT_ID.substring(0, 20) + '...',
+                folderId: this.folderId.substring(0, 10) + '...',
+                scopes: SCOPES
+            });
+
             this.isConfigured = true;
 
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
-                scope: config.SCOPES,
+                scope: SCOPES,
                 callback: (response) => {
                     if (response.access_token) {
                         this.accessToken = response.access_token;
