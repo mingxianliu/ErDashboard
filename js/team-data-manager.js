@@ -171,10 +171,16 @@ class TeamDataManager {
 
                         // 驗證資料結構
                         if (data && data.assignments && typeof data.assignments === 'object') {
-                            console.log('☁️ 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
-                            console.log('☁️ assignments 內容:', data.assignments);
+                            const assignmentCount = Object.keys(data.assignments).length;
+                            if (assignmentCount > 0) {
+                                console.log('☁️ 成功載入專案分配資料:', assignmentCount, '個專案');
+                                console.log('☁️ assignments 內容:', data.assignments);
+                            } else {
+                                console.log('⚠️ Google Drive 中的專案分配為空，將使用本地檔案');
+                                data = null; // 強制使用本地檔案
+                            }
                         } else {
-                            console.warn('⚠️ Google Drive 資料格式不正確:', data);
+                            console.warn('⚠️ Google Drive 資料格式不正確，將使用本地檔案');
                             data = null; // 強制使用本地檔案
                         }
                     }
