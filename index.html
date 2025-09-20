@@ -230,6 +230,7 @@
                                     <div class="card-body">
                                         <h5 class="card-title">總參與成員數</h5>
                                         <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
+                                        <small class="text-muted">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting).length, 0)}</span></small>
                                     </div>
                                 </div>
                             </div>
@@ -287,14 +288,21 @@
                                         <div class="d-flex justify-content-between align-items-center p-3 mb-2 border rounded"
                                              style="background-color: ${groupBgColor};">
                                             <div class="d-flex align-items-center flex-grow-1">
+                                                <div class="form-check me-3">
+                                                    <input class="form-check-input" type="checkbox"
+                                                           id="executing-${project.projectId}-${member.memberId}"
+                                                           onchange="toggleMemberExecution('${project.projectId}', '${member.memberId}', this.checked)"
+                                                           ${member.isExecuting ? 'checked' : ''}>
+                                                </div>
                                                 <div class="d-flex flex-column me-3" style="min-width: 80px;">
-                                                    <div class="fw-bold mb-1">${memberName}</div>
+                                                    <div class="fw-bold mb-1 ${member.isExecuting ? 'text-success' : ''}">${memberName}</div>
                                                     <small class="text-muted">${member.memberId}</small>
                                                 </div>
                                                 <div class="d-flex align-items-center justify-content-end flex-grow-1 me-3">
                                                     <span class="badge px-3 py-2" style="background-color: ${roleColor}; font-size: 0.85em;">
                                                         ${member.role}
                                                     </span>
+                                                    ${member.isExecuting ? '<i class="fas fa-play-circle text-success ms-2" title="執行中"></i>' : ''}
                                                 </div>
                                             </div>
                                             <div class="d-flex gap-1">
@@ -924,6 +932,81 @@
             } catch (error) {
                 console.error('變更成員失敗:', error);
                 alert('變更成員失敗: ' + error.message);
+            }
+        }
+
+        // 切換成員執行狀態
+        async function toggleMemberExecution(projectId, memberId, isChecked) {
+            try {
+                // 載入團隊資料管理器
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+
+                // 更新成員執行狀態
+                if (assignments[projectId] && assignments[projectId].members[memberId]) {
+                    assignments[projectId].members[memberId].isExecuting = isChecked;
+                    assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
+
+                    // 視覺回饋
+                    const checkbox = document.getElementById(`executing-${projectId}-${memberId}`);
+                    const memberCard = checkbox.closest('.border.rounded');
+                    const memberNameDiv = checkbox.closest('.d-flex').querySelector('.fw-bold');
+
+                    if (isChecked) {
+                        memberNameDiv.classList.add('text-success');
+                        memberCard.style.borderLeft = '3px solid #28a745';
+                        showSyncToast('狀態更新', `${memberId} 已開始執行任務`, 'success');
+                    } else {
+                        memberNameDiv.classList.remove('text-success');
+                        memberCard.style.borderLeft = '';
+                        showSyncToast('狀態更新', `${memberId} 已停止執行任務`, 'info');
+                    }
+
+                    // 更新統計資訊
+                    updateExecutionStatistics();
+
+                } else {
+                    throw new Error('找不到指定的專案或成員');
+                }
+
+            } catch (error) {
+                console.error('更新執行狀態失敗:', error);
+                alert('更新執行狀態失敗: ' + error.message);
+
+                // 恢復 checkbox 狀態
+                const checkbox = document.getElementById(`executing-${projectId}-${memberId}`);
+                if (checkbox) {
+                    checkbox.checked = !isChecked;
+                }
+            }
+        }
+
+        // 更新執行統計資訊
+        function updateExecutionStatistics() {
+            try {
+                const teamDataManager = new window.TeamDataManager();
+                const assignments = teamDataManager.getAllAssignments();
+
+                let executingCount = 0;
+                Object.values(assignments).forEach(project => {
+                    Object.values(project.members || {}).forEach(member => {
+                        if (member.isExecuting) {
+                            executingCount++;
+                        }
+                    });
+                });
+
+                // 更新頁面上的統計顯示
+                const executingBadge = document.getElementById('executingCount');
+                if (executingBadge) {
+                    executingBadge.textContent = executingCount;
+                }
+            } catch (error) {
+                console.error('更新統計失敗:', error);
             }
         }
 
