@@ -187,6 +187,28 @@ class GoogleDriveAPI {
         return this.isConfigured && this.tokenClient !== null;
     }
 
+    // 通用的 API 重試機制，處理 token 過期
+    async retryWithReAuth(apiFunction, maxRetries = 1) {
+        let retries = 0;
+        while (retries <= maxRetries) {
+            try {
+                return await apiFunction();
+            } catch (error) {
+                // 檢查是否為 401 未授權錯誤
+                if ((error.message.includes('401') || error.message.includes('Unauthorized')) && retries < maxRetries) {
+                    console.log(`🔑 Token 已過期 (嘗試 ${retries + 1}/${maxRetries + 1})，重新驗證...`);
+                    const reAuthSuccess = await this.signIn();
+                    if (reAuthSuccess) {
+                        console.log('✅ 重新驗證成功，重試操作');
+                        retries++;
+                        continue;
+                    }
+                }
+                throw error;
+            }
+        }
+    }
+
     // 儲存檔案到 Google Drive
     async saveFile(fileName, content, fileType = 'members') {
         if (!this.isConfigured) {
@@ -201,7 +223,7 @@ class GoogleDriveAPI {
             }
         }
 
-        try {
+        return await this.retryWithReAuth(async () => {
             const fileData = {
                 version: "1.0",
                 type: fileType,
@@ -221,10 +243,7 @@ class GoogleDriveAPI {
                 // 建立新檔案
                 return await this.createFile(fileName, fileContent);
             }
-        } catch (error) {
-            console.error('儲存檔案失敗:', error);
-            throw error;
-        }
+        });
     }
 
     // 從 Google Drive 讀取檔案
@@ -233,7 +252,7 @@ class GoogleDriveAPI {
             throw new Error('需要登入 Google Drive');
         }
 
-        try {
+        return await this.retryWithReAuth(async () => {
             const file = await this.findFile(fileName);
             if (!file) {
                 return null;
@@ -268,10 +287,7 @@ class GoogleDriveAPI {
 
             // 否則直接返回解析後的內容
             return parsedContent;
-        } catch (error) {
-            console.error('載入檔案失敗:', error);
-            throw error;
-        }
+        });
     }
 
     // 搜尋檔案
