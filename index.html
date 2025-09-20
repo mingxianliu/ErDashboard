@@ -1336,7 +1336,7 @@
                     throw new Error('Google Drive API 未載入');
                 }
 
-                if (!window.googleDriveAPI.isAuthenticated) {
+                if (!window.googleDriveAPI.isSignedIn()) {
                     // 自動觸發登入
                     syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
                     showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
@@ -1383,7 +1383,7 @@
                     throw new Error('Google Drive API 未載入');
                 }
 
-                if (!window.googleDriveAPI.isAuthenticated) {
+                if (!window.googleDriveAPI.isSignedIn()) {
                     // 自動觸發登入
                     pullBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 登入中...';
                     showSyncToast('需要登入', '正在開啟 Google Drive 登入...', 'info');
