@@ -171,9 +171,17 @@
                     throw new Error('TeamDataManager 未載入');
                 }
 
-                // 初始化 TeamDataManager
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用或創建全域 TeamDataManager
+                let teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                    window.globalTeamDataManager = teamDataManager;
+                    window.teamDataManager = teamDataManager;
+                } else {
+                    // 確保資料是最新的
+                    await teamDataManager.init();
+                }
 
                 // 載入任務範本資料（如果還沒載入）
                 if (!window.taskTemplatesData) {
@@ -454,9 +462,11 @@
         async function editTaskCard(projectId, memberId) {
             try {
 
-                // 重新載入專案資料
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
                 const member = project.members[memberId];
@@ -985,9 +995,11 @@
         // 切換成員執行狀態
         async function toggleMemberExecution(projectId, memberId, isChecked) {
             try {
-                // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
                 const assignments = teamDataManager.getAllAssignments();
 
                 // 更新成員執行狀態
@@ -1035,7 +1047,11 @@
         // 更新執行統計資訊
         function updateExecutionStatistics() {
             try {
-                const teamDataManager = new window.TeamDataManager();
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    console.warn('TeamDataManager 未初始化');
+                    return;
+                }
                 const assignments = teamDataManager.getAllAssignments();
 
                 let executingCount = 0;
@@ -1126,9 +1142,11 @@
                     return;
                 }
 
-                // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
                 const assignments = teamDataManager.getAllAssignments();
 
                 // 更新任務小卡內容
@@ -1800,15 +1818,19 @@
 
                     // 根據檔案類型選擇資料來源
                     if (fileName === 'team-members.json') {
-                        // 使用 TeamDataManager 中的資料
-                        const teamDataManager = new window.TeamDataManager();
-                        await teamDataManager.init();
+                        // 使用全域 TeamDataManager 中的資料
+                        const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                        if (!teamDataManager) {
+                            throw new Error('TeamDataManager 未初始化');
+                        }
                         const teamConfig = teamDataManager.teamConfig;
                         fileContent = JSON.stringify(teamConfig, null, 2);
                     } else if (fileName === 'project-assignments.json') {
-                        // 使用 TeamDataManager 中的分配資料
-                        const teamDataManager = new window.TeamDataManager();
-                        await teamDataManager.init();
+                        // 使用全域 TeamDataManager 中的分配資料
+                        const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                        if (!teamDataManager) {
+                            throw new Error('TeamDataManager 未初始化');
+                        }
                         const assignments = teamDataManager.getAllAssignments();
                         const constraints = teamDataManager.constraints;
                         const assignmentData = {
