@@ -173,9 +173,6 @@
                     // 顯示統計
                     if (summaryCards) {
                         summaryCards.innerHTML = `
-                            <div class="col-12 mb-3">
-                                <h3>團隊專案總覽</h3>
-                            </div>
                             <div class="col-md-3">
                                 <div class="card">
                                     <div class="card-body">
@@ -228,7 +225,13 @@
                             // 生成成員列表
                             let membersHtml = '';
                             if (project.members && Object.keys(project.members).length > 0) {
-                                membersHtml = '<div class="mt-3"><h6>團隊成員:</h6>';
+                                membersHtml = `
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">團隊成員(${memberCount}):</h6>
+                                            <span class="badge bg-${project.status === 'active' ? 'success' : 'secondary'}">${project.status === 'active' ? '進行中' : '已完成'}</span>
+                                        </div>
+                                `;
                                 Object.values(project.members).forEach(member => {
                                     const memberNames = {
                                         'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
@@ -248,33 +251,58 @@
                                     const roleColor = roleColors[member.role] || '#6c757d';
 
                                     membersHtml += `
-                                        <span class="badge me-2 mb-1"
-                                              style="background-color: ${roleColor}; cursor: pointer;"
-                                              onclick="editProjectMember('${project.projectId}', '${member.memberId}')"
-                                              title="點擊編輯任務小卡">
-                                            ${memberName} (${member.role})
-                                        </span>
+                                        <div class="d-flex justify-content-between align-items-center p-2 mb-2 border rounded"
+                                             style="background-color: rgba(${roleColor.slice(1).match(/.{2}/g).map(x => parseInt(x, 16)).join(', ')}, 0.1);">
+                                            <div class="d-flex align-items-center">
+                                                <div class="me-3">
+                                                    <div class="fw-bold">${memberName}</div>
+                                                    <small class="text-muted">${member.memberId}</small>
+                                                </div>
+                                                <span class="badge me-2" style="background-color: ${roleColor};">
+                                                    ${member.role}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-warning" onclick="changeMember('${project.projectId}', '${member.memberId}')" title="變更成員">
+                                                    <i class="fas fa-user-edit"></i>
+                                                </button>
+                                            </div>
+                                        </div>
                                     `;
                                 });
                                 membersHtml += '</div>';
                             } else {
-                                membersHtml = '<div class="mt-3"><small class="text-muted">尚未分配成員</small></div>';
+                                membersHtml = `
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0">團隊成員(0):</h6>
+                                            <span class="badge bg-${project.status === 'active' ? 'success' : 'secondary'}">${project.status === 'active' ? '進行中' : '已完成'}</span>
+                                        </div>
+                                        <small class="text-muted">尚未分配成員</small>
+                                    </div>
+                                `;
                             }
 
                             html += `
                                 <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
-                                    <div class="card mb-3" style="min-height: 250px;">
+                                    <div class="card mb-3" style="min-height: 280px;">
                                         <div class="card-body d-flex flex-column">
-                                            <h5 class="card-title text-truncate" title="${project.projectName}">${project.projectName}</h5>
-                                            <p class="text-muted">成員數: ${memberCount}</p>
-                                            <div class="progress mb-2">
-                                                <div class="progress-bar" style="width: ${project.progress}%">${project.progress}%</div>
+                                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                                <h5 class="card-title text-truncate me-2" title="${project.projectName}">${project.projectName}</h5>
+                                                <button class="btn btn-sm btn-outline-info" onclick="editProjectProgress('${project.projectId}')" title="調整進度">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </button>
+                                            </div>
+                                            <div class="progress mb-3" style="height: 25px;">
+                                                <div class="progress-bar d-flex align-items-center justify-content-center" style="width: ${project.progress}%">
+                                                    <span class="fw-bold">${project.progress}%</span>
+                                                </div>
                                             </div>
                                             <div class="flex-grow-1">
                                                 ${membersHtml}
-                                            </div>
-                                            <div class="mt-auto">
-                                                <small class="text-muted">狀態: ${project.status}</small>
                                             </div>
                                         </div>
                                     </div>
@@ -348,50 +376,10 @@
                 }
 
                 // 生成任務小卡內容（正確格式）
-                const branchName = `${memberName}專案的${project.projectName}`;
-                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${branchName}」，若無則create，請依循下列的任務指引「${taskTemplate}」 進行任務。`;
+                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${memberName}」，若無則create，請依循下列的任務指引：\n\n${taskTemplate}`;
 
-                // 建立操作選擇模態框
-                const modalHtml = `
-                    <div class="modal fade" id="memberActionModal" tabindex="-1">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">成員操作選擇 - ${memberName}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body text-center">
-                                    <p>請選擇要執行的操作：</p>
-                                    <div class="d-grid gap-2">
-                                        <button type="button" class="btn btn-primary" onclick="editTaskCard('${projectId}', '${memberId}')">
-                                            <i class="fas fa-edit"></i> 編輯任務小卡
-                                        </button>
-                                        <button type="button" class="btn btn-info" onclick="editProjectProgress('${projectId}')">
-                                            <i class="fas fa-chart-line"></i> 更改專案進度
-                                        </button>
-                                        <button type="button" class="btn btn-warning" onclick="changeMember('${projectId}', '${memberId}')">
-                                            <i class="fas fa-user-edit"></i> 變更成員
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // 移除舊的模態框並加入新的
-                const oldModal = document.getElementById('memberActionModal');
-                if (oldModal) {
-                    oldModal.remove();
-                }
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
-
-                // 顯示模態框
-                const modal = new bootstrap.Modal(document.getElementById('memberActionModal'));
-                modal.show();
+                // 直接編輯任務小卡（不再需要選擇模態框）
+                editTaskCard(projectId, memberId);
 
             } catch (error) {
                 console.error('編輯任務小卡失敗:', error);
@@ -402,9 +390,6 @@
         // 編輯任務小卡
         async function editTaskCard(projectId, memberId) {
             try {
-                // 關閉操作選擇模態框
-                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
-                if (actionModal) actionModal.hide();
 
                 // 重新載入專案資料
                 const teamDataManager = new window.TeamDataManager();
@@ -432,8 +417,7 @@
                     }
                 }
 
-                const branchName = `${memberName}專案的${project.projectName}`;
-                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${branchName}」，若無則create，請依循下列的任務指引「${taskTemplate}」 進行任務。`;
+                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${memberName}」，若無則create，請依循下列的任務指引：\n\n${taskTemplate}`;
 
                 // 顯示任務小卡編輯模態框
                 const taskModalHtml = `
@@ -441,17 +425,13 @@
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title">任務小卡編輯 - ${memberName}</h5>
+                                    <h5 class="modal-title">任務小卡編輯 - ${memberName}，「${project.projectName}」專案的「${member.role}」</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="mb-3">
-                                        <label for="branchName" class="form-label">分支名稱</label>
-                                        <input type="text" class="form-control" id="branchName" value="${branchName}">
-                                    </div>
-                                    <div class="mb-3">
                                         <label for="taskContent" class="form-label">任務小卡內容</label>
-                                        <textarea class="form-control" id="taskContent" rows="8">${taskCardContent}</textarea>
+                                        <textarea class="form-control" id="taskContent" rows="15" style="min-height: 400px;">${taskCardContent}</textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -481,9 +461,6 @@
         // 編輯專案進度
         async function editProjectProgress(projectId) {
             try {
-                // 關閉操作選擇模態框
-                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
-                if (actionModal) actionModal.hide();
 
                 // 載入專案資料
                 const teamDataManager = new window.TeamDataManager();
@@ -568,9 +545,6 @@
         // 變更成員
         async function changeMember(projectId, memberId) {
             try {
-                // 關閉操作選擇模態框
-                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
-                if (actionModal) actionModal.hide();
 
                 // 載入團隊成員資料
                 const teamDataManager = new window.TeamDataManager();
@@ -663,9 +637,8 @@
         // 複製任務小卡內容
         function copyTaskCard() {
             try {
-                const branchName = document.getElementById('branchName').value;
                 const taskContent = document.getElementById('taskContent').value;
-                const textToCopy = `分支名稱: ${branchName}\n\n任務內容:\n${taskContent}`;
+                const textToCopy = taskContent;
 
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     // 視覺回饋
