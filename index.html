@@ -1016,8 +1016,60 @@
                 const newMemberId = document.getElementById('newMember').value;
                 const newRole = document.getElementById('memberRole').value;
 
-                // 這裡應該要呼叫 TeamDataManager 的方法來儲存變更
-                // 暫時先顯示成功訊息
+                // 載入團隊資料管理器
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+
+                // 檢查新成員是否已經在其他專案中
+                let alreadyAssigned = false;
+                let assignedProject = '';
+                for (const [projId, project] of Object.entries(assignments)) {
+                    if (project.members && project.members[newMemberId]) {
+                        alreadyAssigned = true;
+                        assignedProject = project.projectName;
+                        break;
+                    }
+                }
+
+                if (alreadyAssigned && newMemberId !== oldMemberId) {
+                    if (!confirm(`${newMemberId} 已經被分配到「${assignedProject}」專案。\n確定要將他重新分配到此專案嗎？`)) {
+                        return;
+                    }
+                    // 從舊專案移除
+                    for (const [projId, project] of Object.entries(assignments)) {
+                        if (project.members && project.members[newMemberId]) {
+                            delete project.members[newMemberId];
+                            break;
+                        }
+                    }
+                }
+
+                // 取得舊成員資料
+                const oldMemberData = assignments[projectId].members[oldMemberId];
+
+                if (newMemberId !== oldMemberId) {
+                    // 如果更換成員，刪除舊成員
+                    delete assignments[projectId].members[oldMemberId];
+
+                    // 新增新成員，保留任務小卡等資料
+                    assignments[projectId].members[newMemberId] = {
+                        memberId: newMemberId,
+                        role: newRole,
+                        taskCard: oldMemberData.taskCard || {},
+                        isExecuting: false // 新成員預設為未執行狀態
+                    };
+                } else {
+                    // 如果只是更改角色
+                    assignments[projectId].members[oldMemberId].role = newRole;
+                }
+
+                // 更新專案的最後更新時間
+                assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                // 儲存變更
+                await teamDataManager.saveLocalChanges();
+
                 alert(`成員已從 ${oldMemberId} 變更為 ${newMemberId}\n角色: ${newRole}`);
 
                 // 關閉模態框
@@ -1025,7 +1077,9 @@
                 if (memberModal) memberModal.hide();
 
                 // 重新載入頁面資料
-                loadDataDirectly();
+                setTimeout(() => {
+                    loadDataDirectly();
+                }, 500);
 
             } catch (error) {
                 console.error('儲存成員變更失敗:', error);
