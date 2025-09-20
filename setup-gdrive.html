@@ -62,6 +62,9 @@
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save me-2"></i>儲存設定
                                 </button>
+                                <button type="button" class="btn btn-warning" onclick="clearOldSettings()">
+                                    <i class="fas fa-trash me-2"></i>清除舊設定
+                                </button>
                                 <a href="index.html" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left me-2"></i>返回首頁
                                 </a>
@@ -143,6 +146,15 @@
             }
         });
 
+        function clearOldSettings() {
+            if (confirm('確定要清除所有舊設定嗎？')) {
+                sessionStorage.removeItem('GOOGLE_DRIVE_CONFIG');
+                document.getElementById('clientId').value = '';
+                document.getElementById('folderId').value = '';
+                showMessage('舊設定已清除', 'warning');
+            }
+        }
+
         function showMessage(text, type) {
             const messageDiv = document.getElementById('statusMessage');
             messageDiv.className = `alert alert-${type}`;
@@ -156,8 +168,17 @@
             if (existingConfig) {
                 try {
                     const config = JSON.parse(existingConfig);
-                    document.getElementById('clientId').value = config.CLIENT_ID || '';
-                    document.getElementById('folderId').value = config.FOLDER_ID || '';
+                    // 只載入非預設的安全設定
+                    if (config.CLIENT_ID &&
+                        config.CLIENT_ID !== 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com' &&
+                        !config.CLIENT_ID.includes('756154426515')) {
+                        document.getElementById('clientId').value = config.CLIENT_ID;
+                    }
+                    if (config.FOLDER_ID &&
+                        config.FOLDER_ID !== 'YOUR_FOLDER_ID_HERE' &&
+                        config.FOLDER_ID !== '1u_sNMXzNVxqZJHNZOpIQFxGXaIktyjS4') {
+                        document.getElementById('folderId').value = config.FOLDER_ID;
+                    }
                 } catch (error) {
                     console.error('載入現有設定失敗:', error);
                 }
