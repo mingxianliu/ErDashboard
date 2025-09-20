@@ -35,8 +35,8 @@ class TeamDataManager {
             this.isInitialized = true;
             console.log('[OK] 團隊資料管理器初始化完成 ✅');
             console.log('📊 初始化後的資料狀態:');
-            console.log('  - members:', Object.keys(this.members).length, '個');
-            console.log('  - assignments:', Object.keys(this.assignments).length, '個');
+            console.log('  - members:', Object.keys(this.members || {}).length, '個');
+            console.log('  - assignments:', Object.keys(this.assignments || {}).length, '個');
         } catch (error) {
             console.error('[ERROR] 團隊資料管理器初始化失敗:', error);
             console.error('❌ 錯誤堆疊:', error.stack);
@@ -168,8 +168,15 @@ class TeamDataManager {
                     if (driveContent) {
                         // 處理包裝格式的資料 (從 saveFile 儲存的格式)
                         data = driveContent.data || driveContent;
-                        console.log('☁️ 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
-                        console.log('☁️ assignments 內容:', data.assignments);
+
+                        // 驗證資料結構
+                        if (data && data.assignments && typeof data.assignments === 'object') {
+                            console.log('☁️ 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
+                            console.log('☁️ assignments 內容:', data.assignments);
+                        } else {
+                            console.warn('⚠️ Google Drive 資料格式不正確:', data);
+                            data = null; // 強制使用本地檔案
+                        }
                     }
                 } catch (driveError) {
                     console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
@@ -184,12 +191,16 @@ class TeamDataManager {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 data = await response.json();
-                console.log('📁 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
-                console.log('📁 assignments 內容:', data.assignments);
+                if (data && data.assignments) {
+                    console.log('📁 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
+                    console.log('📁 assignments 內容:', data.assignments);
+                } else {
+                    console.warn('⚠️ 本地檔案資料格式不正確:', data);
+                }
             }
 
-            this.assignments = data.assignments;
-            this.constraints = data.constraints;
+            this.assignments = (data && data.assignments) ? data.assignments : {};
+            this.constraints = (data && data.constraints) ? data.constraints : {};
         } catch (error) {
             console.error('❌ 載入專案分配資料失敗:', error);
             this.assignments = {};
@@ -204,10 +215,12 @@ class TeamDataManager {
                 const localAssignments = JSON.parse(savedData);
                 // 合併本地變更到專案分配
                 Object.keys(localAssignments).forEach(projectId => {
-                    if (this.assignments[projectId]) {
+                    if (this.assignments && this.assignments[projectId]) {
                         this.assignments[projectId] = { ...this.assignments[projectId], ...localAssignments[projectId] };
-                    } else {
+                    } else if (this.assignments) {
                         this.assignments[projectId] = localAssignments[projectId];
+                    } else {
+                        console.warn(`⚠️ assignments 未初始化，無法載入 ${projectId} 的本地變更`);
                     }
                 });
                 console.log('已載入本地專案分配變更');
