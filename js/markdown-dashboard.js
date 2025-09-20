@@ -331,16 +331,16 @@ class MarkdownProjectDashboard {
             <div class="col-md-2">
                 <div class="card border-primary" style="height: 140px;">
                     <div class="card-header bg-primary text-white py-2">
-                        <small class="fw-bold">部署進度最落後</small>
+                        <small class="fw-bold">驗測部署進度最落後</small>
                     </div>
                     <div class="card-body p-1">
-                        ${deploymentBottom.map(p => `
+                        ${testingBottom.map(p => `
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <small class="text-muted">${p.name.split(' - ')[0]}</small>
-                                <span class="badge bg-secondary small">${p.coreMetrics.deployment.progress}%</span>
+                                <span class="badge bg-secondary small">${p.coreMetrics.testing.progress}%</span>
                             </div>
                         `).join('')}
-                        ${deploymentBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
+                        ${testingBottom.length === 0 ? '<small class="text-muted">無數據</small>' : ''}
                     </div>
                 </div>
             </div>
@@ -415,6 +415,7 @@ class MarkdownProjectDashboard {
                                     const membersByRole = {
                                         frontend: [],
                                         backend: [],
+                                        fullstack: [],
                                         testing: []
                                     };
 
@@ -434,8 +435,11 @@ class MarkdownProjectDashboard {
                                     if (membersByRole.backend.length > 0) {
                                         html += `<div class="mb-1"><small class="text-muted">後端 (${membersByRole.backend.join(', ')})</small></div>`;
                                     }
+                                    if (membersByRole.fullstack.length > 0) {
+                                        html += `<div class="mb-1"><small class="text-muted">全端 (${membersByRole.fullstack.join(', ')})</small></div>`;
+                                    }
                                     if (membersByRole.testing.length > 0) {
-                                        html += `<div class="mb-1"><small class="text-muted">測試 (${membersByRole.testing.join(', ')})</small></div>`;
+                                        html += `<div class="mb-1"><small class="text-muted">驗測部署 (${membersByRole.testing.join(', ')})</small></div>`;
                                     }
 
                                     if (html) {
