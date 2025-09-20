@@ -144,18 +144,30 @@
         async function loadDataDirectly() {
             console.log('使用 TeamDataManager 載入資料...');
             try {
-                // 檢查並嘗試 Google Drive 自動登入
-                if (window.googleDriveAPI && window.googleDriveAPI.isReady() && !window.googleDriveAPI.isAuthenticated) {
-                    console.log('Google Drive 未登入，嘗試自動登入...');
-                    try {
-                        const loginSuccess = await window.googleDriveAPI.signIn();
-                        if (loginSuccess) {
-                            console.log('Google Drive 自動登入成功');
-                        } else {
-                            console.log('Google Drive 自動登入失敗或被取消');
+                // 等待 Google Drive API 準備好
+                if (window.googleDriveAPI) {
+                    let waitCount = 0;
+                    while (!window.googleDriveAPI.isReady() && waitCount < 10) {
+                        console.log('⏳ 等待 Google Drive API 初始化...', waitCount + 1);
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        waitCount++;
+                    }
+
+                    // 檢查並嘗試 Google Drive 自動登入
+                    if (window.googleDriveAPI.isReady() && !window.googleDriveAPI.isSignedIn()) {
+                        console.log('🔐 Google Drive 未登入，嘗試自動登入...');
+                        try {
+                            const loginSuccess = await window.googleDriveAPI.signIn();
+                            if (loginSuccess) {
+                                console.log('✅ Google Drive 自動登入成功');
+                            } else {
+                                console.log('⚠️ Google Drive 自動登入失敗或被取消');
+                            }
+                        } catch (loginError) {
+                            console.log('❌ Google Drive 自動登入錯誤:', loginError);
                         }
-                    } catch (loginError) {
-                        console.log('Google Drive 自動登入錯誤:', loginError);
+                    } else if (!window.googleDriveAPI.isReady()) {
+                        console.log('❌ Google Drive API 初始化超時');
                     }
                 }
 
@@ -450,27 +462,98 @@
 
                 // 檢查是否有已儲存的任務小卡內容
                 let taskCardContent;
-                if (assignments[projectId].members[memberId].taskCard && assignments[projectId].members[memberId].taskCard.content) {
+                const taskCard = assignments[projectId].members[memberId].taskCard;
+                if (taskCard && taskCard.content) {
                     // 使用已儲存的內容
-                    taskCardContent = assignments[projectId].members[memberId].taskCard.content;
+                    taskCardContent = taskCard.content;
                 } else {
                     // 使用預設範本
                     taskCardContent = defaultTaskContent;
                 }
 
+                // 產生專案備註歷程 HTML
+                let projectNotesHtml = '';
+                if (project.notes) {
+                    try {
+                        const projectNotes = JSON.parse(project.notes);
+                        if (Array.isArray(projectNotes) && projectNotes.length > 0) {
+                            projectNotesHtml = `
+                                <div class="mb-3">
+                                    <label class="form-label">專案備註歷程</label>
+                                    <div class="card" style="max-height: 300px; overflow-y: auto;">
+                                        <div class="card-body p-2">
+                                            ${projectNotes.map((note, index) => `
+                                                <div class="border-bottom mb-2 pb-2 ${index === projectNotes.length - 1 ? 'border-0 mb-0 pb-0' : ''}">
+                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                        <small class="text-muted">${note.author || 'System'}</small>
+                                                        <small class="text-muted">${note.timestamp}</small>
+                                                    </div>
+                                                    <div class="small">${note.content}</div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    } catch (e) {
+                        console.log('解析專案備註失敗:', e);
+                    }
+                }
+
+                // 產生任務小卡歷程記錄 HTML（如果有的話）
+                let taskHistoryHtml = '';
+                if (taskCard && taskCard.history && taskCard.history.length > 0) {
+                    taskHistoryHtml = `
+                        <div class="mb-3">
+                            <label class="form-label">任務小卡歷程</label>
+                            <div class="card" style="max-height: 200px; overflow-y: auto;">
+                                <div class="card-body p-2">
+                                    ${taskCard.history.slice().reverse().map((record, index) => `
+                                        <div class="border-bottom mb-2 pb-2 ${index === taskCard.history.length - 1 ? 'border-0 mb-0 pb-0' : ''}">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">${record.version} - ${record.author}</small>
+                                                <small class="text-muted">${new Date(record.timestamp).toLocaleString('zh-TW')}</small>
+                                            </div>
+                                            <div class="small text-info">${record.note}</div>
+                                            <details class="mt-1">
+                                                <summary class="small text-secondary" style="cursor: pointer;">查看內容</summary>
+                                                <div class="mt-1">
+                                                    <pre class="small mb-2" style="max-height: 100px; overflow-y: auto; white-space: pre-wrap;">${record.content}</pre>
+                                                    <button class="btn btn-sm btn-outline-primary" onclick="restoreHistoryVersion('${record.timestamp}', \`${record.content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">
+                                                        <i class="fas fa-history"></i> 恢復此版本
+                                                    </button>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 // 顯示任務小卡編輯模態框
                 const taskModalHtml = `
                     <div class="modal fade" id="taskCardModal" tabindex="-1">
-                        <div class="modal-dialog modal-lg">
+                        <div class="modal-dialog modal-xl">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h5 class="modal-title">任務小卡編輯 - ${memberName}，「${project.projectName}」專案的「${member.role}」</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label for="taskContent" class="form-label">任務小卡內容</label>
-                                        <textarea class="form-control" id="taskContent" rows="20" style="min-height: 500px;">${taskCardContent}</textarea>
+                                    <div class="row">
+                                        <div class="col-lg-8">
+                                            <div class="mb-3">
+                                                <label for="taskContent" class="form-label">任務小卡內容</label>
+                                                <textarea class="form-control" id="taskContent" rows="20" style="min-height: 500px;">${taskCardContent}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4">
+                                            ${projectNotesHtml}
+                                            ${taskHistoryHtml}
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
@@ -622,7 +705,9 @@
             const timestamp = new Date().toLocaleString('zh-TW');
             const newNote = {
                 timestamp: timestamp,
-                content: noteContent
+                content: noteContent,
+                author: 'KopylotA', // ErNexus 專案的 testing 角色
+                type: 'note'
             };
 
             // 獲取現有備註
@@ -889,14 +974,38 @@
                         assignments[projectId].members[memberId].taskCard = {};
                     }
 
-                    assignments[projectId].members[memberId].taskCard.content = taskContent;
-                    assignments[projectId].members[memberId].taskCard.lastUpdated = new Date().toISOString();
+                    const taskCard = assignments[projectId].members[memberId].taskCard;
+                    const currentTime = new Date().toISOString();
+
+                    // 如果內容有變更，保存到歷程中
+                    if (taskCard.content && taskCard.content !== taskContent) {
+                        if (!taskCard.history) {
+                            taskCard.history = [];
+                        }
+
+                        // 添加歷程記錄
+                        taskCard.history.push({
+                            timestamp: taskCard.lastUpdated || currentTime,
+                            content: taskCard.content,
+                            note: '內容更新',
+                            author: 'KopylotA', // ErNexus 專案的 testing 角色
+                            version: `v${(taskCard.history.length + 1).toString().padStart(2, '0')}`
+                        });
+
+                        // 保留最近20筆歷程記錄
+                        if (taskCard.history.length > 20) {
+                            taskCard.history = taskCard.history.slice(-20);
+                        }
+                    }
+
+                    taskCard.content = taskContent;
+                    taskCard.lastUpdated = currentTime;
                     assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
 
                     // 儲存變更
                     await teamDataManager.saveLocalChanges();
 
-                    alert('任務小卡已成功儲存！');
+                    alert('任務小卡已成功儲存！' + (changeNote ? `\n變更說明：${changeNote}` : ''));
 
                     // 關閉模態框
                     const taskModal = bootstrap.Modal.getInstance(document.getElementById('taskCardModal'));
@@ -918,24 +1027,49 @@
         }
 
         // 複製任務小卡內容
-        function copyTaskCard() {
+        async function copyTaskCard() {
             try {
                 const taskContent = document.getElementById('taskContent').value;
-                const textToCopy = taskContent;
+
+                // 獲取專案備註歷程
+                let projectNotesText = '';
+                try {
+                    const teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                    const assignments = teamDataManager.getAllAssignments();
+                    const currentProject = assignments[window.currentTaskCardTemplate?.projectId];
+
+                    if (currentProject && currentProject.notes) {
+                        const projectNotes = JSON.parse(currentProject.notes);
+                        if (Array.isArray(projectNotes) && projectNotes.length > 0) {
+                            projectNotesText = '\n\n=== 專案備註歷程 ===\n' +
+                                projectNotes.map(note =>
+                                    `${note.timestamp} [${note.author || 'System'}]: ${note.content}`
+                                ).join('\n') + '\n';
+                        }
+                    }
+                } catch (e) {
+                    console.log('獲取專案備註失敗:', e);
+                }
+
+                const textToCopy = taskContent + projectNotesText;
 
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     // 視覺回饋
-                    const button = event.target.closest('button');
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-check"></i> 已複製';
-                    button.classList.remove('btn-success');
-                    button.classList.add('btn-info');
+                    const buttons = document.querySelectorAll('button[onclick="copyTaskCard()"]');
+                    const button = buttons[0]; // 取得複製按鈕
+                    if (button) {
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-check"></i> 已複製';
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-info');
 
-                    setTimeout(() => {
-                        button.innerHTML = originalText;
-                        button.classList.remove('btn-info');
-                        button.classList.add('btn-success');
-                    }, 2000);
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.classList.remove('btn-info');
+                            button.classList.add('btn-success');
+                        }, 2000);
+                    }
                 }).catch(err => {
                     console.error('複製失敗:', err);
                     alert('複製失敗，請手動複製內容');
@@ -943,6 +1077,22 @@
             } catch (error) {
                 console.error('複製任務小卡失敗:', error);
                 alert('複製失敗，請手動複製內容');
+            }
+        }
+
+        // 恢復歷史版本內容
+        function restoreHistoryVersion(timestamp, content) {
+            try {
+                if (confirm('確定要恢復此歷史版本嗎？目前的編輯內容將被覆蓋。')) {
+                    // 將歷史內容填入文字區域
+                    document.getElementById('taskContent').value = content;
+
+
+                    alert('已恢復歷史版本內容，請記得儲存變更。');
+                }
+            } catch (error) {
+                console.error('恢復歷史版本失敗:', error);
+                alert('恢復歷史版本失敗: ' + error.message);
             }
         }
 
@@ -961,18 +1111,22 @@
                     // 將預設內容填入文字區域
                     document.getElementById('taskContent').value = window.currentTaskCardTemplate.defaultContent;
 
-                    // 視覺回饋
-                    const button = event.target.closest('button');
-                    const originalText = button.innerHTML;
-                    button.innerHTML = '<i class="fas fa-check"></i> 已恢復';
-                    button.classList.remove('btn-warning');
-                    button.classList.add('btn-info');
 
-                    setTimeout(() => {
-                        button.innerHTML = originalText;
-                        button.classList.remove('btn-info');
-                        button.classList.add('btn-warning');
-                    }, 2000);
+                    // 視覺回饋
+                    const buttons = document.querySelectorAll(`button[onclick*="restoreDefaultTaskCard"]`);
+                    const button = buttons[0]; // 取得恢復預設按鈕
+                    if (button) {
+                        const originalText = button.innerHTML;
+                        button.innerHTML = '<i class="fas fa-check"></i> 已恢復';
+                        button.classList.remove('btn-warning');
+                        button.classList.add('btn-info');
+
+                        setTimeout(() => {
+                            button.innerHTML = originalText;
+                            button.classList.remove('btn-info');
+                            button.classList.add('btn-warning');
+                        }, 2000);
+                    }
                 }
             } catch (error) {
                 console.error('恢復預設任務小卡失敗:', error);
@@ -982,13 +1136,14 @@
 
         // 頁面載入時直接執行（延遲一下等認證通過）
         window.addEventListener('DOMContentLoaded', () => {
+            // 等待更長時間確保 Google Drive API 完全初始化
             setTimeout(() => {
                 // 只有在認證通過後才載入
                 const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
                 if (isAuthenticated) {
                     loadDataDirectly();
                 }
-            }, 1000);
+            }, 2000);
         });
 
         // 嚴格的認證檢查 - 無繞過機制
