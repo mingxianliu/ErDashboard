@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive 設定 - ErDashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fab fa-google-drive me-2"></i>
+                            Google Drive 設定
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            設定 Google Drive 整合以啟用雲端同步功能
+                        </div>
+
+                        <form id="gdriveForm">
+                            <div class="mb-3">
+                                <label for="clientId" class="form-label">
+                                    <i class="fas fa-key me-2"></i>Google Client ID
+                                </label>
+                                <input type="text" class="form-control" id="clientId"
+                                       placeholder="請輸入您的 Google Client ID" required>
+                                <div class="form-text">
+                                    從 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a> 取得
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="folderId" class="form-label">
+                                    <i class="fas fa-folder me-2"></i>Google Drive 資料夾 ID
+                                </label>
+                                <input type="text" class="form-control" id="folderId"
+                                       placeholder="請輸入 Google Drive 資料夾 ID" required>
+                                <div class="form-text">
+                                    在 Google Drive 中建立專用資料夾，從 URL 複製資料夾 ID
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="alert alert-warning">
+                                    <strong>注意：</strong>
+                                    <ul class="mb-0 mt-2">
+                                        <li>這些設定將儲存在瀏覽器的 sessionStorage 中</li>
+                                        <li>每次開啟新分頁都需要重新設定</li>
+                                        <li>設定不會被儲存到伺服器</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>儲存設定
+                                </button>
+                                <a href="index.html" class="btn btn-secondary">
+                                    <i class="fas fa-arrow-left me-2"></i>返回首頁
+                                </a>
+                            </div>
+                        </form>
+
+                        <div id="statusMessage" class="mt-3" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- 說明區塊 -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-question-circle me-2"></i>
+                            如何取得 Google Drive 設定
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>1. 取得 Google Client ID：</h6>
+                        <ol>
+                            <li>前往 <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a></li>
+                            <li>建立新專案或選擇現有專案</li>
+                            <li>啟用 Google Drive API</li>
+                            <li>建立 OAuth 2.0 客戶端 ID（網頁應用程式類型）</li>
+                            <li>在授權的 JavaScript 來源中加入：<code>https://mingxianliu.github.io</code></li>
+                            <li>複製產生的 Client ID</li>
+                        </ol>
+
+                        <h6>2. 取得 Google Drive 資料夾 ID：</h6>
+                        <ol>
+                            <li>在 Google Drive 中建立新資料夾（例如：ErDashboard-Data）</li>
+                            <li>開啟該資料夾</li>
+                            <li>從瀏覽器網址列複製資料夾 ID（最後一段）</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('gdriveForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const clientId = document.getElementById('clientId').value.trim();
+            const folderId = document.getElementById('folderId').value.trim();
+
+            if (!clientId || !folderId) {
+                showMessage('請填寫所有必要欄位', 'danger');
+                return;
+            }
+
+            // 驗證 Client ID 格式
+            if (!clientId.includes('.apps.googleusercontent.com')) {
+                showMessage('Client ID 格式不正確，應該以 .apps.googleusercontent.com 結尾', 'danger');
+                return;
+            }
+
+            // 儲存設定到 sessionStorage
+            const config = {
+                CLIENT_ID: clientId,
+                FOLDER_ID: folderId
+            };
+
+            try {
+                sessionStorage.setItem('GOOGLE_DRIVE_CONFIG', JSON.stringify(config));
+                showMessage('設定已成功儲存！現在可以使用 Google Drive 同步功能。', 'success');
+
+                // 3秒後跳轉到首頁
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+
+            } catch (error) {
+                showMessage('儲存設定失敗：' + error.message, 'danger');
+            }
+        });
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.className = `alert alert-${type}`;
+            messageDiv.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : 'exclamation-triangle'} me-2"></i>${text}`;
+            messageDiv.style.display = 'block';
+        }
+
+        // 載入現有設定（如果有的話）
+        document.addEventListener('DOMContentLoaded', function() {
+            const existingConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+            if (existingConfig) {
+                try {
+                    const config = JSON.parse(existingConfig);
+                    document.getElementById('clientId').value = config.CLIENT_ID || '';
+                    document.getElementById('folderId').value = config.FOLDER_ID || '';
+                } catch (error) {
+                    console.error('載入現有設定失敗:', error);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

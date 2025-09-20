@@ -31,6 +31,9 @@
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
+                <button class="btn btn-secondary btn-sm me-2" id="gdriveSetupBtn" title="設定 Google Drive 整合">
+                    <i class="fab fa-google-drive"></i> 雲端設定
+                </button>
                 <button class="btn btn-warning btn-sm me-2" id="teamManagementBtn" style="display: none;">
                     <i class="fas fa-users-cog"></i> 團隊管理
                 </button>
@@ -64,6 +67,11 @@
   "SCOPES": "https://www.googleapis.com/auth/drive.file"
 }'></textarea>
                         <small class="text-muted">Google Drive API 設定，僅在瀏覽器中使用</small>
+                        <div class="mt-2">
+                            <a href="setup-gdrive.html" target="_blank" class="btn btn-outline-primary btn-sm">
+                                <i class="fab fa-google-drive me-1"></i>使用圖形化設定界面
+                            </a>
+                        </div>
                     </div>
 
                     <div class="mb-3">
@@ -1064,6 +1072,11 @@
         // 重新載入功能
         document.getElementById('refreshBtn').addEventListener('click', function() {
             location.reload();
+        });
+
+        // Google Drive 設定按鈕
+        document.getElementById('gdriveSetupBtn').addEventListener('click', function() {
+            window.open('setup-gdrive.html', '_blank');
         });
 
         // Push 功能 (上傳到雲端)
