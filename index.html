@@ -1781,15 +1781,36 @@
                 // 清除記憶體中的資料以強制重新載入
                 window.taskTemplatesData = null;
 
+                // 清除並重新初始化 TeamDataManager
+                if (window.globalTeamDataManager) {
+                    console.log('🔄 重新初始化 TeamDataManager...');
+                    // 清除現有資料
+                    window.globalTeamDataManager = null;
+                    window.teamDataManager = null;
+
+                    // 重新創建並初始化
+                    const teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                    window.globalTeamDataManager = teamDataManager;
+                    window.teamDataManager = teamDataManager;
+                    console.log('✅ TeamDataManager 重新初始化完成');
+                }
+
                 // 成功訊息
                 showSyncToast('拉取成功', '已從 Google Drive 拉取最新資料', 'success');
 
-                // 建議重新載入頁面
-                setTimeout(() => {
-                    if (confirm('資料已更新，是否重新載入頁面以顯示最新內容？')) {
-                        location.reload();
+                // 自動重新載入資料（不需要重新整理頁面）
+                setTimeout(async () => {
+                    try {
+                        await loadDataDirectly();
+                        showSyncToast('更新完成', '頁面資料已更新', 'success');
+                    } catch (error) {
+                        console.error('重新載入資料失敗:', error);
+                        if (confirm('自動更新失敗，是否手動重新載入頁面？')) {
+                            location.reload();
+                        }
                     }
-                }, 1000);
+                }, 500);
 
             } catch (error) {
                 console.error('拉取失敗:', error);
@@ -1951,6 +1972,7 @@
 
                     if (storageKey) {
                         localStorage.setItem(storageKey, JSON.stringify(actualData));
+                        console.log(`✅ ${fileName} 已更新到 localStorage`);
                     }
 
                     pullResults.push({
