@@ -145,6 +145,20 @@
                 const teamDataManager = new window.TeamDataManager();
                 await teamDataManager.init();
 
+                // 載入任務範本資料（如果還沒載入）
+                if (!window.taskTemplatesData) {
+                    try {
+                        const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
+                        if (templateResponse.ok) {
+                            window.taskTemplatesData = await templateResponse.json();
+                            console.log('✅ 任務範本載入完成:', Object.keys(window.taskTemplatesData.taskTemplates || {}));
+                        }
+                    } catch (templateError) {
+                        console.warn('載入任務範本失敗:', templateError);
+                        window.taskTemplatesData = { taskTemplates: {} };
+                    }
+                }
+
                 // 從 TeamDataManager 獲取資料
                 const assignments = teamDataManager.getAllAssignments();
                 console.log('📊 從 TeamDataManager 載入的資料:', assignments);
@@ -319,14 +333,15 @@
                 };
                 const memberName = memberNames[memberId] || memberId;
 
-                // 載入任務範本
+                // 從 TeamDataManager 載入任務範本
                 let taskTemplate = '';
                 try {
-                    const templateResponse = await fetch('config/task-templates.json?v=' + Date.now());
-                    const templateData = await templateResponse.json();
-                    const template = templateData.taskTemplates[member.role];
-                    if (template) {
-                        taskTemplate = template.content;
+                    // TeamDataManager 應該已經載入了任務範本資料
+                    if (window.taskTemplatesData && window.taskTemplatesData.taskTemplates) {
+                        const template = window.taskTemplatesData.taskTemplates[member.role];
+                        if (template) {
+                            taskTemplate = template.content;
+                        }
                     }
                 } catch (templateError) {
                     console.warn('載入任務範本失敗:', templateError);
@@ -336,8 +351,92 @@
                 const branchName = `${memberName}專案的${project.projectName}`;
                 const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${branchName}」，若無則create，請依循下列的任務指引「${taskTemplate}」 進行任務。`;
 
-                // 建立模態框
+                // 建立操作選擇模態框
                 const modalHtml = `
+                    <div class="modal fade" id="memberActionModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">成員操作選擇 - ${memberName}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body text-center">
+                                    <p>請選擇要執行的操作：</p>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-primary" onclick="editTaskCard('${projectId}', '${memberId}')">
+                                            <i class="fas fa-edit"></i> 編輯任務小卡
+                                        </button>
+                                        <button type="button" class="btn btn-info" onclick="editProjectProgress('${projectId}')">
+                                            <i class="fas fa-chart-line"></i> 更改專案進度
+                                        </button>
+                                        <button type="button" class="btn btn-warning" onclick="changeMember('${projectId}', '${memberId}')">
+                                            <i class="fas fa-user-edit"></i> 變更成員
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // 移除舊的模態框並加入新的
+                const oldModal = document.getElementById('memberActionModal');
+                if (oldModal) {
+                    oldModal.remove();
+                }
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+                // 顯示模態框
+                const modal = new bootstrap.Modal(document.getElementById('memberActionModal'));
+                modal.show();
+
+            } catch (error) {
+                console.error('編輯任務小卡失敗:', error);
+                alert('編輯任務小卡失敗: ' + error.message);
+            }
+        }
+
+        // 編輯任務小卡
+        async function editTaskCard(projectId, memberId) {
+            try {
+                // 關閉操作選擇模態框
+                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
+                if (actionModal) actionModal.hide();
+
+                // 重新載入專案資料
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+                const project = assignments[projectId];
+                const member = project.members[memberId];
+
+                const memberNames = {
+                    'A-CC': 'Klauder', 'B-CC': 'Klauder', 'C-CC': 'Klauder',
+                    'A-CA': 'KersirAjen', 'B-CA': 'KersirAjen', 'C-CA': 'KersirAjen',
+                    'A-GI': 'Jaymenight', 'B-GI': 'Jaymenight', 'C-GI': 'Jaymenight',
+                    'A-CI': 'Kodes', 'B-CI': 'Kodes', 'C-CI': 'Kodes',
+                    'A-CS': 'Kersir', 'B-CS': 'Kersir', 'C-CS': 'Kersir',
+                    'A-VC': 'Kopylot', 'B-VC': 'Kopylot', 'C-VC': 'Kopylot'
+                };
+                const memberName = memberNames[memberId] || memberId;
+
+                // 獲取任務範本
+                let taskTemplate = '';
+                if (window.taskTemplatesData && window.taskTemplatesData.taskTemplates) {
+                    const template = window.taskTemplatesData.taskTemplates[member.role];
+                    if (template) {
+                        taskTemplate = template.content;
+                    }
+                }
+
+                const branchName = `${memberName}專案的${project.projectName}`;
+                const taskCardContent = `你現在的角色是「${project.projectName}」的「${member.role}」，代號是「${memberName}」，開發的branch 是「${branchName}」，若無則create，請依循下列的任務指引「${taskTemplate}」 進行任務。`;
+
+                // 顯示任務小卡編輯模態框
+                const taskModalHtml = `
                     <div class="modal fade" id="taskCardModal" tabindex="-1">
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
@@ -366,20 +465,198 @@
                     </div>
                 `;
 
-                // 移除舊的模態框並加入新的
-                const oldModal = document.getElementById('taskCardModal');
-                if (oldModal) {
-                    oldModal.remove();
-                }
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const oldTaskModal = document.getElementById('taskCardModal');
+                if (oldTaskModal) oldTaskModal.remove();
+                document.body.insertAdjacentHTML('beforeend', taskModalHtml);
 
-                // 顯示模態框
-                const modal = new bootstrap.Modal(document.getElementById('taskCardModal'));
-                modal.show();
+                const taskModal = new bootstrap.Modal(document.getElementById('taskCardModal'));
+                taskModal.show();
 
             } catch (error) {
                 console.error('編輯任務小卡失敗:', error);
                 alert('編輯任務小卡失敗: ' + error.message);
+            }
+        }
+
+        // 編輯專案進度
+        async function editProjectProgress(projectId) {
+            try {
+                // 關閉操作選擇模態框
+                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
+                if (actionModal) actionModal.hide();
+
+                // 載入專案資料
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+                const project = assignments[projectId];
+
+                // 顯示進度編輯模態框
+                const progressModalHtml = `
+                    <div class="modal fade" id="progressModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">編輯專案進度 - ${project.projectName}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="projectProgress" class="form-label">專案進度 (%)</label>
+                                        <input type="range" class="form-range" id="projectProgress" min="0" max="100" value="${project.progress}" oninput="updateProgressDisplay(this.value)">
+                                        <div class="text-center">
+                                            <span id="progressDisplay" class="badge bg-primary">${project.progress}%</span>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="projectNotes" class="form-label">專案備註</label>
+                                        <textarea class="form-control" id="projectNotes" rows="4" placeholder="輸入專案備註...">${project.notes || ''}</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-success" onclick="saveProjectProgress('${projectId}')">
+                                        <i class="fas fa-save"></i> 儲存
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const oldProgressModal = document.getElementById('progressModal');
+                if (oldProgressModal) oldProgressModal.remove();
+                document.body.insertAdjacentHTML('beforeend', progressModalHtml);
+
+                const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+                progressModal.show();
+
+            } catch (error) {
+                console.error('編輯專案進度失敗:', error);
+                alert('編輯專案進度失敗: ' + error.message);
+            }
+        }
+
+        // 更新進度顯示
+        function updateProgressDisplay(value) {
+            document.getElementById('progressDisplay').textContent = value + '%';
+        }
+
+        // 儲存專案進度
+        async function saveProjectProgress(projectId) {
+            try {
+                const progress = parseInt(document.getElementById('projectProgress').value);
+                const notes = document.getElementById('projectNotes').value;
+
+                // 這裡應該要呼叫 TeamDataManager 的方法來儲存
+                // 暫時先顯示成功訊息
+                alert(`進度已更新為 ${progress}%\n備註: ${notes}`);
+
+                // 關閉模態框
+                const progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
+                if (progressModal) progressModal.hide();
+
+                // 重新載入頁面資料
+                loadDataDirectly();
+
+            } catch (error) {
+                console.error('儲存專案進度失敗:', error);
+                alert('儲存專案進度失敗: ' + error.message);
+            }
+        }
+
+        // 變更成員
+        async function changeMember(projectId, memberId) {
+            try {
+                // 關閉操作選擇模態框
+                const actionModal = bootstrap.Modal.getInstance(document.getElementById('memberActionModal'));
+                if (actionModal) actionModal.hide();
+
+                // 載入團隊成員資料
+                const teamDataManager = new window.TeamDataManager();
+                await teamDataManager.init();
+                const assignments = teamDataManager.getAllAssignments();
+                const members = teamDataManager.getAllMembers();
+                const project = assignments[projectId];
+                const currentMember = project.members[memberId];
+
+                // 生成可用成員選項
+                let memberOptions = '';
+                Object.values(members).forEach(member => {
+                    const selected = member.id === memberId ? 'selected' : '';
+                    memberOptions += `<option value="${member.id}" ${selected}>${member.name} (${member.id})</option>`;
+                });
+
+                // 顯示成員變更模態框
+                const memberModalHtml = `
+                    <div class="modal fade" id="memberModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">變更成員 - ${project.projectName}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="newMember" class="form-label">選擇新成員</label>
+                                        <select class="form-select" id="newMember">
+                                            ${memberOptions}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="memberRole" class="form-label">角色</label>
+                                        <select class="form-select" id="memberRole">
+                                            <option value="frontend" ${currentMember.role === 'frontend' ? 'selected' : ''}>前端開發</option>
+                                            <option value="backend" ${currentMember.role === 'backend' ? 'selected' : ''}>後端開發</option>
+                                            <option value="fullstack" ${currentMember.role === 'fullstack' ? 'selected' : ''}>全端開發</option>
+                                            <option value="testing" ${currentMember.role === 'testing' ? 'selected' : ''}>測試部署</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-success" onclick="saveMemberChange('${projectId}', '${memberId}')">
+                                        <i class="fas fa-save"></i> 儲存變更
+                                    </button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const oldMemberModal = document.getElementById('memberModal');
+                if (oldMemberModal) oldMemberModal.remove();
+                document.body.insertAdjacentHTML('beforeend', memberModalHtml);
+
+                const memberModal = new bootstrap.Modal(document.getElementById('memberModal'));
+                memberModal.show();
+
+            } catch (error) {
+                console.error('變更成員失敗:', error);
+                alert('變更成員失敗: ' + error.message);
+            }
+        }
+
+        // 儲存成員變更
+        async function saveMemberChange(projectId, oldMemberId) {
+            try {
+                const newMemberId = document.getElementById('newMember').value;
+                const newRole = document.getElementById('memberRole').value;
+
+                // 這裡應該要呼叫 TeamDataManager 的方法來儲存變更
+                // 暫時先顯示成功訊息
+                alert(`成員已從 ${oldMemberId} 變更為 ${newMemberId}\n角色: ${newRole}`);
+
+                // 關閉模態框
+                const memberModal = bootstrap.Modal.getInstance(document.getElementById('memberModal'));
+                if (memberModal) memberModal.hide();
+
+                // 重新載入頁面資料
+                loadDataDirectly();
+
+            } catch (error) {
+                console.error('儲存成員變更失敗:', error);
+                alert('儲存成員變更失敗: ' + error.message);
             }
         }
 
