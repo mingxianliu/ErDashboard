@@ -1251,8 +1251,15 @@
                         fileContent = await response.text();
                     }
 
-                    // 上傳到 Google Drive
-                    await window.googleDriveAPI.saveFile(fileName, fileContent);
+                    // 解析 JSON 字串為物件後上傳到 Google Drive
+                    let dataToSave;
+                    try {
+                        dataToSave = JSON.parse(fileContent);
+                    } catch (parseError) {
+                        throw new Error(`${fileName} JSON 解析失敗: ${parseError.message}`);
+                    }
+
+                    await window.googleDriveAPI.saveFile(fileName, dataToSave);
 
                     syncResults.push({
                         file: fileName,

@@ -250,7 +250,24 @@ class GoogleDriveAPI {
             }
 
             const content = await response.text();
-            return JSON.parse(content);
+
+            // 檢查是否為有效的 JSON
+            let parsedContent;
+            try {
+                parsedContent = JSON.parse(content);
+            } catch (error) {
+                console.error('❌ Google Drive 檔案不是有效的 JSON:', content.substring(0, 100));
+                throw new Error(`Google Drive 檔案格式錯誤: ${error.message}`);
+            }
+
+            // 檢查是否為包裝格式 (有 data 屬性)
+            if (parsedContent && typeof parsedContent === 'object' && parsedContent.data) {
+                console.log('📦 偵測到包裝格式，提取內部資料');
+                return parsedContent;
+            }
+
+            // 否則直接返回解析後的內容
+            return parsedContent;
         } catch (error) {
             console.error('載入檔案失敗:', error);
             throw error;
