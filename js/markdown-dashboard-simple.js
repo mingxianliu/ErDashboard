@@ -308,7 +308,7 @@ ${templateContent}`,
         console.log('🎨 開始渲染 Dashboard...');
 
         // 強制隱藏載入狀態 - 在渲染前就先隱藏
-        this.forceHideLoadingSpinner();
+        // this.forceHideLoadingSpinner(); // 方法不存在，移除
 
         this.renderSummaryCards();
         this.renderProjectsList();
