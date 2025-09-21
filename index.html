@@ -2899,12 +2899,19 @@
 
                                     // 深度合併：雲端資料優先，Pull 後以雲端為準
                                     Object.keys(mergedAssignments).forEach(projectId => {
+                                        const localProject = localAssignments[projectId];
+
+                                        // 保留本地的 memberHistory
+                                        if (localProject && localProject.memberHistory && localProject.memberHistory.length > 0) {
+                                            mergedAssignments[projectId].memberHistory = localProject.memberHistory;
+                                        }
+
                                         if (mergedAssignments[projectId].members) {
                                             Object.keys(mergedAssignments[projectId].members).forEach(memberId => {
                                                 const cloudMember = mergedAssignments[projectId].members[memberId];
                                                 const localMember = localAssignments[projectId]?.members?.[memberId];
 
-                                                // 以雲端資料為準，只合併 personalNotes
+                                                // 以雲端資料為準，合併 personalNotes
                                                 if (localMember && localMember.personalNotes && localMember.personalNotes.length > 0) {
                                                     // 保留本地的個人歷程
                                                     cloudMember.personalNotes = localMember.personalNotes;
