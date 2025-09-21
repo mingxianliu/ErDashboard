@@ -2929,7 +2929,13 @@
                     const wrappedContent = await window.googleDriveAPI.loadFile(fileName);
 
                     if (!wrappedContent) {
-                        throw new Error(`Google Drive 中找不到 ${fileName}`);
+                        console.log(`⚠️ ${fileName} 無法從 Google Drive 載入（可能是 API 未準備或檔案不存在）`);
+                        pullResults.push({
+                            fileName: fileName,
+                            success: false,
+                            error: 'Google Drive API 未準備或檔案不存在'
+                        });
+                        continue;
                     }
 
                     // 提取實際資料
@@ -3039,10 +3045,13 @@
                 console.warn('⚠️ 無法顯示 memberHistory 數量:', e);
             }
 
-            // 自動重新載入頁面以顯示最新資料
-            setTimeout(() => {
-                window.location.reload();
-            }, 2000);
+            // 只有成功拉取到檔案時才重新載入頁面
+            const successfulPulls = pullResults.filter(result => result.success);
+            if (successfulPulls.length > 0) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
 
             return pullResults;
         }

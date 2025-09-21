@@ -6,10 +6,10 @@
 
 class GoogleDriveAPI {
     constructor() {
-        this.accessToken = null;
+        this.accessToken = sessionStorage.getItem('google_access_token');
         this.folderId = 'YOUR_FOLDER_ID_HERE';
         this.tokenClient = null;
-        this.isAuthenticated = false;
+        this.isAuthenticated = !!this.accessToken;
         this.isConfigured = false;
         this.initGoogleAPI();
     }
@@ -88,6 +88,7 @@ class GoogleDriveAPI {
                     if (response.access_token) {
                         this.accessToken = response.access_token;
                         this.isAuthenticated = true;
+                        sessionStorage.setItem('google_access_token', response.access_token);
                         console.log('✅ Google Drive OAuth 成功');
                     } else {
                         console.error('❌ OAuth 回應沒有 access_token');
@@ -160,6 +161,7 @@ class GoogleDriveAPI {
                     if (response.access_token) {
                         this.accessToken = response.access_token;
                         this.isAuthenticated = true;
+                        sessionStorage.setItem('google_access_token', response.access_token);
                         console.log('✅ Google Drive 登入成功');
                         resolve(true);
                     } else {
@@ -179,12 +181,20 @@ class GoogleDriveAPI {
 
     // 檢查是否已登入
     isSignedIn() {
-        return this.isConfigured && this.isAuthenticated && this.accessToken !== null;
+        return this.isAuthenticated && this.accessToken !== null;
     }
 
     // 檢查 API 是否已準備好
     isReady() {
         return this.isConfigured && this.tokenClient !== null;
+    }
+
+    // 登出
+    signOut() {
+        this.accessToken = null;
+        this.isAuthenticated = false;
+        sessionStorage.removeItem('google_access_token');
+        console.log('✅ Google Drive 已登出');
     }
 
     // 通用的 API 重試機制，處理 token 過期
@@ -197,6 +207,11 @@ class GoogleDriveAPI {
                 // 檢查是否為 401 未授權錯誤
                 if ((error.message.includes('401') || error.message.includes('Unauthorized')) && retries < maxRetries) {
                     console.log(`🔑 Token 已過期 (嘗試 ${retries + 1}/${maxRetries + 1})，重新驗證...`);
+                    // 清除過期的 token
+                    sessionStorage.removeItem('google_access_token');
+                    this.accessToken = null;
+                    this.isAuthenticated = false;
+
                     const reAuthSuccess = await this.signIn();
                     if (reAuthSuccess) {
                         console.log('✅ 重新驗證成功，重試操作');
@@ -248,8 +263,15 @@ class GoogleDriveAPI {
 
     // 從 Google Drive 讀取檔案
     async loadFile(fileName) {
+        // 如果 API 未準備好，直接返回 null
+        if (!this.isReady()) {
+            console.log('Google Drive API 未準備好，跳過操作');
+            return null;
+        }
+
         if (!this.isSignedIn()) {
-            throw new Error('需要登入 Google Drive');
+            console.log('Google Drive 未登入，跳過操作');
+            return null;
         }
 
         return await this.retryWithReAuth(async () => {
