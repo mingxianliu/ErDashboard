@@ -1084,6 +1084,18 @@ class TeamManagement {
         // 更新最後修改時間
         assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
 
+        // 添加成員變更歷程記錄
+        const historyResult = this.addMemberChangeHistory(projectId, {
+            action: 'member_assigned',
+            memberId: memberId,
+            memberName: this.dataManager.getAllMembers()[memberId].name,
+            role: role,
+            assignedDate: assignDate,
+            details: tasks.length > 0 ? `任務數量: ${tasks.length}` : '無指定任務'
+        });
+
+        console.log('📝 歷程記錄結果:', historyResult);
+
         // 儲存變更
         this.dataManager.saveLocalChanges().then(() => {
             this.showToast('分配成功', `已將 ${this.dataManager.getAllMembers()[memberId].name} 分配到專案`, 'success');
@@ -1094,6 +1106,9 @@ class TeamManagement {
 
             // 重新載入成員專案檢視
             this.viewMemberProjects(memberId);
+
+            // 通知首頁重新載入資料
+            this.refreshMainPage();
         }).catch(error => {
             console.error('儲存失敗:', error);
             this.showToast('儲存失敗', '無法儲存專案分配變更', 'error');
@@ -1111,6 +1126,20 @@ class TeamManagement {
         }
 
         if (confirm(`確定要將 ${member.name} 從專案「${project.projectName}」中移除嗎？`)) {
+            // 記錄移除前的資訊
+            const memberInfo = project.members[memberId];
+
+            // 添加成員變更歷程記錄 (在移除之前記錄)
+            const historyResult = this.addMemberChangeHistory(projectId, {
+                action: 'member_removed',
+                memberId: memberId,
+                memberName: member.name,
+                role: memberInfo ? memberInfo.role : '未知',
+                details: `移除日期: ${memberInfo ? memberInfo.assignedDate : '未知'}`
+            });
+
+            console.log('📝 移除成員歷程記錄結果:', historyResult);
+
             // 從專案中移除成員
             delete project.members[memberId];
 
@@ -1123,6 +1152,9 @@ class TeamManagement {
 
                 // 重新載入成員專案檢視
                 this.viewMemberProjects(memberId);
+
+                // 通知首頁重新載入資料
+                this.refreshMainPage();
             }).catch(error => {
                 console.error('儲存失敗:', error);
                 this.showToast('儲存失敗', '無法儲存專案變更', 'error');
@@ -1200,9 +1232,23 @@ class TeamManagement {
 
         const project = this.dataManager.getAllAssignments()[projectId];
         const member = this.dataManager.getAllMembers()[memberId];
+        const currentRole = project.members[memberId].role;
+
+        // 添加成員變更歷程記錄 (在變更之前記錄)
+        const historyResult = this.addMemberChangeHistory(projectId, {
+            action: 'role_changed',
+            memberId: memberId,
+            memberName: member.name,
+            oldRole: currentRole,
+            newRole: newRole,
+            details: `角色從「${currentRole}」變更為「${newRole}」`
+        });
+
+        console.log('📝 角色變更歷程記錄結果:', historyResult);
 
         // 更新成員角色
         project.members[memberId].role = newRole;
+
         project.lastUpdated = new Date().toISOString().split('T')[0];
 
         // 儲存變更
@@ -1215,6 +1261,9 @@ class TeamManagement {
 
             // 重新載入成員專案檢視
             this.viewMemberProjects(memberId);
+
+            // 通知首頁重新載入資料
+            this.refreshMainPage();
         }).catch(error => {
             console.error('儲存失敗:', error);
             this.showToast('儲存失敗', '無法儲存角色變更', 'error');
@@ -1298,6 +1347,9 @@ class TeamManagement {
 
             // 重新載入成員專案檢視
             this.viewMemberProjects(memberId);
+
+            // 通知首頁重新載入資料
+            this.refreshMainPage();
         }).catch(error => {
             console.error('儲存失敗:', error);
             this.showToast('儲存失敗', '無法儲存任務變更', 'error');
@@ -1446,6 +1498,9 @@ class TeamManagement {
 
                 // 重新載入專案管理頁面
                 this.loadProjectManagement();
+
+                // 通知首頁重新載入資料
+                this.refreshMainPage();
             }).catch(error => {
                 console.error('❌ 儲存失敗:', error);
                 this.showToast('儲存失敗', error.message, 'error');
@@ -1634,6 +1689,9 @@ class TeamManagement {
 
             // 重新載入專案管理頁面
             this.loadProjectManagement();
+
+            // 通知首頁重新載入資料
+            this.refreshMainPage();
         }).catch(error => {
             this.showToast('儲存失敗', `無法儲存專案變更: ${error.message}`, 'error');
         });
@@ -1662,6 +1720,9 @@ class TeamManagement {
             // 儲存變更
             this.dataManager.saveLocalChanges().then(() => {
                 this.showToast('更新成功', `專案進度已更新為 ${progress}%`, 'success');
+
+                // 通知首頁重新載入資料
+                this.refreshMainPage();
             }).catch(error => {
                 console.error('❌ 儲存失敗:', error);
                 this.showToast('更新失敗', error.message, 'error');
@@ -1698,6 +1759,9 @@ class TeamManagement {
 
                     // 重新載入專案管理頁面
                     this.loadProjectManagement();
+
+                    // 通知首頁重新載入資料
+                    this.refreshMainPage();
                 }).catch(error => {
                     console.error('❌ 儲存失敗:', error);
                     this.showToast('刪除失敗', error.message, 'error');
@@ -1708,6 +1772,383 @@ class TeamManagement {
                 this.showToast('刪除失敗', error.message, 'error');
             }
         }
+    }
+
+    // 添加成員變更歷程記錄
+    addMemberChangeHistory(projectId, changeData) {
+        try {
+            console.log('📝 開始記錄成員變更歷程...', { projectId, changeData });
+
+            const assignments = this.dataManager.getAllAssignments();
+            console.log('📋 所有專案清單:', Object.keys(assignments));
+
+            const project = assignments[projectId];
+
+            if (!project) {
+                console.warn('⚠️ 專案不存在，無法記錄成員變更歷程:', projectId);
+                console.log('可用的專案ID:', Object.keys(assignments));
+
+                // 嘗試模糊匹配專案名稱
+                const projectNames = Object.values(assignments).map(p => `${p.projectId}: ${p.projectName}`);
+                console.log('可用的專案:', projectNames);
+
+                return false;
+            }
+
+            console.log('✅ 找到專案:', project.projectName);
+
+            // 初始化成員歷程陣列
+            if (!project.memberHistory) {
+                project.memberHistory = [];
+                console.log('🆕 初始化成員歷程陣列');
+            }
+
+            // 創建歷程記錄
+            const historyEntry = {
+                timestamp: new Date().toISOString(),
+                date: new Date().toLocaleString('zh-TW'),
+                action: changeData.action,
+                memberId: changeData.memberId,
+                memberName: changeData.memberName,
+                role: changeData.role || changeData.newRole,
+                oldRole: changeData.oldRole,
+                newRole: changeData.newRole,
+                assignedDate: changeData.assignedDate,
+                details: changeData.details,
+                operator: '系統管理員' // 可以之後擴展為實際操作者
+            };
+
+            // 添加到歷程中
+            project.memberHistory.push(historyEntry);
+            console.log('✅ 歷程記錄已添加，目前歷程數量:', project.memberHistory.length);
+            console.log('📋 完整的歷程陣列:', project.memberHistory);
+
+            // 保留最近50筆記錄
+            if (project.memberHistory.length > 50) {
+                project.memberHistory = project.memberHistory.slice(-50);
+                console.log('🔄 保留最近50筆記錄');
+            }
+
+            console.log('✅ 成員變更歷程已記錄:', historyEntry);
+            return true;
+
+        } catch (error) {
+            console.error('❌ 記錄成員變更歷程失敗:', error);
+            console.error('錯誤詳情:', error.stack);
+            return false;
+        }
+    }
+
+    // 測試用：手動添加歷程記錄
+    testAddMemberHistory() {
+        console.log('🧪 開始測試歷程記錄功能...');
+
+        const assignments = this.dataManager.getAllAssignments();
+        const firstProjectId = Object.keys(assignments)[0];
+
+        if (!firstProjectId) {
+            console.error('❌ 沒有找到可用的專案');
+            return;
+        }
+
+        console.log('🎯 使用專案ID進行測試:', firstProjectId);
+
+        const testResult = this.addMemberChangeHistory(firstProjectId, {
+            action: 'member_assigned',
+            memberId: 'test-member',
+            memberName: '測試成員',
+            role: 'frontend',
+            details: '這是一個測試記錄'
+        });
+
+        if (testResult) {
+            console.log('✅ 測試成功，嘗試儲存...');
+            this.dataManager.saveLocalChanges().then(() => {
+                console.log('✅ 測試記錄已儲存');
+                this.showToast('測試成功', '歷程記錄功能正常', 'success');
+            });
+        } else {
+            console.error('❌ 測試失敗');
+            this.showToast('測試失敗', '歷程記錄功能異常', 'error');
+        }
+    }
+
+    // 獲取專案的成員變更歷程
+    getMemberChangeHistory(projectId) {
+        try {
+            const project = this.dataManager.getAllAssignments()[projectId];
+            if (!project || !project.memberHistory) {
+                return [];
+            }
+
+            // 返回按時間倒序排列的歷程
+            return project.memberHistory.slice().reverse();
+        } catch (error) {
+            console.error('❌ 獲取成員變更歷程失敗:', error);
+            return [];
+        }
+    }
+
+    // 生成成員變更歷程的 HTML
+    generateMemberHistoryHTML(projectId) {
+        const history = this.getMemberChangeHistory(projectId);
+
+        if (history.length === 0) {
+            return `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    尚無成員變更歷程記錄
+                </div>
+            `;
+        }
+
+        const actionLabels = {
+            'member_assigned': '<i class="fas fa-user-plus text-success me-2"></i>成員加入',
+            'member_removed': '<i class="fas fa-user-minus text-danger me-2"></i>成員移除',
+            'role_changed': '<i class="fas fa-exchange-alt text-warning me-2"></i>角色變更'
+        };
+
+        return `
+            <div class="member-history-container">
+                <h6 class="mb-3">
+                    <i class="fas fa-history me-2"></i>成員變更歷程
+                    <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
+                </h6>
+                <div class="history-timeline">
+                    ${history.map((entry, index) => `
+                        <div class="history-entry ${index === 0 ? 'latest' : ''}" data-timestamp="${entry.timestamp}">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div class="history-action">
+                                    ${actionLabels[entry.action] || entry.action}
+                                    <strong>${entry.memberName}</strong>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <small class="text-muted">${entry.date}</small>
+                                    <button class="btn btn-sm btn-outline-secondary p-1" onclick="teamManagement.editHistoryOperator('${projectId}', '${entry.timestamp}')" title="編輯操作者">
+                                        <i class="fas fa-edit" style="font-size: 10px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="history-details ps-4">
+                                ${entry.role ? `<div><span class="badge bg-info">${entry.role}</span></div>` : ''}
+                                ${entry.oldRole && entry.newRole ? `
+                                    <div class="mt-1">
+                                        <span class="badge bg-secondary">${entry.oldRole}</span>
+                                        <i class="fas fa-arrow-right mx-2"></i>
+                                        <span class="badge bg-success">${entry.newRole}</span>
+                                    </div>
+                                ` : ''}
+                                ${entry.details ? `<div class="text-muted mt-1"><small>${entry.details}</small></div>` : ''}
+                                <div class="mt-1">
+                                    <small class="text-success">操作者: ${entry.operator || '系統管理員'}</small>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // 查看專案的成員變更歷程
+    viewMemberHistory(projectId) {
+        const project = this.dataManager.getAllAssignments()[projectId];
+        if (!project) {
+            this.showToast('錯誤', '找不到指定專案', 'error');
+            return;
+        }
+
+        const modalHtml = `
+            <div class="modal fade" id="memberHistoryModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-history me-2"></i>成員變更歷程 - ${project.projectName}
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            ${this.generateMemberHistoryHTML(projectId)}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 modal
+        const existingModal = document.getElementById('memberHistoryModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的 modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('memberHistoryModal'));
+        modal.show();
+    }
+
+    // 編輯歷程記錄中的操作者名稱
+    editHistoryOperator(projectId, timestamp) {
+        const project = this.dataManager.getAllAssignments()[projectId];
+        if (!project || !project.memberHistory) {
+            this.showToast('錯誤', '找不到專案或歷程記錄', 'error');
+            return;
+        }
+
+        // 找到對應的歷程記錄
+        const historyEntry = project.memberHistory.find(entry => entry.timestamp === timestamp);
+        if (!historyEntry) {
+            this.showToast('錯誤', '找不到指定的歷程記錄', 'error');
+            return;
+        }
+
+        const currentOperator = historyEntry.operator || '系統管理員';
+
+        // 創建編輯模態框
+        const modalHtml = `
+            <div class="modal fade" id="editOperatorModal" tabindex="-1">
+                <div class="modal-dialog modal-sm">
+                    <div class="modal-content">
+                        <div class="modal-header bg-secondary text-white">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-edit me-2"></i>編輯操作者
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="operatorName" class="form-label">操作者名稱</label>
+                                <input type="text" class="form-control" id="operatorName" value="${currentOperator}" placeholder="請輸入操作者名稱">
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <strong>操作時間:</strong> ${historyEntry.date}<br>
+                                    <strong>操作內容:</strong> ${historyEntry.action === 'member_assigned' ? '成員加入' :
+                                                               historyEntry.action === 'member_removed' ? '成員移除' : '角色變更'}
+                                    - ${historyEntry.memberName}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.confirmEditOperator('${projectId}', '${timestamp}')">確認修改</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的模態框
+        const existingModal = document.getElementById('editOperatorModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加並顯示新的模態框
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('editOperatorModal'));
+        modal.show();
+
+        // 聚焦到輸入框
+        setTimeout(() => {
+            document.getElementById('operatorName').focus();
+            document.getElementById('operatorName').select();
+        }, 300);
+    }
+
+    // 確認修改操作者名稱
+    confirmEditOperator(projectId, timestamp) {
+        const newOperatorName = document.getElementById('operatorName').value.trim();
+
+        if (!newOperatorName) {
+            this.showToast('輸入錯誤', '操作者名稱不能為空', 'error');
+            return;
+        }
+
+        const project = this.dataManager.getAllAssignments()[projectId];
+        const historyEntry = project.memberHistory.find(entry => entry.timestamp === timestamp);
+
+        if (historyEntry) {
+            const oldOperator = historyEntry.operator || '系統管理員';
+            historyEntry.operator = newOperatorName;
+
+            // 儲存變更
+            this.dataManager.saveLocalChanges().then(() => {
+                this.showToast('修改成功', `操作者已從「${oldOperator}」變更為「${newOperatorName}」`, 'success');
+
+                // 關閉模態框
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editOperatorModal'));
+                modal.hide();
+
+                // 重新生成歷程HTML並更新顯示
+                this.refreshMemberHistoryDisplay(projectId);
+            }).catch(error => {
+                console.error('儲存失敗:', error);
+                this.showToast('儲存失敗', '無法儲存操作者變更', 'error');
+            });
+        }
+    }
+
+    // 刷新成員變更歷程顯示
+    refreshMemberHistoryDisplay(projectId) {
+        try {
+            // 更新成員歷程模態框中的內容
+            const memberHistoryModal = document.getElementById('memberHistoryModal');
+            if (memberHistoryModal) {
+                const modalBody = memberHistoryModal.querySelector('.modal-body');
+                if (modalBody) {
+                    modalBody.innerHTML = this.generateMemberHistoryHTML(projectId);
+                }
+            }
+
+            // 更新任務小卡中的成員變更歷程 (如果有開啟的話)
+            const memberHistoryColumn = document.querySelector('#taskCardModal .col-lg-2:nth-child(5)');
+            if (memberHistoryColumn) {
+                // 重新生成成員變更歷程
+                let updatedMemberHistoryHtml = '';
+                if (window.teamManagement && typeof window.teamManagement.generateMemberHistoryHTML === 'function') {
+                    updatedMemberHistoryHtml = window.teamManagement.generateMemberHistoryHTML(projectId);
+                }
+                memberHistoryColumn.innerHTML = updatedMemberHistoryHtml;
+            }
+        } catch (error) {
+            console.error('刷新歷程顯示失敗:', error);
+        }
+    }
+
+    // 通知首頁重新載入資料
+    refreshMainPage() {
+        console.log('🔄 通知首頁重新載入資料...');
+
+        // 方法1: localStorage 強制通信 (最可靠)
+        try {
+            const updateSignal = {
+                action: 'teamDataUpdate',
+                timestamp: Date.now(),
+                source: 'teamManagement',
+                forceReload: true
+            };
+            localStorage.setItem('teamUpdateSignal', JSON.stringify(updateSignal));
+            console.log('✅ localStorage 信號已發送:', updateSignal);
+        } catch (e) {
+            console.warn('localStorage 通信失敗:', e);
+        }
+
+        // 方法2: 直接重新整理主視窗 (1秒後)
+        setTimeout(() => {
+            try {
+                if (window.opener && !window.opener.closed) {
+                    console.log('🔄 強制重新整理主視窗...');
+                    window.opener.location.reload();
+                }
+            } catch (e) {
+                console.warn('無法重新整理主視窗:', e);
+            }
+        }, 1000);
     }
 }
 

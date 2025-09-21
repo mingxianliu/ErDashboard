@@ -254,3 +254,102 @@ body {
     color: rgba(255, 255, 255, 0.7) !important;
 }
 
+/* 成員變更歷程時間軸樣式 */
+.member-history-container {
+    position: relative;
+}
+
+.history-timeline {
+    position: relative;
+    padding-left: 20px;
+}
+
+.history-timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(to bottom, #007bff, #6c757d);
+    border-radius: 1px;
+}
+
+.history-entry {
+    position: relative;
+    margin-bottom: 20px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.history-entry::before {
+    content: '';
+    position: absolute;
+    left: -28px;
+    top: 20px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #007bff;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #007bff;
+}
+
+.history-entry.latest::before {
+    background: #28a745;
+    box-shadow: 0 0 0 2px #28a745;
+    animation: pulse 2s infinite;
+}
+
+.history-entry:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+}
+
+.history-action {
+    font-weight: 500;
+    color: #495057;
+}
+
+.history-details {
+    margin-top: 8px;
+}
+
+.history-details .badge {
+    font-size: 0.75em;
+    margin-right: 4px;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 2px #28a745;
+    }
+    70% {
+        box-shadow: 0 0 0 8px rgba(40, 167, 69, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 2px #28a745;
+    }
+}
+
+/* 在小屏幕上調整歷程樣式 */
+@media (max-width: 768px) {
+    .history-timeline {
+        padding-left: 15px;
+    }
+
+    .history-entry::before {
+        left: -23px;
+        width: 8px;
+        height: 8px;
+    }
+
+    .history-entry {
+        padding: 8px;
+        margin-bottom: 15px;
+    }
+}
+

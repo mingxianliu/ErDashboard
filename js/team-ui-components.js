@@ -1856,6 +1856,9 @@ class TeamUIComponents {
                     <button class="btn btn-primary" onclick="teamManagement.addNewProject()">
                         <i class="fas fa-plus me-2"></i>新增專案
                     </button>
+                    <button class="btn btn-warning ms-2" onclick="teamManagement.testAddMemberHistory()" title="測試歷程記錄功能">
+                        <i class="fas fa-vial me-2"></i>測試歷程
+                    </button>
                 </div>
             </div>
 
@@ -1892,6 +1895,9 @@ class TeamUIComponents {
                     <td>${project.lastUpdated ? new Date(project.lastUpdated).toLocaleDateString() : '-'}</td>
                     <td>
                         <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-info" onclick="teamManagement.viewMemberHistory('${project.projectId}')" title="查看成員變更歷程">
+                                <i class="fas fa-history"></i>
+                            </button>
                             <button class="btn btn-outline-primary" onclick="teamManagement.editProject('${project.projectId}')">
                                 <i class="fas fa-edit"></i>
                             </button>
