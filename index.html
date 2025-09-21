@@ -3307,6 +3307,56 @@
                     try {
                         await pullFilesFromGoogleDrive();
                         console.log('✅ 自動同步完成');
+
+                        // 設定定時自動 Push（每5分鐘）
+                        if (!window.autoPushInterval) {
+                            window.autoPushInterval = setInterval(async () => {
+                                try {
+                                    console.log('⏰ 定時自動 Push 到 Google Drive...');
+                                    if (window.teamDataManager) {
+                                        await window.teamDataManager.saveLocalChanges();
+                                        console.log('✅ 定時 Push 完成');
+                                    }
+                                } catch (error) {
+                                    console.warn('⚠️ 定時 Push 失敗:', error);
+                                }
+                            }, 5 * 60 * 1000); // 每5分鐘
+                            console.log('⏰ 已啟動定時自動 Push（每5分鐘）');
+                        }
+
+                        // 當頁面即將關閉時，自動 Push
+                        if (!window.beforeUnloadListener) {
+                            window.beforeUnloadListener = true;
+                            window.addEventListener('beforeunload', (event) => {
+                                if (window.teamDataManager) {
+                                    // 同步儲存（注意：beforeunload 中 async 可能不可靠）
+                                    try {
+                                        const data = JSON.stringify({
+                                            assignments: window.teamDataManager.getAllAssignments(),
+                                            constraints: {}
+                                        });
+                                        localStorage.setItem('pendingPush', data);
+                                        console.log('💾 頁面關閉前已儲存待同步資料');
+                                    } catch (e) {
+                                        console.error('儲存失敗:', e);
+                                    }
+                                }
+                            });
+                        }
+
+                        // 頁面載入時檢查是否有待同步的資料
+                        const pendingPush = localStorage.getItem('pendingPush');
+                        if (pendingPush) {
+                            try {
+                                const data = JSON.parse(pendingPush);
+                                await window.googleDriveAPI.saveFile('project-assignments.json', data);
+                                localStorage.removeItem('pendingPush');
+                                console.log('✅ 已同步上次未完成的資料');
+                            } catch (e) {
+                                console.error('同步待處理資料失敗:', e);
+                            }
+                        }
+
                     } catch (error) {
                         console.warn('⚠️ 自動同步失敗，使用本地資料:', error);
                     }

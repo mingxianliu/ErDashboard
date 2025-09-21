@@ -306,10 +306,23 @@ class TeamDataManager {
                         completedProjects: Object.values(this.assignments).filter(p => p.status === 'completed').length,
                         membersInUse: new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size,
                         availableMembers: Object.keys(this.members).length - new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size
-                    }
+                    },
+                    lastSync: new Date().toISOString()
                 };
 
+                console.log('📤 自動 Push 到 Google Drive...');
                 await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
+                console.log('✅ 自動 Push 成功');
+
+                // 更新同步狀態顯示
+                const syncBtn = document.getElementById('syncBtn');
+                if (syncBtn) {
+                    const originalText = syncBtn.innerHTML;
+                    syncBtn.innerHTML = '<i class="fas fa-check"></i> 已同步';
+                    setTimeout(() => {
+                        syncBtn.innerHTML = originalText;
+                    }, 2000);
+                }
             } else {
                 console.log('⚠️ Google Drive 未登入，僅儲存到本地');
             }
