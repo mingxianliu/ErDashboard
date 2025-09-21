@@ -337,7 +337,7 @@
                                                     ${member.isExecuting ? '<i class="fas fa-play-circle text-success ms-2" title="執行中"></i>' : ''}
                                                 </div>
                                             </div>
-                                            <div class="d-flex gap-1">
+                                            <div class="d-grid gap-1" style="grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 80px;">
                                                 <button class="btn btn-sm btn-outline-primary" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
@@ -346,6 +346,9 @@
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="changeMember('${project.projectId}', '${member.memberId}')" title="變更成員">
                                                     <i class="fas fa-user-edit"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-secondary" onclick="showMemberInfo('${project.projectId}', '${member.memberId}')" title="成員資訊">
+                                                    <i class="fas fa-info-circle"></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -1320,6 +1323,115 @@
             const notesListDiv = document.getElementById('personalNotesList');
             if (notesListDiv) {
                 notesListDiv.innerHTML = formatPersonalNotes(notesList);
+            }
+        }
+
+        // 顯示成員資訊
+        function showMemberInfo(projectId, memberId) {
+            try {
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
+
+                const assignments = teamDataManager.getAllAssignments();
+                const allMembers = teamDataManager.getAllMembers();
+                const project = assignments[projectId];
+                const member = project.members[memberId];
+                const memberInfo = allMembers[memberId];
+
+                if (!project || !member) {
+                    throw new Error('找不到指定的專案或成員');
+                }
+
+                const memberName = memberInfo?.name || memberId;
+                const personalNotesCount = (member.personalNotes || []).length;
+                const taskCardCount = Object.keys(member.taskCard || {}).length;
+
+                // 顯示成員資訊模態框
+                const memberInfoModalHtml = `
+                    <div class="modal fade" id="memberInfoModal" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">成員資訊 - ${memberName}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fas fa-user me-2"></i>基本資訊</h6>
+                                            <p class="mb-1"><strong>成員 ID：</strong>${memberId}</p>
+                                            <p class="mb-1"><strong>成員名稱：</strong>${memberName}</p>
+                                            <p class="mb-1"><strong>專案角色：</strong><span class="badge bg-primary">${member.role}</span></p>
+                                            <p class="mb-0"><strong>執行狀態：</strong>
+                                                ${member.isExecuting ?
+                                                    '<span class="badge bg-success">執行中</span>' :
+                                                    '<span class="badge bg-secondary">未執行</span>'
+                                                }
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fas fa-chart-bar me-2"></i>活動統計</h6>
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <div class="text-center">
+                                                        <div class="fs-4 fw-bold text-primary">${personalNotesCount}</div>
+                                                        <small class="text-muted">個人備註</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="text-center">
+                                                        <div class="fs-4 fw-bold text-success">${taskCardCount}</div>
+                                                        <small class="text-muted">任務小卡</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6 class="card-title"><i class="fas fa-project-diagram me-2"></i>專案資訊</h6>
+                                            <p class="mb-1"><strong>專案名稱：</strong>${project.projectName}</p>
+                                            <p class="mb-1"><strong>專案狀態：</strong>
+                                                <span class="badge bg-${
+                                                    project.status === 'active' ? 'success' :
+                                                    project.status === 'paused' ? 'warning' :
+                                                    project.status === 'completed' ? 'secondary' : 'info'
+                                                }">${
+                                                    project.status === 'active' ? '進行中' :
+                                                    project.status === 'paused' ? '暫停' :
+                                                    project.status === 'completed' ? '已完成' :
+                                                    project.status || '未知狀態'
+                                                }</span>
+                                            </p>
+                                            <p class="mb-0"><strong>最後更新：</strong>${project.lastUpdated || '未知'}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const oldMemberInfoModal = document.getElementById('memberInfoModal');
+                if (oldMemberInfoModal) oldMemberInfoModal.remove();
+                document.body.insertAdjacentHTML('beforeend', memberInfoModalHtml);
+
+                const memberInfoModal = new bootstrap.Modal(document.getElementById('memberInfoModal'));
+                memberInfoModal.show();
+
+            } catch (error) {
+                console.error('顯示成員資訊失敗:', error);
+                alert('顯示成員資訊失敗: ' + error.message);
             }
         }
 
