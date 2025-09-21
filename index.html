@@ -3037,11 +3037,29 @@
             // 記錄拉取結果
             logPullResults(pullResults);
 
-            // 自動重新載入頁面以顯示最新資料
-            console.log('✅ Pull 完成，2秒後自動重新載入頁面...');
+            // 顯示拉取後的 memberHistory 數量
+            try {
+                console.log('📊 Pull 後各專案 memberHistory 數量:');
+                const assignments = window.teamDataManager.getAllAssignments();
+                Object.keys(assignments).forEach(projectId => {
+                    const memberHistoryCount = assignments[projectId].memberHistory?.length || 0;
+                    console.log(`📊 ${projectId}: ${memberHistoryCount} 筆 memberHistory`);
+                });
+
+                // 也彈出 alert 顯示關鍵資訊
+                const erShieldCount = assignments.ErShield?.memberHistory?.length || 0;
+                alert(`Pull 完成！ErShield memberHistory: ${erShieldCount} 筆`);
+
+            } catch (e) {
+                console.warn('⚠️ 無法顯示 memberHistory 數量:', e);
+                alert('Pull 完成，但無法檢查 memberHistory 數量');
+            }
+
+            // 延長重新載入時間，讓用戶有時間看到訊息
+            console.log('✅ Pull 完成，5秒後自動重新載入頁面...');
             setTimeout(() => {
                 window.location.reload();
-            }, 2000);
+            }, 5000);
 
             return pullResults;
         }

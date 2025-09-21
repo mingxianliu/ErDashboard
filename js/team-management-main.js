@@ -2235,7 +2235,23 @@ class TeamManagement {
             // 儲存變更
             await this.dataManager.saveLocalChanges();
 
-            this.showToast('清空完成', '角色變更歷程已清空', 'success');
+            // 立即驗證 Google Drive 上的資料
+            try {
+                const remoteData = await window.googleDriveAPI.loadFile('project-assignments.json');
+                if (remoteData && remoteData.data && remoteData.data.assignments) {
+                    const remoteProject = remoteData.data.assignments[projectId];
+                    const remoteCount = remoteProject?.memberHistory?.length || 0;
+                    if (remoteCount > 0) {
+                        throw new Error(`Google Drive 同步失敗：遠端還有 ${remoteCount} 筆記錄`);
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 同步驗證失敗:', error);
+                this.showToast('同步失敗', error.message, 'error');
+                return;
+            }
+
+            this.showToast('清空完成', '角色變更歷程已清空並同步到雲端', 'success');
 
             // 刷新顯示
             this.refreshMemberHistoryDisplay(projectId);
