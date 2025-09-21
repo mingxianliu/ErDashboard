@@ -2994,15 +2994,8 @@
                                     Object.keys(mergedAssignments).forEach(projectId => {
                                         const localProject = localAssignments[projectId];
 
-                                        // 優先使用備份的 memberHistory（最完整的本地資料）
-                                        if (backupMemberHistory[projectId] && backupMemberHistory[projectId].length > 0) {
-                                            console.log(`✅ 恢復 ${projectId} memberHistory: ${backupMemberHistory[projectId].length} 筆`);
-                                            mergedAssignments[projectId].memberHistory = backupMemberHistory[projectId];
-                                        }
-                                        // 如果備份沒有，但本地有，保留本地的
-                                        else if (localProject && localProject.memberHistory && localProject.memberHistory.length > 0) {
-                                            mergedAssignments[projectId].memberHistory = localProject.memberHistory;
-                                        }
+                                        // Pull 操作以雲端資料為準，不恢復本地 memberHistory
+                                        // (memberHistory 已經從雲端正確載入)
 
                                         if (mergedAssignments[projectId].members) {
                                             Object.keys(mergedAssignments[projectId].members).forEach(memberId => {
