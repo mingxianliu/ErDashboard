@@ -5,15 +5,14 @@
 
 class TeamManagement {
     constructor() {
-        // 使用全域單例或創建新實例
-        this.dataManager = window.globalTeamDataManager || new TeamDataManager();
+        // 強制使用全域單例
+        if (!window.globalTeamDataManager) {
+            window.globalTeamDataManager = new TeamDataManager();
+            window.globalTeamDataManager.init();
+        }
+        this.dataManager = window.globalTeamDataManager;
         this.statistics = new TeamStatistics(this.dataManager);
         this.uiComponents = new TeamUIComponents(this.dataManager, this.statistics);
-
-        // 如果不是全域實例，則初始化
-        if (!window.globalTeamDataManager) {
-            this.dataManager.init();
-        }
     }
 
     // 等待初始化完成並載入總覽
@@ -1998,10 +1997,15 @@ class TeamManagement {
 
         return `
             <div class="member-history-container">
-                <h6 class="mb-3">
-                    <i class="fas fa-history me-2"></i>角色變更歷程
-                    <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
-                </h6>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>角色變更歷程
+                        <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
+                    </h6>
+                    <button class="btn btn-sm btn-outline-danger" onclick="teamManagement.clearMemberHistory('${projectId}')" title="清空所有歷程">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                </div>
                 <div class="history-timeline">
                     ${history.map((entry, index) => `
                         <div class="history-entry ${index === 0 ? 'latest' : ''}" data-timestamp="${entry.timestamp}">
@@ -2208,6 +2212,40 @@ class TeamManagement {
         }
     }
 
+    // 清空角色變更歷程
+    async clearMemberHistory(projectId) {
+        try {
+            if (!confirm('確定要清空所有角色變更歷程記錄嗎？此操作無法復原。')) {
+                return;
+            }
+
+            // 直接修改 dataManager 內部的 assignments 物件
+            if (!this.dataManager.assignments[projectId]) {
+                this.showToast('錯誤', '找不到指定專案', 'error');
+                return;
+            }
+
+            // 清空角色變更歷程記錄
+            this.dataManager.assignments[projectId].memberHistory = [];
+
+            // 更新專案時間戳確保資料有變更
+            this.dataManager.assignments[projectId].lastUpdated = new Date().toISOString();
+            this.dataManager.assignments[projectId].lastModified = Date.now();
+
+            // 儲存變更
+            await this.dataManager.saveLocalChanges();
+
+            this.showToast('清空完成', '角色變更歷程已清空', 'success');
+
+            // 刷新顯示
+            this.refreshMemberHistoryDisplay(projectId);
+
+        } catch (error) {
+            console.error('清空角色變更歷程失敗:', error);
+            this.showToast('清空失敗', '清空角色變更歷程失敗: ' + error.message, 'error');
+        }
+    }
+
     // 通知首頁重新載入資料
     refreshMainPage() {
         console.log('🔄 開始強制更新首頁...');
@@ -2282,9 +2320,20 @@ window.generateMemberHistoryHTML = function(projectId) {
 
     if (history.length === 0) {
         return `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                尚無角色變更歷程記錄
+            <div class="member-history-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>角色變更歷程
+                        <span class="badge bg-secondary ms-2">0 筆記錄</span>
+                    </h6>
+                    <button class="btn btn-sm btn-outline-danger" onclick="if(window.teamManagement) window.teamManagement.clearMemberHistory('${projectId}')" title="清空所有歷程">
+                        <i class="fas fa-trash"></i> 清空
+                    </button>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    尚無角色變更歷程記錄
+                </div>
             </div>
         `;
     }
@@ -2297,10 +2346,15 @@ window.generateMemberHistoryHTML = function(projectId) {
 
     return `
         <div class="member-history-container">
-            <h6 class="mb-3">
-                <i class="fas fa-history me-2"></i>角色變更歷程
-                <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
-            </h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">
+                    <i class="fas fa-history me-2"></i>角色變更歷程
+                    <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
+                </h6>
+                <button class="btn btn-sm btn-outline-danger" onclick="if(window.teamManagement) window.teamManagement.clearMemberHistory('${projectId}')" title="清空所有歷程">
+                    <i class="fas fa-trash"></i> 清空
+                </button>
+            </div>
             <div class="history-timeline">
                 ${history.map((entry, index) => `
                     <div class="history-entry ${index === 0 ? 'latest' : ''}" data-timestamp="${entry.timestamp}">

@@ -349,7 +349,26 @@ class GoogleDriveAPI {
         });
 
         if (!response.ok) {
-            throw new Error(`更新檔案失敗: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('❌ 更新檔案失敗:', response.status, errorText);
+
+            // 如果 PATCH 失敗，嘗試 PUT 方法
+            const putResponse = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${this.accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: content
+            });
+
+            if (!putResponse.ok) {
+                const putErrorText = await putResponse.text();
+                console.error('❌ PUT 方法也失敗:', putResponse.status, putErrorText);
+                throw new Error(`更新檔案失敗: ${putResponse.status} ${putResponse.statusText} - ${putErrorText}`);
+            }
+
+            return await putResponse.json();
         }
 
         return await response.json();
