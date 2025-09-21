@@ -1149,9 +1149,14 @@
                     }
                 });
 
-                // 使用 TeamDataManager 更新資料
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域的團隊資料管理器，確保與歷程記錄同步
+                let teamDataManager;
+                if (window.teamManagement && window.teamManagement.dataManager) {
+                    teamDataManager = window.teamManagement.dataManager;
+                } else {
+                    teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                }
                 const assignments = teamDataManager.getAllAssignments();
 
                 // 更新專案進度和備註
@@ -1796,9 +1801,14 @@
                 const newMemberId = document.getElementById('newMember').value;
                 const newRole = document.getElementById('memberRole').value;
 
-                // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                // 使用全域的團隊資料管理器，確保與歷程記錄同步
+                let teamDataManager;
+                if (window.teamManagement && window.teamManagement.dataManager) {
+                    teamDataManager = window.teamManagement.dataManager;
+                } else {
+                    teamDataManager = new window.TeamDataManager();
+                    await teamDataManager.init();
+                }
                 const assignments = teamDataManager.getAllAssignments();
 
                 // 檢查新成員是否已經在當前專案中（避免重複）
