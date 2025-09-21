@@ -2975,6 +2975,12 @@
             // 記錄拉取結果
             logPullResults(pullResults);
 
+            // 自動重新載入頁面以顯示最新資料
+            console.log('✅ Pull 完成，2秒後自動重新載入頁面...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+
             return pullResults;
         }
 
@@ -3293,6 +3299,19 @@
                         await window.globalTeamDataManager.init();
                     }
                     window.teamDataManager = window.globalTeamDataManager;
+                }
+
+                // 自動執行 Pull 操作（登入後自動同步最新資料）
+                console.log('🔄 登入成功，自動從 Google Drive 同步最新資料...');
+                if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                    try {
+                        await pullFilesFromGoogleDrive();
+                        console.log('✅ 自動同步完成');
+                    } catch (error) {
+                        console.warn('⚠️ 自動同步失敗，使用本地資料:', error);
+                    }
+                } else {
+                    console.log('ℹ️ Google Drive 未登入，使用本地資料');
                 }
 
                 // 立即初始化 Dashboard，讓它自己等待 teamDataManager
