@@ -179,8 +179,13 @@
                     window.globalTeamDataManager = teamDataManager;
                     window.teamDataManager = teamDataManager;
                 } else {
-                    // 確保資料是最新的
-                    await teamDataManager.init();
+                    // 檢查是否需要重新初始化（避免覆蓋剛同步的資料）
+                    if (!teamDataManager.isReady()) {
+                        console.log('🔄 TeamDataManager 未準備好，執行初始化...');
+                        await teamDataManager.init();
+                    } else {
+                        console.log('✅ TeamDataManager 已準備好，跳過重複初始化');
+                    }
                 }
 
                 // 載入任務範本資料（如果還沒載入）
@@ -212,11 +217,22 @@
                 Object.values(assignments).forEach(project => {
                     if (project.members) {
                         Object.values(project.members).forEach(member => {
-                            if (member.isExecuting === undefined) {
+                            if (member.isExecuting === undefined || member.isExecuting === null) {
                                 member.isExecuting = false; // 預設為未執行
                             }
                             if (!member.personalNotes) {
                                 member.personalNotes = []; // 初始化個人備註陣列
+                            }
+                        });
+                    }
+                });
+
+                console.log('🔍 Debug - 渲染前的 assignments 狀態:', assignments);
+                Object.values(assignments).forEach(project => {
+                    if (project.members) {
+                        Object.entries(project.members).forEach(([memberId, member]) => {
+                            if (member.isExecuting === true) {
+                                console.log(`✅ 發現執行中成員: ${project.projectId} - ${memberId}, isExecuting: ${member.isExecuting}`);
                             }
                         });
                     }
@@ -337,7 +353,8 @@
                                                     <input class="form-check-input mb-1" type="checkbox"
                                                            id="executing-${project.projectId}-${member.memberId}"
                                                            onchange="toggleMemberExecution('${project.projectId}', '${member.memberId}', this.checked)"
-                                                           ${member.isExecuting ? 'checked' : ''}>
+                                                           ${member.isExecuting ? 'checked' : ''}
+                                                           data-project="${project.projectId}" data-member="${member.memberId}">
                                                     ${member.isExecuting ? '<i class="fas fa-play-circle text-success" title="執行中"></i>' : ''}
                                                 </div>
                                                 <div class="d-flex flex-column me-3" style="min-width: 80px; max-width: 120px;">
@@ -415,6 +432,16 @@
                             `;
                         });
                         projectsList.innerHTML = html;
+
+                        // 添加事件監聽器作為備份（以防 onchange 屬性失效）
+                        document.querySelectorAll('input[type="checkbox"][id^="executing-"]').forEach(checkbox => {
+                            checkbox.addEventListener('change', function() {
+                                const projectId = this.getAttribute('data-project');
+                                const memberId = this.getAttribute('data-member');
+                                console.log(`🔄 Backup 事件監聽器觸發: ${projectId} - ${memberId} = ${this.checked}`);
+                                toggleMemberExecution(projectId, memberId, this.checked);
+                            });
+                        });
                         projectsList.style.display = 'flex';
                     }
                 } else {
@@ -1067,6 +1094,8 @@
         // 切換成員執行狀態
         async function toggleMemberExecution(projectId, memberId, isChecked) {
             try {
+                console.log(`🔄 Toggle 執行狀態: ${projectId} - ${memberId} = ${isChecked}`);
+
                 // 使用全域 TeamDataManager
                 const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
                 if (!teamDataManager) {
@@ -1079,8 +1108,12 @@
                     assignments[projectId].members[memberId].isExecuting = isChecked;
                     assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
 
+                    console.log(`✅ 已更新成員狀態: ${memberId}.isExecuting = ${assignments[projectId].members[memberId].isExecuting}`);
+                    console.log(`🔍 完整成員資料:`, assignments[projectId].members[memberId]);
+
                     // 儲存變更
                     await teamDataManager.saveLocalChanges();
+                    console.log(`💾 狀態已儲存到 localStorage 和 Google Drive`);
 
                     // 視覺回饋
                     const checkbox = document.getElementById(`executing-${projectId}-${memberId}`);
@@ -2269,6 +2302,10 @@
                     window.globalTeamDataManager = teamDataManager;
                     window.teamDataManager = teamDataManager;
                     console.log('✅ TeamDataManager 重新初始化完成');
+
+                    // 清除備份，避免干擾
+                    localStorage.removeItem('teamAssignments_backup');
+                    console.log('🧹 已清除備份資料');
                 }
 
                 // 成功訊息
@@ -2451,6 +2488,22 @@
 
                         // 特別處理 project-assignments.json：深度合併到 teamAssignments
                         if (fileName === 'project-assignments.json' && actualData.assignments) {
+                            console.log('🔄 開始處理 project-assignments.json 同步...');
+                            console.log('☁️ 雲端資料:', actualData.assignments);
+
+                            // 檢查雲端資料中的執行狀態
+                            console.log('🔍 檢查雲端資料中的執行狀態:');
+                            Object.keys(actualData.assignments).forEach(projectId => {
+                                if (actualData.assignments[projectId].members) {
+                                    Object.keys(actualData.assignments[projectId].members).forEach(memberId => {
+                                        const member = actualData.assignments[projectId].members[memberId];
+                                        if (member.isExecuting === true) {
+                                            console.log(`☁️ 雲端發現執行中成員: ${projectId} - ${memberId}`);
+                                        }
+                                    });
+                                }
+                            });
+
                             // 取得當前本地狀態作為備份
                             const currentLocalState = localStorage.getItem('teamAssignments');
                             let mergedAssignments = actualData.assignments;
@@ -2458,7 +2511,20 @@
                             if (currentLocalState) {
                                 try {
                                     const localAssignments = JSON.parse(currentLocalState);
+                                    console.log('💾 本地資料:', localAssignments);
                                     console.log('🔄 執行深度合併，保留本地狀態...');
+
+                                    // 檢查並記錄本地執行狀態
+                                    Object.keys(localAssignments).forEach(projectId => {
+                                        if (localAssignments[projectId].members) {
+                                            Object.keys(localAssignments[projectId].members).forEach(memberId => {
+                                                const member = localAssignments[projectId].members[memberId];
+                                                if (member.isExecuting === true) {
+                                                    console.log(`📍 發現本地執行中成員: ${projectId} - ${memberId}`);
+                                                }
+                                            });
+                                        }
+                                    });
 
                                     // 深度合併：雲端資料為基礎，本地狀態優先
                                     Object.keys(localAssignments).forEach(projectId => {
@@ -2473,10 +2539,17 @@
                                             if (localAssignments[projectId].members && mergedAssignments[projectId].members) {
                                                 Object.keys(localAssignments[projectId].members).forEach(memberId => {
                                                     if (mergedAssignments[projectId].members[memberId]) {
+                                                        const original = mergedAssignments[projectId].members[memberId];
+                                                        const local = localAssignments[projectId].members[memberId];
+
                                                         mergedAssignments[projectId].members[memberId] = {
-                                                            ...mergedAssignments[projectId].members[memberId],
-                                                            ...localAssignments[projectId].members[memberId]
+                                                            ...original,
+                                                            ...local
                                                         };
+
+                                                        if (local.isExecuting === true) {
+                                                            console.log(`✅ 保留執行狀態: ${projectId} - ${memberId} = ${mergedAssignments[projectId].members[memberId].isExecuting}`);
+                                                        }
                                                     }
                                                 });
                                             }
@@ -2485,10 +2558,13 @@
                                 } catch (parseError) {
                                     console.warn('⚠️ 本地狀態解析失敗，使用雲端資料:', parseError);
                                 }
+                            } else {
+                                console.log('💾 沒有本地狀態，直接使用雲端資料');
                             }
 
                             localStorage.setItem('teamAssignments', JSON.stringify(mergedAssignments));
-                            console.log(`✅ 專案分配資料已深度合併到 teamAssignments，保留執行狀態和個人歷程`);
+                            console.log(`✅ 專案分配資料已深度合併到 teamAssignments`);
+                            console.log('🔍 最終合併結果:', mergedAssignments);
                         }
                     }
 

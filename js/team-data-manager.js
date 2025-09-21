@@ -238,6 +238,18 @@ class TeamDataManager {
                 const localAssignments = JSON.parse(savedData);
                 console.log('🔄 載入本地變更數據:', localAssignments);
 
+                // 檢查並記錄執行中的成員
+                Object.keys(localAssignments).forEach(projectId => {
+                    if (localAssignments[projectId].members) {
+                        Object.keys(localAssignments[projectId].members).forEach(memberId => {
+                            const member = localAssignments[projectId].members[memberId];
+                            if (member.isExecuting === true) {
+                                console.log(`📍 TeamDataManager 發現執行中成員: ${projectId} - ${memberId}`);
+                            }
+                        });
+                    }
+                });
+
                 // 深度合併本地變更到專案分配
                 Object.keys(localAssignments).forEach(projectId => {
                     if (this.assignments && this.assignments[projectId]) {
@@ -301,6 +313,20 @@ class TeamDataManager {
             // 同時儲存到 Google Drive
             if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                 console.log('☁️ 儲存專案分配到 Google Drive...');
+
+                // 檢查要儲存的資料中是否包含執行狀態
+                console.log('🔍 檢查要儲存到雲端的執行狀態:');
+                Object.keys(this.assignments).forEach(projectId => {
+                    if (this.assignments[projectId].members) {
+                        Object.keys(this.assignments[projectId].members).forEach(memberId => {
+                            const member = this.assignments[projectId].members[memberId];
+                            if (member.isExecuting === true) {
+                                console.log(`💾 準備儲存執行中成員: ${projectId} - ${memberId}`);
+                            }
+                        });
+                    }
+                });
+
                 const assignmentData = {
                     assignments: this.assignments,
                     constraints: this.constraints,
@@ -313,6 +339,7 @@ class TeamDataManager {
                     }
                 };
 
+                console.log('🔍 最終儲存到雲端的 assignmentData:', assignmentData);
                 await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
                 console.log('☁️ 專案分配已儲存到 Google Drive');
             } else {
