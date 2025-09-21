@@ -801,7 +801,7 @@
                         `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <div class="fw-bold small text-muted">${note.timestamp}</div>
-                                <button class="btn btn-sm btn-outline-danger p-1" onclick="deleteProjectNote(${index})" title="刪除此備註">
+                                <button class="btn btn-sm btn-outline-danger p-1 delete-project-note-btn" data-index="${index}" title="刪除此備註">
                                     <i class="fas fa-times" style="font-size: 10px;"></i>
                                 </button>
                             </div>
@@ -821,7 +821,7 @@
                             `<div class="mb-2 p-2 border-start border-primary border-3 bg-white">
                                 <div class="d-flex justify-content-between align-items-center mb-1">
                                     <div class="fw-bold small text-muted">${note.timestamp}</div>
-                                    <button class="btn btn-sm btn-outline-danger p-1" onclick="deleteProjectNote(${index})" title="刪除此備註">
+                                    <button class="btn btn-sm btn-outline-danger p-1 delete-project-note-btn" data-index="${index}" title="刪除此備註">
                                         <i class="fas fa-times" style="font-size: 10px;"></i>
                                     </button>
                                 </div>
@@ -1439,7 +1439,7 @@
         }
 
         // 刪除專案備註
-        async function deleteProjectNote(index) {
+        window.deleteProjectNote = async function(index) {
             if (!confirm('確定要刪除此專案備註嗎？')) {
                 return;
             }
@@ -2109,6 +2109,17 @@
 
         // 頁面載入時直接執行（延遲一下等認證通過）
         window.addEventListener('DOMContentLoaded', () => {
+            // 添加專案備註刪除按鈕的事件委託
+            document.addEventListener('click', function(event) {
+                if (event.target.closest('.delete-project-note-btn')) {
+                    const button = event.target.closest('.delete-project-note-btn');
+                    const index = parseInt(button.getAttribute('data-index'));
+                    if (!isNaN(index)) {
+                        window.deleteProjectNote(index);
+                    }
+                }
+            });
+
             // 等待更長時間確保 Google Drive API 完全初始化
             setTimeout(() => {
                 // 只有在認證通過後才載入
