@@ -14,38 +14,16 @@ class TeamDataManager {
     }
 
     async init() {
-        console.log('🚀 團隊資料管理器開始初始化...');
         try {
-            console.log('📊 步驟1: 載入團隊資料');
             await this.loadTeamData();
-            console.log('✅ 步驟1 完成');
-
-            console.log('📊 步驟2: 載入專案分配');
             await this.loadAssignments();
-            console.log('✅ 步驟2 完成');
-
-            console.log('📊 步驟3: 載入本地變更');
             await this.loadLocalChanges();
-            console.log('✅ 步驟3 完成');
-
-            console.log('📊 步驟4: 載入本地成員變更');
             await this.loadLocalMemberChanges();
-            console.log('✅ 步驟4 完成');
 
             this.isInitialized = true;
             this.lastUpdateTime = Date.now(); // 記錄更新時間
-            console.log('[OK] 團隊資料管理器初始化完成 ✅');
-            console.log('📊 初始化後的資料狀態:');
-            console.log('  - members:', Object.keys(this.members || {}).length, '個');
-            console.log('  - assignments:', Object.keys(this.assignments || {}).length, '個');
         } catch (error) {
-            console.error('[ERROR] 團隊資料管理器初始化失敗:', error);
-            console.error('❌ 錯誤堆疊:', error.stack);
-            console.error('❌ 錯誤詳細資訊:', {
-                message: error.message,
-                name: error.name,
-                stack: error.stack
-            });
+            console.error('團隊資料管理器初始化失敗:', error);
             this.isInitialized = false;
 
             // 即使初始化失敗，也要確保基本結構存在
@@ -61,7 +39,6 @@ class TeamDataManager {
 
     async loadTeamData() {
         try {
-            console.log('🔄 開始載入團隊成員資料...');
             let data = null;
 
             // 1. 優先從本地快取載入（最新的儲存資料）
@@ -69,51 +46,39 @@ class TeamDataManager {
             if (cachedData) {
                 try {
                     data = JSON.parse(cachedData);
-                    console.log('💾 從本地快取載入團隊成員資料');
-                    console.log('💾 快取資料大小:', cachedData.length, 'bytes');
-                    console.log('💾 members 數量:', Object.keys(data.members || {}).length);
-                    console.log('💾 快取中的成員資料:', data.members);
                 } catch (e) {
-                    console.error('💾 本地快取資料解析失敗:', e);
+                    console.error('本地快取資料解析失敗:', e);
                     data = null; // 確保重置 data
                 }
             } else {
-                console.log('💾 沒有找到本地快取資料');
             }
 
             // 2. 如果沒有快取，嘗試從 Google Drive 載入
             if (!data && window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                 try {
-                    console.log('☁️ 從 Google Drive 載入 team-members.json...');
                     const driveContent = await window.googleDriveAPI.retryWithReAuth(
                         () => window.googleDriveAPI.loadFile('team-members.json')
                     );
                     if (driveContent) {
                         // 處理包裝格式的資料 (從 saveFile 儲存的格式)
                         data = driveContent.data || driveContent;
-                        console.log('☁️ Google Drive 團隊成員資料載入成功');
-                        console.log('☁️ members 數量:', Object.keys(data.members || {}).length);
                         // 儲存到本地快取 (儲存原始格式)
                         localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
                     }
                 } catch (driveError) {
-                    console.log('☁️ Google Drive 載入失敗:', driveError.message);
+                    console.log('Google Drive 載入失敗:', driveError.message);
                 }
             }
 
             // 3. 如果還是沒有資料，載入本地檔案
             if (!data) {
-                console.log('📁 從本地檔案載入 team-members.json...');
                 const response = await fetch('config/team-members.json?v=' + Date.now());
-                console.log('📁 team-members.json 回應狀態:', response.status, response.statusText);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 data = await response.json();
-                console.log('📁 team-members.json 資料載入成功');
-                console.log('📁 members 數量:', Object.keys(data.members || {}).length);
                 // 儲存到本地快取
                 localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
             }
@@ -167,17 +132,14 @@ class TeamDataManager {
             if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
                 // 如果未登入，嘗試自動登入
                 if (!window.googleDriveAPI.isAuthenticated) {
-                    console.log('🔐 Google Drive 未登入，嘗試自動登入...');
                     const loginSuccess = await window.googleDriveAPI.signIn();
                     if (!loginSuccess) {
-                        console.log('❌ Google Drive 自動登入失敗，使用本地檔案');
                     }
                 }
 
                 // 如果已登入，載入雲端資料
                 if (window.googleDriveAPI.isAuthenticated) {
                     try {
-                    console.log('☁️ 從 Google Drive 載入 project-assignments.json...');
                     const driveContent = await window.googleDriveAPI.retryWithReAuth(
                         () => window.googleDriveAPI.loadFile('project-assignments.json')
                     );
@@ -189,19 +151,15 @@ class TeamDataManager {
                         if (data && data.assignments && typeof data.assignments === 'object') {
                             const assignmentCount = Object.keys(data.assignments).length;
                             if (assignmentCount > 0) {
-                                console.log('☁️ 成功載入專案分配資料:', assignmentCount, '個專案');
-                                console.log('☁️ assignments 內容:', data.assignments);
                             } else {
-                                console.log('⚠️ Google Drive 中的專案分配為空，將使用本地檔案');
                                 data = null; // 強制使用本地檔案
                             }
                         } else {
-                            console.warn('⚠️ Google Drive 資料格式不正確，將使用本地檔案');
                             data = null; // 強制使用本地檔案
                         }
                     }
                     } catch (driveError) {
-                        console.log('☁️ Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                        console.log('Google Drive 載入失敗，改用本地檔案:', driveError.message);
                     }
                 }
             }
@@ -215,17 +173,14 @@ class TeamDataManager {
                 }
                 data = await response.json();
                 if (data && data.assignments) {
-                    console.log('📁 成功載入專案分配資料:', Object.keys(data.assignments).length, '個專案');
-                    console.log('📁 assignments 內容:', data.assignments);
                 } else {
-                    console.warn('⚠️ 本地檔案資料格式不正確:', data);
                 }
             }
 
             this.assignments = (data && data.assignments) ? data.assignments : {};
             this.constraints = (data && data.constraints) ? data.constraints : {};
         } catch (error) {
-            console.error('❌ 載入專案分配資料失敗:', error);
+            console.error('載入專案分配資料失敗:', error);
             this.assignments = {};
             this.constraints = {};
         }

@@ -157,7 +157,6 @@
                         try {
                             const loginSuccess = await window.googleDriveAPI.signIn();
                             if (loginSuccess) {
-                                console.log('✅ Google Drive 自動登入成功');
                             } else {
                             }
                         } catch (loginError) {
@@ -182,10 +181,8 @@
                 } else {
                     // 檢查是否需要重新初始化（避免覆蓋剛同步的資料）
                     if (!teamDataManager.isReady()) {
-                        console.log('🔄 TeamDataManager 未準備好，執行初始化...');
                         await teamDataManager.init();
                     } else {
-                        console.log('✅ TeamDataManager 已準備好，跳過重複初始化');
                     }
                 }
 
@@ -2753,7 +2750,6 @@
 
                 // 保存當前本地變更，然後重新初始化 TeamDataManager
                 if (window.globalTeamDataManager) {
-                    console.log('🔄 保存當前狀態並重新初始化 TeamDataManager...');
 
                     // 先保存當前的assignments到localStorage作為備份
                     const currentAssignments = window.globalTeamDataManager.getAllAssignments();
@@ -2771,7 +2767,6 @@
                     await teamDataManager.init();
                     window.globalTeamDataManager = teamDataManager;
                     window.teamDataManager = teamDataManager;
-                    console.log('✅ TeamDataManager 重新初始化完成');
 
                     // 清除備份，避免干擾
                     localStorage.removeItem('teamAssignments_backup');
@@ -2908,18 +2903,15 @@
         // 從 Google Drive 拉取檔案到本地
         async function pullFilesFromGoogleDrive() {
             // Pull 前先備份本地的 memberHistory
-            console.log('📦 Pull 前備份 memberHistory...');
             const backupMemberHistory = {};
             try {
                 const currentAssignments = window.teamDataManager.getAllAssignments();
                 Object.keys(currentAssignments).forEach(projectId => {
                     if (currentAssignments[projectId].memberHistory) {
                         backupMemberHistory[projectId] = [...currentAssignments[projectId].memberHistory];
-                        console.log(`📦 備份 ${projectId} memberHistory: ${backupMemberHistory[projectId].length} 筆`);
                     }
                 });
             } catch (e) {
-                console.warn('⚠️ 無法備份 memberHistory:', e);
             }
 
             const filesToPull = [
@@ -2969,7 +2961,6 @@
 
                     if (storageKey) {
                         localStorage.setItem(storageKey, JSON.stringify(actualData));
-                        console.log(`✅ ${fileName} 已更新到 localStorage`);
 
                         // 特別處理 project-assignments.json：深度合併到 teamAssignments
                         if (fileName === 'project-assignments.json' && actualData.assignments) {
@@ -2977,7 +2968,6 @@
                             const erShieldFromCloud = actualData.assignments.ErShield;
                             if (erShieldFromCloud) {
                                 const cloudMemberHistoryCount = erShieldFromCloud.memberHistory?.length || 0;
-                                console.log(`🔍 從 Google Drive 拉取的 ErShield memberHistory: ${cloudMemberHistoryCount} 筆`);
                                 if (cloudMemberHistoryCount > 0) {
                                     console.log('🔍 Google Drive 中的 ErShield memberHistory:', erShieldFromCloud.memberHistory);
                                 }
@@ -3040,21 +3030,16 @@
             logPullResults(pullResults);
 
             // 顯示拉取後的 memberHistory 數量
-            console.log('📊 =================================');
-            console.log('📊 Pull 後各專案 memberHistory 數量:');
             try {
                 const assignments = window.teamDataManager.getAllAssignments();
                 Object.keys(assignments).forEach(projectId => {
                     const memberHistoryCount = assignments[projectId].memberHistory?.length || 0;
-                    console.log(`📊 ${projectId}: ${memberHistoryCount} 筆 memberHistory`);
                 });
-                console.log('📊 =================================');
             } catch (e) {
                 console.warn('⚠️ 無法顯示 memberHistory 數量:', e);
             }
 
             // 自動重新載入頁面以顯示最新資料
-            console.log('✅ Pull 完成，2秒後自動重新載入頁面...');
             setTimeout(() => {
                 window.location.reload();
             }, 2000);
@@ -3316,9 +3301,7 @@
                 }
 
                 try {
-                    console.log('🔄 創建備用 teamManagement 實例...');
                     window.teamManagement = new window.TeamManagement();
-                    console.log('✅ 備用 teamManagement 實例創建成功');
                 } catch (error) {
                     console.error('❌ 創建備用實例失敗:', error);
                     alert('無法創建團隊管理系統: ' + error.message);
@@ -3335,7 +3318,6 @@
                 if (window.teamManagement.dataManager && !window.teamManagement.dataManager.isInitialized) {
                     console.log('⚠️ dataManager 未初始化，嘗試初始化...');
                     window.teamManagement.dataManager.init().then(() => {
-                        console.log('✅ dataManager 初始化完成，開啟團隊管理');
                         window.teamManagement.openTeamManagementDashboard();
                     }).catch(error => {
                         console.error('❌ dataManager 初始化失敗:', error);
@@ -3380,26 +3362,21 @@
                 }
 
                 // 自動執行 Pull 操作（登入後自動同步最新資料）
-                console.log('🔄 登入成功，自動從 Google Drive 同步最新資料...');
                 if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                     try {
                         await pullFilesFromGoogleDrive();
-                        console.log('✅ 自動同步完成');
 
                         // 設定定時自動 Push（每5分鐘）
                         if (!window.autoPushInterval) {
                             window.autoPushInterval = setInterval(async () => {
                                 try {
-                                    console.log('⏰ 定時自動 Push 到 Google Drive...');
                                     if (window.teamDataManager) {
                                         await window.teamDataManager.saveLocalChanges();
-                                        console.log('✅ 定時 Push 完成');
                                     }
                                 } catch (error) {
                                     console.warn('⚠️ 定時 Push 失敗:', error);
                                 }
                             }, 5 * 60 * 1000); // 每5分鐘
-                            console.log('⏰ 已啟動定時自動 Push（每5分鐘）');
                         }
 
                         // 當頁面即將關閉時，自動 Push
@@ -3429,7 +3406,6 @@
                                 const data = JSON.parse(pendingPush);
                                 await window.googleDriveAPI.saveFile('project-assignments.json', data);
                                 localStorage.removeItem('pendingPush');
-                                console.log('✅ 已同步上次未完成的資料');
                             } catch (e) {
                                 console.error('同步待處理資料失敗:', e);
                             }
