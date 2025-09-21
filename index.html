@@ -208,12 +208,15 @@
                 // 從 TeamDataManager 獲取資料
                 const assignments = teamDataManager.getAllAssignments();
 
-                // 確保所有成員都有 isExecuting 欄位
+                // 確保所有成員都有必要的欄位
                 Object.values(assignments).forEach(project => {
                     if (project.members) {
                         Object.values(project.members).forEach(member => {
                             if (member.isExecuting === undefined) {
                                 member.isExecuting = false; // 預設為未執行
+                            }
+                            if (!member.personalNotes) {
+                                member.personalNotes = []; // 初始化個人備註陣列
                             }
                         });
                     }
