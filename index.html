@@ -2526,33 +2526,24 @@
                                         }
                                     });
 
-                                    // 深度合併：雲端資料為基礎，本地狀態優先
-                                    Object.keys(localAssignments).forEach(projectId => {
-                                        if (mergedAssignments[projectId] && localAssignments[projectId]) {
-                                            // 深度合併專案資料
-                                            mergedAssignments[projectId] = {
-                                                ...mergedAssignments[projectId],
-                                                ...localAssignments[projectId]
-                                            };
+                                    // 深度合併：雲端資料優先，Pull 後以雲端為準
+                                    Object.keys(mergedAssignments).forEach(projectId => {
+                                        if (mergedAssignments[projectId].members) {
+                                            Object.keys(mergedAssignments[projectId].members).forEach(memberId => {
+                                                const cloudMember = mergedAssignments[projectId].members[memberId];
+                                                const localMember = localAssignments[projectId]?.members?.[memberId];
 
-                                            // 特別處理成員資料：保留 isExecuting 和 personalNotes
-                                            if (localAssignments[projectId].members && mergedAssignments[projectId].members) {
-                                                Object.keys(localAssignments[projectId].members).forEach(memberId => {
-                                                    if (mergedAssignments[projectId].members[memberId]) {
-                                                        const original = mergedAssignments[projectId].members[memberId];
-                                                        const local = localAssignments[projectId].members[memberId];
+                                                // 以雲端資料為準，只合併 personalNotes
+                                                if (localMember && localMember.personalNotes && localMember.personalNotes.length > 0) {
+                                                    // 保留本地的個人歷程
+                                                    cloudMember.personalNotes = localMember.personalNotes;
+                                                    console.log(`✅ 保留個人歷程: ${projectId} - ${memberId} (${localMember.personalNotes.length} 筆)`);
+                                                }
 
-                                                        mergedAssignments[projectId].members[memberId] = {
-                                                            ...original,
-                                                            ...local
-                                                        };
-
-                                                        if (local.isExecuting === true) {
-                                                            console.log(`✅ 保留執行狀態: ${projectId} - ${memberId} = ${mergedAssignments[projectId].members[memberId].isExecuting}`);
-                                                        }
-                                                    }
-                                                });
-                                            }
+                                                if (cloudMember.isExecuting === true) {
+                                                    console.log(`☁️ 使用雲端執行狀態: ${projectId} - ${memberId} = ${cloudMember.isExecuting}`);
+                                                }
+                                            });
                                         }
                                     });
                                 } catch (parseError) {
