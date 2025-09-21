@@ -2973,6 +2973,15 @@
 
                         // 特別處理 project-assignments.json：深度合併到 teamAssignments
                         if (fileName === 'project-assignments.json' && actualData.assignments) {
+                            // 顯示從 Google Drive 拉取到的 ErShield 資料
+                            const erShieldFromCloud = actualData.assignments.ErShield;
+                            if (erShieldFromCloud) {
+                                const cloudMemberHistoryCount = erShieldFromCloud.memberHistory?.length || 0;
+                                console.log(`🔍 從 Google Drive 拉取的 ErShield memberHistory: ${cloudMemberHistoryCount} 筆`);
+                                if (cloudMemberHistoryCount > 0) {
+                                    console.log('🔍 Google Drive 中的 ErShield memberHistory:', erShieldFromCloud.memberHistory);
+                                }
+                            }
                             // 取得當前本地狀態作為備份
                             const currentLocalState = localStorage.getItem('teamAssignments');
                             let mergedAssignments = actualData.assignments;
