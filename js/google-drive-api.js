@@ -237,44 +237,8 @@ class GoogleDriveAPI {
             const existingFile = await this.findFile(fileName);
 
             if (existingFile) {
-                // 驗證要推送的資料內容
-                if (fileName === 'project-assignments.json') {
-                    try {
-                        const dataToCheck = JSON.parse(fileContent);
-                        // 正確的路徑應該是 dataToCheck.data.assignments.ErShield
-                        const erShieldData = dataToCheck.data.assignments?.ErShield;
-                        const memberHistoryCount = erShieldData?.memberHistory?.length || 0;
-                        console.log(`🔍 準備推送 ${fileName} - ErShield memberHistory: ${memberHistoryCount} 筆`);
-                        console.log('🔍 完整 ErShield 數據:', JSON.stringify(erShieldData?.memberHistory, null, 2));
-                    } catch (e) {
-                        console.warn('無法解析推送資料:', e);
-                    }
-                }
                 // 更新現有檔案
-                const updateResult = await this.updateFile(existingFile.id, fileContent);
-
-                // 立即驗證更新是否成功
-                if (fileName === 'project-assignments.json') {
-                    try {
-                        console.log('🔍 驗證 Google Drive 更新結果...');
-                        await new Promise(resolve => setTimeout(resolve, 1000)); // 等待1秒
-                        const verifyData = await this.loadFile(fileName);
-                        if (verifyData && verifyData.data && verifyData.data.assignments) {
-                            const verifyErShield = verifyData.data.assignments.ErShield;
-                            const verifyCount = verifyErShield?.memberHistory?.length || 0;
-                            console.log(`🔍 Google Drive 驗證結果 - ErShield memberHistory: ${verifyCount} 筆`);
-                            if (verifyCount > 0) {
-                                console.error('❌ Google Drive 更新失敗！檔案內容沒有變更');
-                            } else {
-                                console.log('✅ Google Drive 更新成功！');
-                            }
-                        }
-                    } catch (verifyError) {
-                        console.error('❌ 無法驗證 Google Drive 更新:', verifyError);
-                    }
-                }
-
-                return updateResult;
+                return await this.updateFile(existingFile.id, fileContent);
             } else {
                 // 建立新檔案
                 return await this.createFile(fileName, fileContent);
