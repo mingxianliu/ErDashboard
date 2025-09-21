@@ -307,8 +307,7 @@ class TeamDataManager {
                         membersInUse: new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size,
                         availableMembers: Object.keys(this.members).length - new Set(Object.values(this.assignments).flatMap(p => Object.keys(p.members || {}))).size
                     },
-                    lastSync: new Date().toISOString(),
-                    version: Date.now() // 添加版本號確保資料更新
+                    lastSync: new Date().toISOString()
                 };
 
                 console.log('📤 自動 Push 到 Google Drive...');
