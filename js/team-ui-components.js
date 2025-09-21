@@ -1898,7 +1898,7 @@ class TeamUIComponents {
                     <td>${project.lastUpdated ? new Date(project.lastUpdated).toLocaleDateString() : '-'}</td>
                     <td>
                         <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-info" onclick="teamManagement.viewMemberHistory('${project.projectId}')" title="查看成員變更歷程">
+                            <button class="btn btn-outline-info" onclick="teamManagement.viewMemberHistory('${project.projectId}')" title="查看角色變更歷程">
                                 <i class="fas fa-history"></i>
                             </button>
                             <button class="btn btn-outline-primary" onclick="teamManagement.editProject('${project.projectId}')">

@@ -1084,7 +1084,7 @@ class TeamManagement {
         // 更新最後修改時間
         assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
 
-        // 添加成員變更歷程記錄
+        // 添加角色變更歷程記錄
         const historyResult = this.addMemberChangeHistory(projectId, {
             action: 'member_assigned',
             memberId: memberId,
@@ -1129,7 +1129,7 @@ class TeamManagement {
             // 記錄移除前的資訊
             const memberInfo = project.members[memberId];
 
-            // 添加成員變更歷程記錄 (在移除之前記錄)
+            // 添加角色變更歷程記錄 (在移除之前記錄)
             const historyResult = this.addMemberChangeHistory(projectId, {
                 action: 'member_removed',
                 memberId: memberId,
@@ -1234,7 +1234,7 @@ class TeamManagement {
         const member = this.dataManager.getAllMembers()[memberId];
         const currentRole = project.members[memberId].role;
 
-        // 添加成員變更歷程記錄 (在變更之前記錄)
+        // 添加角色變更歷程記錄 (在變更之前記錄)
         const historyResult = this.addMemberChangeHistory(projectId, {
             action: 'role_changed',
             memberId: memberId,
@@ -1774,10 +1774,10 @@ class TeamManagement {
         }
     }
 
-    // 添加成員變更歷程記錄
+    // 添加角色變更歷程記錄
     addMemberChangeHistory(projectId, changeData) {
         try {
-            console.log('📝 開始記錄成員變更歷程...', { projectId, changeData });
+            console.log('📝 開始記錄角色變更歷程...', { projectId, changeData });
 
             const assignments = this.dataManager.getAllAssignments();
             console.log('📋 所有專案清單:', Object.keys(assignments));
@@ -1785,7 +1785,7 @@ class TeamManagement {
             const project = assignments[projectId];
 
             if (!project) {
-                console.warn('⚠️ 專案不存在，無法記錄成員變更歷程:', projectId);
+                console.warn('⚠️ 專案不存在，無法記錄角色變更歷程:', projectId);
                 console.log('可用的專案ID:', Object.keys(assignments));
 
                 // 嘗試模糊匹配專案名稱
@@ -1829,11 +1829,11 @@ class TeamManagement {
                 console.log('🔄 保留最近50筆記錄');
             }
 
-            console.log('✅ 成員變更歷程已記錄:', historyEntry);
+            console.log('✅ 角色變更歷程已記錄:', historyEntry);
             return true;
 
         } catch (error) {
-            console.error('❌ 記錄成員變更歷程失敗:', error);
+            console.error('❌ 記錄角色變更歷程失敗:', error);
             console.error('錯誤詳情:', error.stack);
             return false;
         }
@@ -1930,7 +1930,7 @@ class TeamManagement {
         }
     }
 
-    // 獲取專案的成員變更歷程
+    // 獲取專案的角色變更歷程
     getMemberChangeHistory(projectId) {
         try {
             console.log('🔍 getMemberChangeHistory 開始:', { projectId });
@@ -1972,12 +1972,12 @@ class TeamManagement {
             console.log('✅ 回傳歷程記錄:', history.length, '筆');
             return history;
         } catch (error) {
-            console.error('❌ 獲取成員變更歷程失敗:', error);
+            console.error('❌ 獲取角色變更歷程失敗:', error);
             return [];
         }
     }
 
-    // 生成成員變更歷程的 HTML
+    // 生成角色變更歷程的 HTML
     generateMemberHistoryHTML(projectId) {
         const history = this.getMemberChangeHistory(projectId);
 
@@ -1985,7 +1985,7 @@ class TeamManagement {
             return `
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle me-2"></i>
-                    尚無成員變更歷程記錄
+                    尚無角色變更歷程記錄
                 </div>
             `;
         }
@@ -1999,7 +1999,7 @@ class TeamManagement {
         return `
             <div class="member-history-container">
                 <h6 class="mb-3">
-                    <i class="fas fa-history me-2"></i>成員變更歷程
+                    <i class="fas fa-history me-2"></i>角色變更歷程
                     <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
                 </h6>
                 <div class="history-timeline">
@@ -2038,7 +2038,7 @@ class TeamManagement {
         `;
     }
 
-    // 查看專案的成員變更歷程
+    // 查看專案的角色變更歷程
     viewMemberHistory(projectId) {
         const project = this.dataManager.getAllAssignments()[projectId];
         if (!project) {
@@ -2052,7 +2052,7 @@ class TeamManagement {
                     <div class="modal-content">
                         <div class="modal-header bg-info text-white">
                             <h5 class="modal-title">
-                                <i class="fas fa-history me-2"></i>成員變更歷程 - ${project.projectName}
+                                <i class="fas fa-history me-2"></i>角色變更歷程 - ${project.projectName}
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
@@ -2181,7 +2181,7 @@ class TeamManagement {
         }
     }
 
-    // 刷新成員變更歷程顯示
+    // 刷新角色變更歷程顯示
     refreshMemberHistoryDisplay(projectId) {
         try {
             // 更新成員歷程模態框中的內容
@@ -2193,10 +2193,10 @@ class TeamManagement {
                 }
             }
 
-            // 更新任務小卡中的成員變更歷程 (如果有開啟的話)
+            // 更新任務小卡中的角色變更歷程 (如果有開啟的話)
             const memberHistoryColumn = document.querySelector('#taskCardModal .col-lg-2:nth-child(5)');
             if (memberHistoryColumn) {
-                // 重新生成成員變更歷程
+                // 重新生成角色變更歷程
                 let updatedMemberHistoryHtml = '';
                 if (window.teamManagement && typeof window.teamManagement.generateMemberHistoryHTML === 'function') {
                     updatedMemberHistoryHtml = window.teamManagement.generateMemberHistoryHTML(projectId);
@@ -2246,7 +2246,7 @@ class TeamManagement {
     }
 }
 
-// 全域輔助函數：獲取成員變更歷程
+// 全域輔助函數：獲取角色變更歷程
 window.getMemberChangeHistory = function(projectId) {
     console.log('🌐 全域函數：getMemberChangeHistory 被呼叫:', projectId);
 
@@ -2274,7 +2274,7 @@ window.getMemberChangeHistory = function(projectId) {
     return [];
 };
 
-// 全域輔助函數：生成成員變更歷程 HTML
+// 全域輔助函數：生成角色變更歷程 HTML
 window.generateMemberHistoryHTML = function(projectId) {
     console.log('🌐 全域函數：generateMemberHistoryHTML 被呼叫:', projectId);
 
@@ -2284,7 +2284,7 @@ window.generateMemberHistoryHTML = function(projectId) {
         return `
             <div class="alert alert-info">
                 <i class="fas fa-info-circle me-2"></i>
-                尚無成員變更歷程記錄
+                尚無角色變更歷程記錄
             </div>
         `;
     }
@@ -2298,7 +2298,7 @@ window.generateMemberHistoryHTML = function(projectId) {
     return `
         <div class="member-history-container">
             <h6 class="mb-3">
-                <i class="fas fa-history me-2"></i>成員變更歷程
+                <i class="fas fa-history me-2"></i>角色變更歷程
                 <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
             </h6>
             <div class="history-timeline">

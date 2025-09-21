@@ -604,13 +604,13 @@
                     }
                 }
 
-                // 產生個人歷程 HTML
+                // 產生角色備註 HTML
                 let personalNotesHtml = '';
                 const personalNotes = member.personalNotes || [];
                 if (personalNotes.length > 0) {
                     personalNotesHtml = `
                         <div class="mb-3">
-                            <label class="form-label">個人歷程</label>
+                            <label class="form-label">角色備註</label>
                             <div class="card" style="max-height: 300px; overflow-y: auto;">
                                 <div class="card-body p-2">
                                     ${personalNotes.map((note, index) => `
@@ -629,10 +629,10 @@
                 } else {
                     personalNotesHtml = `
                         <div class="mb-3">
-                            <label class="form-label">個人歷程</label>
+                            <label class="form-label">角色備註</label>
                             <div class="card">
                                 <div class="card-body p-2 text-center text-muted">
-                                    <small>尚無個人歷程記錄</small>
+                                    <small>尚無角色備註記錄</small>
                                 </div>
                             </div>
                         </div>
@@ -681,7 +681,7 @@
                     `;
                 }
 
-                // 產生成員變更歷程 HTML
+                // 產生角色變更歷程 HTML
                 let memberHistoryHtml = '';
                 try {
                     if (window.generateMemberHistoryHTML && typeof window.generateMemberHistoryHTML === 'function') {
@@ -698,7 +698,7 @@
 
                             memberHistoryHtml = `
                                 <div class="mb-3">
-                                    <label class="form-label">成員變更歷程</label>
+                                    <label class="form-label">角色變更歷程</label>
                                     <div class="card" style="max-height: 400px; overflow-y: auto;">
                                         <div class="card-body p-2">
                                             ${memberHistory.slice().reverse().map((entry, index) => `
@@ -738,7 +738,7 @@
                         } else {
                             memberHistoryHtml = `
                                 <div class="mb-3">
-                                    <label class="form-label">成員變更歷程</label>
+                                    <label class="form-label">角色變更歷程</label>
                                     <div class="card">
                                         <div class="card-body p-2 text-center text-muted">
                                             <small>尚無成員變更記錄</small>
@@ -749,10 +749,10 @@
                         }
                     }
                 } catch (error) {
-                    console.warn('生成成員變更歷程時發生錯誤:', error);
+                    console.warn('生成角色變更歷程時發生錯誤:', error);
                     memberHistoryHtml = `
                         <div class="mb-3">
-                            <label class="form-label">成員變更歷程</label>
+                            <label class="form-label">角色變更歷程</label>
                             <div class="card">
                                 <div class="card-body p-2 text-center text-muted">
                                     <small>載入歷程時發生錯誤</small>
@@ -1406,7 +1406,7 @@
                                 </div>
                                 <div class="modal-body">
                                     <div class="mb-3">
-                                        <label for="newPersonalNote" class="form-label">新增個人備註</label>
+                                        <label for="newPersonalNote" class="form-label">新增角色備註</label>
                                         <div class="mb-2">
                                             <textarea class="form-control" id="newPersonalNote" rows="3" placeholder="記錄開發歷程、學習筆記、遇到的問題等..."></textarea>
                                         </div>
@@ -1465,7 +1465,7 @@
             ).join('');
         }
 
-        // 新增個人備註
+        // 新增角色備註
         async function addPersonalNote() {
             const newNoteInput = document.getElementById('newPersonalNote');
             const noteContent = newNoteInput.value.trim();
@@ -1514,8 +1514,8 @@
                     showSyncToast('備註已新增', '個人備註已儲存', 'success');
                 }
             } catch (error) {
-                console.error('新增個人備註失敗:', error);
-                alert('新增個人備註失敗: ' + error.message);
+                console.error('新增角色備註失敗:', error);
+                alert('新增角色備註失敗: ' + error.message);
             }
         }
 
@@ -1822,6 +1822,13 @@
                 const oldRole = oldMemberData?.role;
 
                 if (newMemberId !== oldMemberId) {
+                    // 檢查新成員是否真的不同（避免重複切換的問題）
+                    console.log('成員變更檢查:', {
+                        oldMemberId,
+                        newMemberId,
+                        currentMembers: Object.keys(assignments[projectId].members)
+                    });
+
                     // 如果更換成員，刪除舊成員
                     delete assignments[projectId].members[oldMemberId];
 
@@ -1834,7 +1841,7 @@
                         isExecuting: false // 新成員預設為未執行狀態
                     };
 
-                    // 記錄成員變更歷程 - 成員移除
+                    // 記錄角色變更歷程 - 成員移除
                     if (window.teamManagement && typeof window.teamManagement.addMemberChangeHistory === 'function') {
                         // 取得真實成員姓名
                         const oldMemberName = window.teamDataManager.getAllMembers()[oldMemberId]?.name || oldMemberId;
@@ -1848,7 +1855,7 @@
                             details: `成員從專案中移除`
                         });
 
-                        // 記錄成員變更歷程 - 成員加入
+                        // 記錄角色變更歷程 - 成員加入
                         window.teamManagement.addMemberChangeHistory(projectId, {
                             action: 'member_assigned',
                             memberId: newMemberId,
@@ -2142,7 +2149,7 @@
                     `;
                 }
 
-                // 重新生成個人歷程 HTML
+                // 重新生成角色備註 HTML
                 const allMembers = teamDataManager.getAllMembers() || {};
                 const memberName = allMembers[memberId]?.name || memberId;
                 let personalNotesHtml = '';
@@ -2150,7 +2157,7 @@
                 if (personalNotes.length > 0) {
                     personalNotesHtml = `
                         <div class="mb-3">
-                            <label class="form-label">個人歷程</label>
+                            <label class="form-label">角色備註</label>
                             <div class="card" style="max-height: 300px; overflow-y: auto;">
                                 <div class="card-body p-2">
                                     ${personalNotes.map((note, index) => `
@@ -2169,17 +2176,17 @@
                 } else {
                     personalNotesHtml = `
                         <div class="mb-3">
-                            <label class="form-label">個人歷程</label>
+                            <label class="form-label">角色備註</label>
                             <div class="card">
                                 <div class="card-body p-2 text-center text-muted">
-                                    <small>尚無個人歷程記錄</small>
+                                    <small>尚無角色備註記錄</small>
                                 </div>
                             </div>
                         </div>
                     `;
                 }
 
-                // 更新現有 modal 中的專案備註歷程、個人歷程、任務小卡歷程和成員變更歷程欄位
+                // 更新現有 modal 中的專案備註歷程、角色備註、任務小卡歷程和角色變更歷程欄位
                 const projectNotesColumn = document.querySelector('#taskCardModal .col-lg-2:nth-child(2)');
                 const personalNotesColumn = document.querySelector('#taskCardModal .col-lg-2:nth-child(3)');
                 const taskHistoryColumn = document.querySelector('#taskCardModal .col-lg-2:nth-child(4)');
@@ -2195,7 +2202,7 @@
                     taskHistoryColumn.innerHTML = taskHistoryHtml;
                 }
                 if (memberHistoryColumn) {
-                    // 重新生成成員變更歷程
+                    // 重新生成角色變更歷程
                     let updatedMemberHistoryHtml = '';
                     try {
                         if (window.generateMemberHistoryHTML && typeof window.generateMemberHistoryHTML === 'function') {
@@ -2212,7 +2219,7 @@
 
                                 updatedMemberHistoryHtml = `
                                     <div class="mb-3">
-                                        <label class="form-label">成員變更歷程</label>
+                                        <label class="form-label">角色變更歷程</label>
                                         <div class="card" style="max-height: 400px; overflow-y: auto;">
                                             <div class="card-body p-2">
                                                 ${memberHistory.slice().reverse().map((entry, index) => `
@@ -2244,7 +2251,7 @@
                             } else {
                                 updatedMemberHistoryHtml = `
                                     <div class="mb-3">
-                                        <label class="form-label">成員變更歷程</label>
+                                        <label class="form-label">角色變更歷程</label>
                                         <div class="card">
                                             <div class="card-body p-2 text-center text-muted">
                                                 <small>尚無成員變更記錄</small>
@@ -2255,10 +2262,10 @@
                             }
                         }
                     } catch (error) {
-                        console.warn('更新成員變更歷程時發生錯誤:', error);
+                        console.warn('更新角色變更歷程時發生錯誤:', error);
                         updatedMemberHistoryHtml = `
                             <div class="mb-3">
-                                <label class="form-label">成員變更歷程</label>
+                                <label class="form-label">角色變更歷程</label>
                                 <div class="card">
                                     <div class="card-body p-2 text-center text-muted">
                                         <small>載入歷程時發生錯誤</small>
@@ -2913,7 +2920,7 @@
 
                                                 // 以雲端資料為準，合併 personalNotes
                                                 if (localMember && localMember.personalNotes && localMember.personalNotes.length > 0) {
-                                                    // 保留本地的個人歷程
+                                                    // 保留本地的角色備註
                                                     cloudMember.personalNotes = localMember.personalNotes;
                                                 }
                                             });
