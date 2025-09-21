@@ -2845,6 +2845,21 @@
 
         // 從 Google Drive 拉取檔案到本地
         async function pullFilesFromGoogleDrive() {
+            // Pull 前先備份本地的 memberHistory
+            console.log('📦 Pull 前備份 memberHistory...');
+            const backupMemberHistory = {};
+            try {
+                const currentAssignments = window.teamDataManager.getAllAssignments();
+                Object.keys(currentAssignments).forEach(projectId => {
+                    if (currentAssignments[projectId].memberHistory) {
+                        backupMemberHistory[projectId] = [...currentAssignments[projectId].memberHistory];
+                        console.log(`📦 備份 ${projectId} memberHistory: ${backupMemberHistory[projectId].length} 筆`);
+                    }
+                });
+            } catch (e) {
+                console.warn('⚠️ 無法備份 memberHistory:', e);
+            }
+
             const filesToPull = [
                 'team-members.json',
                 'project-assignments.json',
@@ -2908,8 +2923,13 @@
                                     Object.keys(mergedAssignments).forEach(projectId => {
                                         const localProject = localAssignments[projectId];
 
-                                        // 保留本地的 memberHistory
-                                        if (localProject && localProject.memberHistory && localProject.memberHistory.length > 0) {
+                                        // 優先使用備份的 memberHistory（最完整的本地資料）
+                                        if (backupMemberHistory[projectId] && backupMemberHistory[projectId].length > 0) {
+                                            console.log(`✅ 恢復 ${projectId} memberHistory: ${backupMemberHistory[projectId].length} 筆`);
+                                            mergedAssignments[projectId].memberHistory = backupMemberHistory[projectId];
+                                        }
+                                        // 如果備份沒有，但本地有，保留本地的
+                                        else if (localProject && localProject.memberHistory && localProject.memberHistory.length > 0) {
                                             mergedAssignments[projectId].memberHistory = localProject.memberHistory;
                                         }
 
