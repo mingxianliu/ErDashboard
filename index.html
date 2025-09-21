@@ -338,6 +338,9 @@
                                                 <button class="btn btn-sm btn-outline-primary" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
+                                                <button class="btn btn-sm btn-outline-info" onclick="editPersonalNotes('${project.projectId}', '${member.memberId}')" title="個人備註">
+                                                    <i class="fas fa-sticky-note"></i>
+                                                </button>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="changeMember('${project.projectId}', '${member.memberId}')" title="變更成員">
                                                     <i class="fas fa-user-edit"></i>
                                                 </button>
@@ -1083,6 +1086,240 @@
             }
         }
 
+        // 編輯個人備註
+        async function editPersonalNotes(projectId, memberId) {
+            try {
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
+                const assignments = teamDataManager.getAllAssignments();
+                const project = assignments[projectId];
+                const member = project.members[memberId];
+
+                if (!project || !member) {
+                    throw new Error('找不到指定的專案或成員');
+                }
+
+                // 從實際成員資料取得名稱
+                const allMembers = teamDataManager.getAllMembers() || {};
+                const memberName = allMembers[memberId]?.name || memberId;
+
+                // 設定當前資料供其他函數使用
+                window.currentPersonalNotes = {
+                    projectId: projectId,
+                    memberId: memberId,
+                    member: member,
+                    memberName: memberName
+                };
+
+                // 格式化個人備註顯示
+                const personalNotes = member.personalNotes || [];
+                const notesHtml = formatPersonalNotes(personalNotes);
+
+                // 顯示個人備註編輯模態框
+                const personalNotesModalHtml = `
+                    <div class="modal fade" id="personalNotesModal" tabindex="-1">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">個人備註 - ${memberName} (${project.projectName})</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="newPersonalNote" class="form-label">新增個人備註</label>
+                                        <div class="mb-2">
+                                            <textarea class="form-control" id="newPersonalNote" rows="3" placeholder="記錄開發歷程、學習筆記、遇到的問題等..."></textarea>
+                                        </div>
+                                        <div class="mb-2">
+                                            <button type="button" class="btn btn-sm btn-primary me-2" onclick="addPersonalNote()">
+                                                <i class="fas fa-plus"></i> 新增備註
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="clearAllPersonalNotes()">
+                                                <i class="fas fa-trash"></i> 清除所有備註
+                                            </button>
+                                        </div>
+                                        <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa;">
+                                            <div id="personalNotesList">
+                                                ${notesHtml}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const oldPersonalNotesModal = document.getElementById('personalNotesModal');
+                if (oldPersonalNotesModal) oldPersonalNotesModal.remove();
+                document.body.insertAdjacentHTML('beforeend', personalNotesModalHtml);
+
+                const personalNotesModal = new bootstrap.Modal(document.getElementById('personalNotesModal'));
+                personalNotesModal.show();
+
+            } catch (error) {
+                console.error('編輯個人備註失敗:', error);
+                alert('編輯個人備註失敗: ' + error.message);
+            }
+        }
+
+        // 格式化個人備註顯示
+        function formatPersonalNotes(notes) {
+            if (!notes || !Array.isArray(notes) || notes.length === 0) {
+                return '<p class="text-muted m-0">尚無個人備註</p>';
+            }
+
+            return notes.map((note, index) =>
+                `<div class="mb-2 p-2 border-start border-info border-3 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="fw-bold small text-muted">${note.timestamp}</div>
+                        <button class="btn btn-sm btn-outline-danger p-1" onclick="deletePersonalNote(${index})" title="刪除此備註">
+                            <i class="fas fa-times" style="font-size: 10px;"></i>
+                        </button>
+                    </div>
+                    <div>${note.content}</div>
+                </div>`
+            ).join('');
+        }
+
+        // 新增個人備註
+        async function addPersonalNote() {
+            const newNoteInput = document.getElementById('newPersonalNote');
+            const noteContent = newNoteInput.value.trim();
+
+            if (!noteContent) {
+                alert('請輸入備註內容');
+                return;
+            }
+
+            const timestamp = new Date().toLocaleString('zh-TW');
+            const newNote = {
+                timestamp: timestamp,
+                content: noteContent,
+                created: new Date().toISOString()
+            };
+
+            try {
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
+                const assignments = teamDataManager.getAllAssignments();
+                const currentData = window.currentPersonalNotes;
+
+                if (assignments[currentData.projectId] && assignments[currentData.projectId].members[currentData.memberId]) {
+                    // 初始化個人備註陣列
+                    if (!assignments[currentData.projectId].members[currentData.memberId].personalNotes) {
+                        assignments[currentData.projectId].members[currentData.memberId].personalNotes = [];
+                    }
+
+                    // 新增到陣列開頭（最新的在上面）
+                    assignments[currentData.projectId].members[currentData.memberId].personalNotes.unshift(newNote);
+                    assignments[currentData.projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
+
+                    // 更新顯示
+                    const personalNotes = assignments[currentData.projectId].members[currentData.memberId].personalNotes;
+                    updatePersonalNotesDisplay(personalNotes);
+
+                    // 清空輸入框
+                    newNoteInput.value = '';
+
+                    showSyncToast('備註已新增', '個人備註已儲存', 'success');
+                }
+            } catch (error) {
+                console.error('新增個人備註失敗:', error);
+                alert('新增個人備註失敗: ' + error.message);
+            }
+        }
+
+        // 刪除個人備註
+        async function deletePersonalNote(index) {
+            if (!confirm('確定要刪除此個人備註嗎？')) {
+                return;
+            }
+
+            try {
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
+                const assignments = teamDataManager.getAllAssignments();
+                const currentData = window.currentPersonalNotes;
+
+                if (assignments[currentData.projectId] && assignments[currentData.projectId].members[currentData.memberId]) {
+                    const personalNotes = assignments[currentData.projectId].members[currentData.memberId].personalNotes;
+                    if (personalNotes && personalNotes[index]) {
+                        // 刪除指定的備註
+                        personalNotes.splice(index, 1);
+                        assignments[currentData.projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                        // 儲存變更
+                        await teamDataManager.saveLocalChanges();
+
+                        // 更新顯示
+                        updatePersonalNotesDisplay(personalNotes);
+
+                        showSyncToast('備註已刪除', '個人備註已移除', 'info');
+                    }
+                }
+            } catch (error) {
+                console.error('刪除個人備註失敗:', error);
+                alert('刪除個人備註失敗: ' + error.message);
+            }
+        }
+
+        // 清除所有個人備註
+        async function clearAllPersonalNotes() {
+            if (!confirm('確定要清除所有個人備註嗎？此操作無法復原。')) {
+                return;
+            }
+
+            try {
+                // 使用全域 TeamDataManager
+                const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
+                if (!teamDataManager) {
+                    throw new Error('TeamDataManager 未初始化');
+                }
+                const assignments = teamDataManager.getAllAssignments();
+                const currentData = window.currentPersonalNotes;
+
+                if (assignments[currentData.projectId] && assignments[currentData.projectId].members[currentData.memberId]) {
+                    assignments[currentData.projectId].members[currentData.memberId].personalNotes = [];
+                    assignments[currentData.projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
+
+                    // 更新顯示
+                    updatePersonalNotesDisplay([]);
+
+                    showSyncToast('備註已清除', '所有個人備註已清除', 'info');
+                }
+            } catch (error) {
+                console.error('清除個人備註失敗:', error);
+                alert('清除個人備註失敗: ' + error.message);
+            }
+        }
+
+        // 更新個人備註顯示
+        function updatePersonalNotesDisplay(notesList) {
+            const notesListDiv = document.getElementById('personalNotesList');
+            if (notesListDiv) {
+                notesListDiv.innerHTML = formatPersonalNotes(notesList);
+            }
+        }
+
         // 儲存成員變更
         async function saveMemberChange(projectId, oldMemberId) {
             try {
@@ -1107,11 +1344,12 @@
                     // 如果更換成員，刪除舊成員
                     delete assignments[projectId].members[oldMemberId];
 
-                    // 新增新成員，保留任務小卡等資料
+                    // 新增新成員，保留任務小卡和個人備註等資料
                     assignments[projectId].members[newMemberId] = {
                         memberId: newMemberId,
                         role: newRole,
                         taskCard: oldMemberData.taskCard || {},
+                        personalNotes: oldMemberData.personalNotes || [], // 複製個人備註
                         isExecuting: false // 新成員預設為未執行狀態
                     };
                 } else {
