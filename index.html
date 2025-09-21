@@ -232,16 +232,16 @@
                     if (summaryCards) {
                         summaryCards.innerHTML = `
                             <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
+                                <div class="card" style="height: 120px;">
+                                    <div class="card-body d-flex flex-column justify-content-center">
                                         <h5 class="card-title">總專案數</h5>
                                         <h2>${projects.length}</h2>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
+                                <div class="card" style="height: 120px;">
+                                    <div class="card-body d-flex flex-column justify-content-center">
                                         <h5 class="card-title">進行中</h5>
                                         <h2>${projects.filter(p => p.status === 'active').length}</h2>
                                         <small class="text-muted">暫停: <span class="badge bg-warning">${projects.filter(p => p.status === 'paused').length}</span></small>
@@ -249,8 +249,8 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
+                                <div class="card" style="height: 120px;">
+                                    <div class="card-body d-flex flex-column justify-content-center">
                                         <h5 class="card-title">總參與成員數</h5>
                                         <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
                                         <small class="text-muted">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting === true).length, 0)}</span></small>
@@ -258,8 +258,8 @@
                                 </div>
                             </div>
                             <div class="col-md-3">
-                                <div class="card">
-                                    <div class="card-body">
+                                <div class="card" style="height: 120px;">
+                                    <div class="card-body d-flex flex-column justify-content-center">
                                         <h5 class="card-title">平均進度</h5>
                                         <h2>${Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)}%</h2>
                                     </div>
@@ -303,9 +303,22 @@
                                         'frontend': '#007bff',
                                         'backend': '#28a745',
                                         'fullstack': '#ffc107',
-                                        'testing': '#dc3545'
+                                        'testing': '#dc3545',
+                                        '前端': '#007bff',
+                                        '後端': '#28a745',
+                                        '全端': '#ffc107',
+                                        '測試': '#dc3545'
                                     };
                                     const roleColor = roleColors[member.role] || '#6c757d';
+
+                                    // 角色文字轉換
+                                    const roleTranslation = {
+                                        'frontend': '前端',
+                                        'backend': '後端',
+                                        'fullstack': '全端',
+                                        'testing': '測試'
+                                    };
+                                    const displayRole = roleTranslation[member.role] || member.role;
 
                                     // 根據組別設定背景色
                                     const memberGroup = member.memberId.split('-')[0]; // A, B, C
@@ -320,21 +333,21 @@
                                         <div class="position-relative p-3 mb-2 border rounded"
                                              style="background-color: ${groupBgColor}; height: 85px; overflow: hidden;">
                                             <div class="d-flex align-items-center h-100" style="padding-right: 90px;">
-                                                <div class="form-check me-3">
-                                                    <input class="form-check-input" type="checkbox"
+                                                <div class="d-flex flex-column align-items-center me-3">
+                                                    <input class="form-check-input mb-1" type="checkbox"
                                                            id="executing-${project.projectId}-${member.memberId}"
                                                            onchange="toggleMemberExecution('${project.projectId}', '${member.memberId}', this.checked)"
                                                            ${member.isExecuting ? 'checked' : ''}>
+                                                    ${member.isExecuting ? '<i class="fas fa-play-circle text-success" title="執行中"></i>' : ''}
                                                 </div>
                                                 <div class="d-flex flex-column me-3" style="min-width: 80px; max-width: 120px;">
                                                     <div class="fw-bold mb-1 ${member.isExecuting ? 'text-success' : ''} text-truncate" title="${memberName}">${memberName}</div>
                                                     <small class="text-muted text-truncate" title="${member.memberId}">${member.memberId}</small>
                                                 </div>
-                                                <div class="d-flex align-items-center flex-grow-1">
-                                                    <span class="badge px-3 py-2 me-2" style="background-color: ${roleColor}; font-size: 0.85em;">
-                                                        ${member.role}
+                                                <div class="d-flex align-items-center flex-grow-1 justify-content-end">
+                                                    <span class="badge px-3 py-2 me-3" style="background-color: ${roleColor}; font-size: 0.85em;">
+                                                        ${displayRole}
                                                     </span>
-                                                    ${member.isExecuting ? '<i class="fas fa-play-circle text-success" title="執行中"></i>' : ''}
                                                 </div>
                                             </div>
                                             <div class="position-absolute top-50 end-0 translate-middle-y me-3">
