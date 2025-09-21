@@ -1708,106 +1708,22 @@ class TeamManagement {
                 this.showToast('刪除失敗', error.message, 'error');
             }
         }
-
-        // 開啟團隊管理 Dashboard
-        openTeamManagementDashboard() {
-            try {
-                // 開啟新視窗顯示團隊管理介面
-                const managementWindow = window.open('', 'teamManagement', 'width=1200,height=800,scrollbars=yes,resizable=yes');
-
-                if (!managementWindow) {
-                    alert('無法開啟團隊管理視窗，請檢查瀏覽器的彈出視窗設定');
-                    return;
-                }
-
-                // 設定視窗內容
-                managementWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html lang="zh-TW">
-                    <head>
-                        <meta charset="UTF-8">
-                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>團隊管理 Dashboard</title>
-                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-                        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-                        <style>
-                            body { background-color: #f8f9fc; padding: 20px; }
-                            .card { border: none; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, .15); }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="container-fluid">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h2><i class="fas fa-users-cog me-2"></i>團隊管理 Dashboard</h2>
-                                <button type="button" class="btn btn-secondary" onclick="window.close(); window.opener.focus();">
-                                    <i class="fas fa-times me-2"></i>關閉
-                                </button>
-                            </div>
-                            <div id="teamManagementContent">
-                                <div class="text-center">
-                                    <div class="spinner-border" role="status">
-                                        <span class="visually-hidden">載入中...</span>
-                                    </div>
-                                    <p class="mt-2">正在載入團隊管理介面...</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-                        <script>
-                            // 載入團隊管理模組
-                            window.addEventListener('load', async () => {
-                                try {
-                                    // 從主視窗獲取團隊管理實例
-                                    if (window.opener && window.opener.teamManagement) {
-                                        const teamMgmt = window.opener.teamManagement;
-
-                                        // 等待初始化完成
-                                        await teamMgmt.waitForInitAndLoadOverview();
-
-                                        // 載入 UI 組件
-                                        const content = document.getElementById('teamManagementContent');
-                                        content.innerHTML = teamMgmt.uiComponents.generateFullDashboard();
-
-                                        // 綁定事件
-                                        teamMgmt.bindEvents();
-
-                                        console.log('✅ 團隊管理 Dashboard 載入完成');
-                                    } else {
-                                        throw new Error('無法訪問主視窗的團隊管理實例');
-                                    }
-                                } catch (error) {
-                                    console.error('❌ 載入團隊管理 Dashboard 失敗:', error);
-                                    document.getElementById('teamManagementContent').innerHTML =
-                                        '<div class="alert alert-danger">載入失敗: ' + error.message + '</div>';
-                                }
-                            });
-
-                            // 視窗關閉時將焦點回到主視窗
-                            window.addEventListener('beforeunload', () => {
-                                if (window.opener && !window.opener.closed) {
-                                    window.opener.focus();
-                                }
-                            });
-                        </script>
-                    </body>
-                    </html>
-                `);
-                managementWindow.document.close();
-
-                // 將焦點移到新視窗
-                managementWindow.focus();
-
-            } catch (error) {
-                console.error('❌ 開啟團隊管理 Dashboard 失敗:', error);
-                alert('開啟團隊管理失敗: ' + error.message);
-            }
-        }
     }
 }
 
 // 全域實例
-window.teamManagement = new TeamManagement();
+try {
+    console.log('🔄 嘗試創建 TeamManagement 實例...');
+    console.log('- TeamDataManager 可用:', !!window.TeamDataManager);
+    console.log('- TeamStatistics 可用:', !!window.TeamStatistics);
+    console.log('- TeamUIComponents 可用:', !!window.TeamUIComponents);
+
+    window.teamManagement = new TeamManagement();
+    console.log('✅ TeamManagement 實例創建成功');
+} catch (error) {
+    console.error('❌ 創建 TeamManagement 實例失敗:', error);
+    console.error('錯誤堆疊:', error.stack);
+}
 
 // 當頁面載入完成時啟動自動功能
 document.addEventListener('DOMContentLoaded', () => {

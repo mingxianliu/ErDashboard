@@ -180,3 +180,77 @@ body {
     overflow-y: auto;
 }
 
+/* 進度條編輯樣式優化 */
+.progress-container {
+    position: relative;
+}
+
+.progress-slider {
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+.progress-slider::-webkit-slider-thumb {
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.progress-slider::-webkit-slider-thumb:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+.progress-slider::-webkit-slider-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #e9ecef;
+    border: none;
+}
+
+.progress-slider::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.progress-slider::-moz-range-thumb:hover {
+    background: #0056b3;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+}
+
+.progress-slider::-moz-range-track {
+    height: 8px;
+    border-radius: 4px;
+    background: #e9ecef;
+    border: none;
+}
+
+/* 統計卡片樣式優化 - 使用原生 Bootstrap 樣式 */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* 統計卡片半透明文字 */
+.text-white-50 {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+

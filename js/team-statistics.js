@@ -8,6 +8,11 @@ class TeamStatistics {
         this.dataManager = dataManager;
     }
 
+    // 獲取團隊統計資料 (alias for generateTeamStatistics)
+    getTeamStatistics() {
+        return this.generateTeamStatistics();
+    }
+
     // 生成團隊統計資料
     generateTeamStatistics() {
         console.log('📊 開始生成團隊統計資料');

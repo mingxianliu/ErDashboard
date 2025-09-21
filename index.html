@@ -134,10 +134,10 @@
         document.head.appendChild(configScript);
     </script>
     <script src="js/google-drive-api.js?v=20250918t"></script>
-    <script src="js/team-data-manager.js?v=20250918u"></script>
-    <script src="js/team-statistics.js?v=20250918u"></script>
-    <script src="js/team-ui-components.js?v=20250920k"></script>
-    <script src="js/team-management-main.js?v=20250920e"></script>
+    <script src="js/team-data-manager.js?v=20250918u" onerror="console.error('❌ 載入 team-data-manager.js 失敗')"></script>
+    <script src="js/team-statistics.js?v=20250918u" onerror="console.error('❌ 載入 team-statistics.js 失敗')"></script>
+    <script src="js/team-ui-components.js?v=20250920k" onerror="console.error('❌ 載入 team-ui-components.js 失敗')"></script>
+    <script src="js/team-management-main.js?v=20250920e" onerror="console.error('❌ 載入 team-management-main.js 失敗')"></script>
     <script src="js/markdown-dashboard-simple.js?v=20250920b"></script>
     <script>
         // 使用 TeamDataManager 載入資料
@@ -238,37 +238,65 @@
                     // 顯示統計
                     if (summaryCards) {
                         summaryCards.innerHTML = `
-                            <div class="col-md-3">
-                                <div class="card" style="height: 120px;">
-                                    <div class="card-body d-flex flex-column justify-content-center">
-                                        <h5 class="card-title">總專案數</h5>
-                                        <h2>${projects.length}</h2>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card bg-primary text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <div class="h4 mb-0">${projects.length}</div>
+                                                <div>總專案數</div>
+                                            </div>
+                                            <div class="h1 opacity-50">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card" style="height: 120px;">
-                                    <div class="card-body d-flex flex-column justify-content-center">
-                                        <h5 class="card-title">進行中</h5>
-                                        <h2>${projects.filter(p => p.status === 'active').length}</h2>
-                                        <small class="text-muted">暫停: <span class="badge bg-warning">${projects.filter(p => p.status === 'paused').length}</span></small>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card bg-success text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <div class="h4 mb-0">${projects.filter(p => p.status === 'active').length}</div>
+                                                <div>進行中專案</div>
+                                                <small class="text-white-50">暫停: <span class="badge bg-warning text-dark">${projects.filter(p => p.status === 'paused').length}</span></small>
+                                            </div>
+                                            <div class="h1 opacity-50">
+                                                <i class="fas fa-rocket"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card" style="height: 120px;">
-                                    <div class="card-body d-flex flex-column justify-content-center">
-                                        <h5 class="card-title">總參與成員數</h5>
-                                        <h2>${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</h2>
-                                        <small class="text-muted">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting === true).length, 0)}</span></small>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card bg-info text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <div class="h4 mb-0">${new Set(Object.values(assignments).flatMap(p => Object.keys(p.members || {}))).size}</div>
+                                                <div>總成員數</div>
+                                                <small class="text-white-50">執行中: <span id="executingCount" class="badge bg-success">${Object.values(assignments).reduce((sum, p) => sum + Object.values(p.members || {}).filter(m => m.isExecuting === true).length, 0)}</span></small>
+                                            </div>
+                                            <div class="h1 opacity-50">
+                                                <i class="fas fa-users"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <div class="card" style="height: 120px;">
-                                    <div class="card-body d-flex flex-column justify-content-center">
-                                        <h5 class="card-title">平均進度</h5>
-                                        <h2>${Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)}%</h2>
+                            <div class="col-lg-3 col-md-6 mb-4">
+                                <div class="card bg-warning text-white h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between">
+                                            <div>
+                                                <div class="h4 mb-0">${Math.round(projects.reduce((sum, p) => sum + p.progress, 0) / projects.length)}%</div>
+                                                <div>平均進度</div>
+                                            </div>
+                                            <div class="h1 opacity-50">
+                                                <i class="fas fa-chart-line"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -734,11 +762,23 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="mb-3">
-                                        <label for="projectProgress" class="form-label">專案進度 (%)</label>
-                                        <input type="range" class="form-range" id="projectProgress" min="0" max="100" value="${project.progress}" oninput="updateProgressDisplay(this.value)">
-                                        <div class="text-center">
-                                            <span id="progressDisplay" class="badge bg-primary">${project.progress}%</span>
+                                    <div class="mb-4">
+                                        <label for="projectProgress" class="form-label fw-bold">專案進度</label>
+                                        <div class="progress-container">
+                                            <div class="progress mb-3" style="height: 20px; border-radius: 10px; background-color: #e9ecef;">
+                                                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                                                     id="progressBar"
+                                                     role="progressbar"
+                                                     style="width: ${project.progress}%; background: linear-gradient(45deg, #007bff, #0056b3); border-radius: 10px;"
+                                                     aria-valuenow="${project.progress}"
+                                                     aria-valuemin="0"
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <input type="range" class="form-range progress-slider" id="projectProgress" min="0" max="100" value="${project.progress}" oninput="updateProgressDisplay(this.value)">
+                                            <div class="text-center mt-2">
+                                                <span id="progressDisplay" class="badge bg-primary fs-6 px-3 py-2" style="border-radius: 20px;">${project.progress}%</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="mb-3">
@@ -788,6 +828,22 @@
         // 更新進度顯示
         function updateProgressDisplay(value) {
             document.getElementById('progressDisplay').textContent = value + '%';
+            const progressBar = document.getElementById('progressBar');
+            if (progressBar) {
+                progressBar.style.width = value + '%';
+                progressBar.setAttribute('aria-valuenow', value);
+
+                // 動態改變進度條顏色
+                let gradient;
+                if (value < 30) {
+                    gradient = 'linear-gradient(45deg, #dc3545, #c82333)'; // 紅色
+                } else if (value < 70) {
+                    gradient = 'linear-gradient(45deg, #ffc107, #e0a800)'; // 黃色
+                } else {
+                    gradient = 'linear-gradient(45deg, #28a745, #1e7e34)'; // 綠色
+                }
+                progressBar.style.background = gradient;
+            }
         }
 
         // 格式化備註顯示
@@ -2764,15 +2820,208 @@
             localStorage.setItem('syncLogs', JSON.stringify(existingLogs));
         }
 
+        // 簡化版團隊管理
+        function showSimpleTeamManagement() {
+            console.log('📋 顯示簡化版團隊管理界面');
+
+            const modalHtml = `
+                <div class="modal fade" id="simpleTeamModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">團隊管理 (簡化版)</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warning">
+                                    <h6>⚠️ 團隊管理系統載入問題</h6>
+                                    <p>完整的團隊管理系統未能正確載入。這可能是由於以下原因之一：</p>
+                                    <ul>
+                                        <li>JavaScript 檔案載入失敗</li>
+                                        <li>瀏覽器快取問題</li>
+                                        <li>網路連線問題</li>
+                                    </ul>
+                                </div>
+
+                                <h6>解決方案：</h6>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="location.reload()">
+                                        <i class="fas fa-sync-alt me-2"></i>重新載入頁面
+                                    </button>
+                                    <button class="btn btn-outline-info" onclick="window.open('setup-gdrive.html', '_blank')">
+                                        <i class="fab fa-google-drive me-2"></i>設定 Google Drive
+                                    </button>
+                                    <button class="btn btn-outline-secondary" onclick="clearBrowserCache()">
+                                        <i class="fas fa-trash me-2"></i>清除瀏覽器快取
+                                    </button>
+                                </div>
+
+                                <hr>
+
+                                <h6>當前資料狀態：</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">專案資料</h6>
+                                                <p class="card-text">
+                                                    已載入專案: <span id="simpleProjectCount">-</span><br>
+                                                    資料管理器狀態: <span id="simpleDataManagerStatus">-</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="card-title">系統狀態</h6>
+                                                <p class="card-text">
+                                                    TeamDataManager: <span id="simpleTDMStatus">-</span><br>
+                                                    TeamManagement: <span id="simpleTMStatus">-</span><br>
+                                                    Google Drive: <span id="simpleGDStatus">-</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 移除舊的模態框
+            const existingModal = document.getElementById('simpleTeamModal');
+            if (existingModal) {
+                existingModal.remove();
+            }
+
+            // 添加新的模態框
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            // 更新狀態信息
+            updateSimpleTeamModalStatus();
+
+            // 顯示模態框
+            const modal = new bootstrap.Modal(document.getElementById('simpleTeamModal'));
+            modal.show();
+        }
+
+        function updateSimpleTeamModalStatus() {
+            // 更新專案數量
+            const projectCount = window.teamDataManager ?
+                Object.keys(window.teamDataManager.getAllAssignments()).length :
+                'N/A';
+            document.getElementById('simpleProjectCount').textContent = projectCount;
+
+            // 更新資料管理器狀態
+            const dataManagerStatus = window.teamDataManager ?
+                (window.teamDataManager.isInitialized ? '已初始化' : '未初始化') :
+                '不存在';
+            document.getElementById('simpleDataManagerStatus').textContent = dataManagerStatus;
+
+            // 更新系統狀態
+            document.getElementById('simpleTDMStatus').textContent =
+                window.TeamDataManager ? '✅ 已載入' : '❌ 未載入';
+            document.getElementById('simpleTMStatus').textContent =
+                window.TeamManagement ? '✅ 已載入' : '❌ 未載入';
+
+            // 更新 Google Drive 狀態
+            const googleDriveConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+            const googleDriveStatus = googleDriveConfig ?
+                (window.googleDriveAPI && window.googleDriveAPI.isSignedIn && window.googleDriveAPI.isSignedIn() ?
+                    '✅ 已登入' : '⚠️ 已設定未登入') :
+                '❌ 未設定';
+            document.getElementById('simpleGDStatus').textContent = googleDriveStatus;
+        }
+
+        function clearBrowserCache() {
+            if (confirm('這將清除瀏覽器快取並重新載入頁面。確定要繼續嗎？')) {
+                // 清除 localStorage
+                localStorage.clear();
+                // 清除 sessionStorage（但保留認證狀態和 Google Drive 設定）
+                const auth = sessionStorage.getItem('KEY_AUTHENTICATED');
+                const loginTime = sessionStorage.getItem('LOGIN_TIME');
+                const googleDriveConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+                sessionStorage.clear();
+                if (auth) sessionStorage.setItem('KEY_AUTHENTICATED', auth);
+                if (loginTime) sessionStorage.setItem('LOGIN_TIME', loginTime);
+                if (googleDriveConfig) sessionStorage.setItem('GOOGLE_DRIVE_CONFIG', googleDriveConfig);
+
+                // 重新載入頁面，添加時間戳避免快取
+                window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+            }
+        }
+
         // 團隊管理功能
         document.getElementById('teamManagementBtn').addEventListener('click', function() {
-            if (window.teamManagement) {
-                window.teamManagement.openTeamManagementDashboard();
+            console.log('🎯 團隊管理按鈕被點擊');
+            console.log('🔍 檢查相關物件存在狀態:');
+            console.log('- window.teamManagement:', !!window.teamManagement);
+            console.log('- window.TeamDataManager:', !!window.TeamDataManager);
+            console.log('- window.TeamUIComponents:', !!window.TeamUIComponents);
+            console.log('- bootstrap.Modal:', !!window.bootstrap?.Modal);
+
+            // 如果 teamManagement 不存在，嘗試創建備用實例
+            if (!window.teamManagement) {
+                console.log('⚠️ teamManagement 實例不存在，嘗試創建備用實例...');
+
+                if (!window.TeamManagement) {
+                    console.error('❌ TeamManagement 類別不存在，使用簡化版團隊管理');
+                    // 創建簡化版團隊管理
+                    showSimpleTeamManagement();
+                    return;
+                }
+
+                try {
+                    console.log('🔄 創建備用 teamManagement 實例...');
+                    window.teamManagement = new window.TeamManagement();
+                    console.log('✅ 備用 teamManagement 實例創建成功');
+                } catch (error) {
+                    console.error('❌ 創建備用實例失敗:', error);
+                    alert('無法創建團隊管理系統: ' + error.message);
+                    return;
+                }
+            }
+
+            console.log('✅ teamManagement 實例存在');
+            console.log('- dataManager:', !!window.teamManagement.dataManager);
+            console.log('- uiComponents:', !!window.teamManagement.uiComponents);
+
+            try {
+                // 檢查 dataManager 是否已初始化
+                if (window.teamManagement.dataManager && !window.teamManagement.dataManager.isInitialized) {
+                    console.log('⚠️ dataManager 未初始化，嘗試初始化...');
+                    window.teamManagement.dataManager.init().then(() => {
+                        console.log('✅ dataManager 初始化完成，開啟團隊管理');
+                        window.teamManagement.openTeamManagementDashboard();
+                    }).catch(error => {
+                        console.error('❌ dataManager 初始化失敗:', error);
+                        alert('資料管理器初始化失敗: ' + error.message);
+                    });
+                } else {
+                    console.log('✅ dataManager 已準備，直接開啟團隊管理');
+                    window.teamManagement.openTeamManagementDashboard();
+                }
+            } catch (error) {
+                console.error('❌ 開啟團隊管理失敗:', error);
+                console.error('錯誤堆疊:', error.stack);
+                alert('開啟團隊管理失敗: ' + error.message);
             }
         });
 
         // 啟動 Dashboard
         document.addEventListener('DOMContentLoaded', async () => {
+            console.log('📋 DOMContentLoaded 觸發，檢查類別載入狀態:');
+            console.log('- TeamDataManager:', !!window.TeamDataManager);
+            console.log('- TeamStatistics:', !!window.TeamStatistics);
+            console.log('- TeamUIComponents:', !!window.TeamUIComponents);
+            console.log('- TeamManagement:', !!window.TeamManagement);
+            console.log('- teamManagement 實例:', !!window.teamManagement);
+
             // 檢查是否已通過私鑰驗證
             if (!checkAuthentication()) {
                 // 未驗證禁止初始化 Dashboard

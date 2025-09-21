@@ -1781,6 +1781,159 @@ class TeamUIComponents {
             `;
         }
     }
+
+    // 生成成員管理內容
+    generateMembersManagementContent() {
+        const members = this.dataManager.getAllMembers();
+        const assignments = this.dataManager.getAllAssignments();
+
+        let content = `
+            <div class="row mb-4">
+                <div class="col">
+                    <h5>成員管理</h5>
+                    <p class="text-muted">管理團隊成員資料和分配狀況</p>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" onclick="teamManagement.addNewMember()">
+                        <i class="fas fa-plus me-2"></i>新增成員
+                    </button>
+                </div>
+            </div>
+
+            <div class="row">
+        `;
+
+        Object.values(members).forEach(member => {
+            // 計算該成員參與的專案數
+            const memberProjects = Object.values(assignments).filter(project =>
+                project.members && project.members[member.id]
+            );
+
+            content += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card member-card">
+                        <div class="card-body">
+                            <h6 class="card-title">${member.name}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">${member.id}</small><br>
+                                參與專案: ${memberProjects.length} 個
+                            </p>
+                            <div class="btn-group btn-group-sm w-100">
+                                <button class="btn btn-outline-primary" onclick="teamManagement.editMember('${member.id}')">
+                                    <i class="fas fa-edit"></i> 編輯
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="teamManagement.deleteMember('${member.id}')">
+                                    <i class="fas fa-trash"></i> 刪除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        content += `
+            </div>
+            <div class="text-center mt-3">
+                <small class="text-muted">目前團隊共 ${Object.keys(members).length} 位成員</small>
+            </div>
+        `;
+
+        return content;
+    }
+
+    // 生成專案管理內容
+    generateProjectsManagementContent() {
+        const assignments = this.dataManager.getAllAssignments();
+
+        let content = `
+            <div class="row mb-4">
+                <div class="col">
+                    <h5>專案管理</h5>
+                    <p class="text-muted">管理專案狀態和成員分配</p>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" onclick="teamManagement.addNewProject()">
+                        <i class="fas fa-plus me-2"></i>新增專案
+                    </button>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>專案名稱</th>
+                            <th>狀態</th>
+                            <th>進度</th>
+                            <th>成員數</th>
+                            <th>最後更新</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        Object.values(assignments).forEach(project => {
+            const memberCount = Object.keys(project.members || {}).length;
+            const statusBadge = project.status === 'active' ? 'success' :
+                               project.status === 'paused' ? 'warning' : 'secondary';
+
+            content += `
+                <tr>
+                    <td>${project.projectName}</td>
+                    <td><span class="badge bg-${statusBadge}">${project.status}</span></td>
+                    <td>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" style="width: ${project.progress || 0}%">${project.progress || 0}%</div>
+                        </div>
+                    </td>
+                    <td>${memberCount}</td>
+                    <td>${project.lastUpdated ? new Date(project.lastUpdated).toLocaleDateString() : '-'}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="teamManagement.editProject('${project.projectId}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="teamManagement.deleteProject('${project.projectId}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        content += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        return content;
+    }
+
+    // 生成任務範本管理內容
+    generateTasksManagementContent() {
+        return `
+            <div class="row mb-4">
+                <div class="col">
+                    <h5>任務範本管理</h5>
+                    <p class="text-muted">管理不同角色的任務範本</p>
+                </div>
+                <div class="col-auto">
+                    <button class="btn btn-primary" onclick="teamManagement.addNewTaskTemplate()">
+                        <i class="fas fa-plus me-2"></i>新增範本
+                    </button>
+                </div>
+            </div>
+
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                任務範本功能開發中，敬請期待...
+            </div>
+        `;
+    }
 }
 
 // 匯出給其他模組使用
