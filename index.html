@@ -1084,17 +1084,27 @@
 
                     // 視覺回饋
                     const checkbox = document.getElementById(`executing-${projectId}-${memberId}`);
-                    const memberCard = checkbox.closest('.border.rounded');
-                    const memberNameDiv = checkbox.closest('.d-flex').querySelector('.fw-bold');
+                    const memberCard = checkbox ? checkbox.closest('.border.rounded') : null;
+                    const memberNameDiv = memberCard ? memberCard.querySelector('.fw-bold') : null;
 
-                    if (isChecked) {
-                        memberNameDiv.classList.add('text-success');
-                        memberCard.style.borderLeft = '3px solid #28a745';
-                        showSyncToast('狀態更新', `${memberId} 已開始執行任務`, 'success');
+                    if (memberNameDiv && memberCard) {
+                        if (isChecked) {
+                            memberNameDiv.classList.add('text-success');
+                            memberCard.style.borderLeft = '3px solid #28a745';
+                            showSyncToast('狀態更新', `${memberId} 已開始執行任務`, 'success');
+                        } else {
+                            memberNameDiv.classList.remove('text-success');
+                            memberCard.style.borderLeft = '';
+                            showSyncToast('狀態更新', `${memberId} 已停止執行任務`, 'info');
+                        }
                     } else {
-                        memberNameDiv.classList.remove('text-success');
-                        memberCard.style.borderLeft = '';
-                        showSyncToast('狀態更新', `${memberId} 已停止執行任務`, 'info');
+                        console.warn('無法找到成員卡片元素進行視覺更新');
+                        // 仍然顯示狀態訊息
+                        if (isChecked) {
+                            showSyncToast('狀態更新', `${memberId} 已開始執行任務`, 'success');
+                        } else {
+                            showSyncToast('狀態更新', `${memberId} 已停止執行任務`, 'info');
+                        }
                     }
 
                     // 更新統計資訊
@@ -2238,9 +2248,17 @@
                 // 清除記憶體中的資料以強制重新載入
                 window.taskTemplatesData = null;
 
-                // 清除並重新初始化 TeamDataManager
+                // 保存當前本地變更，然後重新初始化 TeamDataManager
                 if (window.globalTeamDataManager) {
-                    console.log('🔄 重新初始化 TeamDataManager...');
+                    console.log('🔄 保存當前狀態並重新初始化 TeamDataManager...');
+
+                    // 先保存當前的assignments到localStorage作為備份
+                    const currentAssignments = window.globalTeamDataManager.getAllAssignments();
+                    if (currentAssignments && Object.keys(currentAssignments).length > 0) {
+                        localStorage.setItem('teamAssignments_backup', JSON.stringify(currentAssignments));
+                        console.log('💾 當前狀態已備份');
+                    }
+
                     // 清除現有資料
                     window.globalTeamDataManager = null;
                     window.teamDataManager = null;
@@ -2430,6 +2448,48 @@
                     if (storageKey) {
                         localStorage.setItem(storageKey, JSON.stringify(actualData));
                         console.log(`✅ ${fileName} 已更新到 localStorage`);
+
+                        // 特別處理 project-assignments.json：深度合併到 teamAssignments
+                        if (fileName === 'project-assignments.json' && actualData.assignments) {
+                            // 取得當前本地狀態作為備份
+                            const currentLocalState = localStorage.getItem('teamAssignments');
+                            let mergedAssignments = actualData.assignments;
+
+                            if (currentLocalState) {
+                                try {
+                                    const localAssignments = JSON.parse(currentLocalState);
+                                    console.log('🔄 執行深度合併，保留本地狀態...');
+
+                                    // 深度合併：雲端資料為基礎，本地狀態優先
+                                    Object.keys(localAssignments).forEach(projectId => {
+                                        if (mergedAssignments[projectId] && localAssignments[projectId]) {
+                                            // 深度合併專案資料
+                                            mergedAssignments[projectId] = {
+                                                ...mergedAssignments[projectId],
+                                                ...localAssignments[projectId]
+                                            };
+
+                                            // 特別處理成員資料：保留 isExecuting 和 personalNotes
+                                            if (localAssignments[projectId].members && mergedAssignments[projectId].members) {
+                                                Object.keys(localAssignments[projectId].members).forEach(memberId => {
+                                                    if (mergedAssignments[projectId].members[memberId]) {
+                                                        mergedAssignments[projectId].members[memberId] = {
+                                                            ...mergedAssignments[projectId].members[memberId],
+                                                            ...localAssignments[projectId].members[memberId]
+                                                        };
+                                                    }
+                                                });
+                                            }
+                                        }
+                                    });
+                                } catch (parseError) {
+                                    console.warn('⚠️ 本地狀態解析失敗，使用雲端資料:', parseError);
+                                }
+                            }
+
+                            localStorage.setItem('teamAssignments', JSON.stringify(mergedAssignments));
+                            console.log(`✅ 專案分配資料已深度合併到 teamAssignments，保留執行狀態和個人歷程`);
+                        }
                     }
 
                     pullResults.push({

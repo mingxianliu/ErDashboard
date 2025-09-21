@@ -236,17 +236,37 @@ class TeamDataManager {
             const savedData = localStorage.getItem('teamAssignments');
             if (savedData) {
                 const localAssignments = JSON.parse(savedData);
-                // 合併本地變更到專案分配
+                console.log('🔄 載入本地變更數據:', localAssignments);
+
+                // 深度合併本地變更到專案分配
                 Object.keys(localAssignments).forEach(projectId => {
                     if (this.assignments && this.assignments[projectId]) {
+                        // 深度合併專案數據
                         this.assignments[projectId] = { ...this.assignments[projectId], ...localAssignments[projectId] };
+
+                        // 特別處理成員數據，確保 isExecuting 和 personalNotes 被保留
+                        if (localAssignments[projectId].members && this.assignments[projectId].members) {
+                            Object.keys(localAssignments[projectId].members).forEach(memberId => {
+                                if (this.assignments[projectId].members[memberId]) {
+                                    // 深度合併成員數據
+                                    this.assignments[projectId].members[memberId] = {
+                                        ...this.assignments[projectId].members[memberId],
+                                        ...localAssignments[projectId].members[memberId]
+                                    };
+                                } else {
+                                    // 新成員
+                                    this.assignments[projectId].members[memberId] = localAssignments[projectId].members[memberId];
+                                }
+                            });
+                        }
                     } else if (this.assignments) {
                         this.assignments[projectId] = localAssignments[projectId];
                     } else {
                         console.warn(`⚠️ assignments 未初始化，無法載入 ${projectId} 的本地變更`);
                     }
                 });
-                console.log('已載入本地專案分配變更');
+                console.log('✅ 已載入本地專案分配變更，包含執行狀態和個人歷程');
+                console.log('🔍 合併後的assignments:', this.assignments);
             }
         } catch (error) {
             console.error('載入本地變更失敗:', error);
