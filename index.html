@@ -1172,10 +1172,15 @@
                 const progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
                 if (progressModal) progressModal.hide();
 
-                // 重新載入頁面資料
-                setTimeout(() => {
-                    loadDataDirectly();
-                }, 500);
+                // 立即重新載入頁面資料
+                await loadDataDirectly();
+
+                // 發送localStorage更新信號確保即時更新
+                localStorage.setItem('teamUpdateSignal', JSON.stringify({
+                    action: 'teamDataUpdate',
+                    timestamp: Date.now(),
+                    source: 'progressUpdate'
+                }));
 
             } catch (error) {
                 console.error('儲存專案進度失敗:', error);
@@ -1874,10 +1879,15 @@
                 const memberModal = bootstrap.Modal.getInstance(document.getElementById('memberModal'));
                 if (memberModal) memberModal.hide();
 
-                // 重新載入頁面資料
-                setTimeout(() => {
-                    loadDataDirectly();
-                }, 500);
+                // 立即重新載入頁面資料
+                await loadDataDirectly();
+
+                // 發送localStorage更新信號確保即時更新
+                localStorage.setItem('teamUpdateSignal', JSON.stringify({
+                    action: 'teamDataUpdate',
+                    timestamp: Date.now(),
+                    source: 'memberChange'
+                }));
 
             } catch (error) {
                 console.error('儲存成員變更失敗:', error);
