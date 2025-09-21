@@ -684,8 +684,8 @@
                 // 產生成員變更歷程 HTML
                 let memberHistoryHtml = '';
                 try {
-                    if (window.teamManagement && typeof window.teamManagement.generateMemberHistoryHTML === 'function') {
-                        memberHistoryHtml = window.teamManagement.generateMemberHistoryHTML(projectId);
+                    if (window.generateMemberHistoryHTML && typeof window.generateMemberHistoryHTML === 'function') {
+                        memberHistoryHtml = window.generateMemberHistoryHTML(projectId);
                     } else {
                         // 備用方案：直接從資料中生成
                         const memberHistory = project.memberHistory || [];
@@ -1804,6 +1804,7 @@
 
                 // 取得舊成員資料
                 const oldMemberData = assignments[projectId].members[oldMemberId];
+                const oldRole = oldMemberData?.role;
 
                 if (newMemberId !== oldMemberId) {
                     // 如果更換成員，刪除舊成員
@@ -1817,9 +1818,48 @@
                         personalNotes: oldMemberData.personalNotes || [], // 複製個人備註
                         isExecuting: false // 新成員預設為未執行狀態
                     };
+
+                    // 記錄成員變更歷程 - 成員移除
+                    if (window.teamManagement && typeof window.teamManagement.addMemberChangeHistory === 'function') {
+                        // 取得真實成員姓名
+                        const oldMemberName = window.teamDataManager.getAllMembers()[oldMemberId]?.name || oldMemberId;
+                        const newMemberName = window.teamDataManager.getAllMembers()[newMemberId]?.name || newMemberId;
+
+                        window.teamManagement.addMemberChangeHistory(projectId, {
+                            action: 'member_removed',
+                            memberId: oldMemberId,
+                            memberName: oldMemberName,
+                            role: oldRole,
+                            details: `成員從專案中移除`
+                        });
+
+                        // 記錄成員變更歷程 - 成員加入
+                        window.teamManagement.addMemberChangeHistory(projectId, {
+                            action: 'member_assigned',
+                            memberId: newMemberId,
+                            memberName: newMemberName,
+                            role: newRole,
+                            details: `新成員加入專案`
+                        });
+                    }
                 } else {
                     // 如果只是更改角色
                     assignments[projectId].members[oldMemberId].role = newRole;
+
+                    // 記錄角色變更歷程
+                    if (oldRole !== newRole && window.teamManagement && typeof window.teamManagement.addMemberChangeHistory === 'function') {
+                        // 取得真實成員姓名
+                        const memberName = window.teamDataManager.getAllMembers()[oldMemberId]?.name || oldMemberId;
+
+                        window.teamManagement.addMemberChangeHistory(projectId, {
+                            action: 'role_changed',
+                            memberId: oldMemberId,
+                            memberName: memberName,
+                            oldRole: oldRole,
+                            newRole: newRole,
+                            details: `角色從 ${oldRole} 變更為 ${newRole}`
+                        });
+                    }
                 }
 
                 // 更新專案的最後更新時間
@@ -2138,8 +2178,8 @@
                     // 重新生成成員變更歷程
                     let updatedMemberHistoryHtml = '';
                     try {
-                        if (window.teamManagement && typeof window.teamManagement.generateMemberHistoryHTML === 'function') {
-                            updatedMemberHistoryHtml = window.teamManagement.generateMemberHistoryHTML(projectId);
+                        if (window.generateMemberHistoryHTML && typeof window.generateMemberHistoryHTML === 'function') {
+                            updatedMemberHistoryHtml = window.generateMemberHistoryHTML(projectId);
                         } else {
                             const currentProject = teamDataManager.getAllAssignments()[projectId];
                             const memberHistory = currentProject?.memberHistory || [];

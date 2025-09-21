@@ -1839,19 +1839,67 @@ class TeamManagement {
         }
     }
 
+    // 初始化所有專案的 memberHistory 陣列
+    initializeMemberHistoryForAllProjects() {
+        console.log('🔧 開始初始化所有專案的成員歷程陣列...');
+
+        const assignments = this.dataManager.getAllAssignments();
+        let initCount = 0;
+
+        Object.keys(assignments).forEach(projectId => {
+            const project = assignments[projectId];
+            if (!project.memberHistory) {
+                project.memberHistory = [];
+                initCount++;
+                console.log(`✅ 初始化專案 ${projectId} (${project.projectName}) 的 memberHistory`);
+            }
+        });
+
+        if (initCount > 0) {
+            console.log(`🔧 共初始化了 ${initCount} 個專案的歷程陣列`);
+            this.dataManager.saveLocalChanges().then(() => {
+                console.log('✅ 專案歷程陣列初始化已儲存');
+                this.showToast('初始化完成', `已為 ${initCount} 個專案初始化歷程記錄`, 'success');
+            }).catch(error => {
+                console.error('❌ 初始化儲存失敗:', error);
+                this.showToast('初始化失敗', error.message, 'error');
+            });
+        } else {
+            console.log('ℹ️ 所有專案都已經有歷程陣列了');
+            this.showToast('檢查完成', '所有專案都已經有歷程記錄結構', 'info');
+        }
+    }
+
     // 測試用：手動添加歷程記錄
     testAddMemberHistory() {
         console.log('🧪 開始測試歷程記錄功能...');
 
+        // 詳細診斷
+        console.log('🔍 診斷資訊:');
+        console.log('- dataManager 存在:', !!this.dataManager);
+        console.log('- dataManager 類型:', typeof this.dataManager);
+
         const assignments = this.dataManager.getAllAssignments();
+        console.log('- assignments 物件:', assignments);
+        console.log('- assignments 類型:', typeof assignments);
+        console.log('- assignments 鍵值:', Object.keys(assignments));
+
         const firstProjectId = Object.keys(assignments)[0];
 
         if (!firstProjectId) {
             console.error('❌ 沒有找到可用的專案');
+            this.showToast('測試失敗', '沒有可用的專案', 'error');
             return;
         }
 
         console.log('🎯 使用專案ID進行測試:', firstProjectId);
+        console.log('🎯 專案資料:', assignments[firstProjectId]);
+
+        // 先強制添加 memberHistory 屬性
+        if (!assignments[firstProjectId].memberHistory) {
+            assignments[firstProjectId].memberHistory = [];
+            console.log('🔧 強制初始化 memberHistory 陣列');
+        }
 
         const testResult = this.addMemberChangeHistory(firstProjectId, {
             action: 'member_assigned',
@@ -1861,11 +1909,20 @@ class TeamManagement {
             details: '這是一個測試記錄'
         });
 
+        console.log('📝 測試結果:', testResult);
+        console.log('📋 專案歷程陣列:', assignments[firstProjectId].memberHistory);
+
         if (testResult) {
             console.log('✅ 測試成功，嘗試儲存...');
             this.dataManager.saveLocalChanges().then(() => {
                 console.log('✅ 測試記錄已儲存');
                 this.showToast('測試成功', '歷程記錄功能正常', 'success');
+
+                // 強制重新載入首頁
+                this.refreshMainPage();
+            }).catch(error => {
+                console.error('❌ 儲存失敗:', error);
+                this.showToast('儲存失敗', error.message, 'error');
             });
         } else {
             console.error('❌ 測試失敗');
@@ -1876,13 +1933,44 @@ class TeamManagement {
     // 獲取專案的成員變更歷程
     getMemberChangeHistory(projectId) {
         try {
-            const project = this.dataManager.getAllAssignments()[projectId];
-            if (!project || !project.memberHistory) {
+            console.log('🔍 getMemberChangeHistory 開始:', { projectId });
+            console.log('🔍 this.dataManager 存在:', !!this.dataManager);
+
+            // 如果沒有 dataManager，嘗試使用全域的
+            let dataManager = this.dataManager;
+            if (!dataManager && window.teamDataManager) {
+                dataManager = window.teamDataManager;
+                console.log('🔄 使用全域 teamDataManager');
+            }
+
+            if (!dataManager) {
+                console.error('❌ 無法取得 dataManager');
+                return [];
+            }
+
+            const assignments = dataManager.getAllAssignments();
+            console.log('🔍 所有專案:', Object.keys(assignments));
+
+            const project = assignments[projectId];
+            console.log('🔍 專案資料:', project);
+
+            if (!project) {
+                console.warn('⚠️ 專案不存在:', projectId);
+                return [];
+            }
+
+            console.log('🔍 memberHistory 存在:', !!project.memberHistory);
+            console.log('🔍 memberHistory 長度:', project.memberHistory ? project.memberHistory.length : 0);
+
+            if (!project.memberHistory) {
+                console.log('⚠️ 專案沒有 memberHistory 陣列');
                 return [];
             }
 
             // 返回按時間倒序排列的歷程
-            return project.memberHistory.slice().reverse();
+            const history = project.memberHistory.slice().reverse();
+            console.log('✅ 回傳歷程記錄:', history.length, '筆');
+            return history;
         } catch (error) {
             console.error('❌ 獲取成員變更歷程失敗:', error);
             return [];
@@ -2122,35 +2210,129 @@ class TeamManagement {
 
     // 通知首頁重新載入資料
     refreshMainPage() {
-        console.log('🔄 通知首頁重新載入資料...');
+        console.log('🔄 開始強制更新首頁...');
 
-        // 方法1: localStorage 強制通信 (最可靠)
+        // 方法1: 立即重新整理主視窗
         try {
-            const updateSignal = {
-                action: 'teamDataUpdate',
-                timestamp: Date.now(),
-                source: 'teamManagement',
-                forceReload: true
-            };
-            localStorage.setItem('teamUpdateSignal', JSON.stringify(updateSignal));
-            console.log('✅ localStorage 信號已發送:', updateSignal);
+            if (window.opener && !window.opener.closed) {
+                console.log('🔄 立即重新整理主視窗...');
+                window.opener.location.reload();
+                console.log('✅ 主視窗重新整理指令已發送');
+                return;
+            } else {
+                console.warn('⚠️ 主視窗不存在或已關閉');
+            }
         } catch (e) {
-            console.warn('localStorage 通信失敗:', e);
+            console.warn('❌ 重新整理主視窗失敗:', e);
         }
 
-        // 方法2: 直接重新整理主視窗 (1秒後)
-        setTimeout(() => {
-            try {
-                if (window.opener && !window.opener.closed) {
-                    console.log('🔄 強制重新整理主視窗...');
-                    window.opener.location.reload();
-                }
-            } catch (e) {
-                console.warn('無法重新整理主視窗:', e);
-            }
-        }, 1000);
+        // 方法2: localStorage 備用通信
+        try {
+            const updateSignal = {
+                action: 'FORCE_RELOAD',
+                timestamp: Date.now(),
+                source: 'teamManagement'
+            };
+            localStorage.setItem('TEAM_UPDATE_SIGNAL', JSON.stringify(updateSignal));
+            console.log('✅ localStorage 強制更新信號已發送');
+
+            // 立即清除信號避免重複觸發
+            setTimeout(() => {
+                localStorage.removeItem('TEAM_UPDATE_SIGNAL');
+            }, 500);
+        } catch (e) {
+            console.warn('❌ localStorage 通信失敗:', e);
+        }
     }
 }
+
+// 全域輔助函數：獲取成員變更歷程
+window.getMemberChangeHistory = function(projectId) {
+    console.log('🌐 全域函數：getMemberChangeHistory 被呼叫:', projectId);
+
+    // 優先使用 window.teamManagement
+    if (window.teamManagement && typeof window.teamManagement.getMemberChangeHistory === 'function') {
+        console.log('🔄 使用 window.teamManagement');
+        return window.teamManagement.getMemberChangeHistory(projectId);
+    }
+
+    // 備用：直接從 dataManager 取得
+    if (window.teamDataManager) {
+        console.log('🔄 直接使用 window.teamDataManager');
+        try {
+            const assignments = window.teamDataManager.getAllAssignments();
+            const project = assignments[projectId];
+            if (project && project.memberHistory) {
+                return project.memberHistory.slice().reverse();
+            }
+        } catch (error) {
+            console.error('❌ 直接讀取失敗:', error);
+        }
+    }
+
+    console.log('⚠️ 無法取得歷程資料');
+    return [];
+};
+
+// 全域輔助函數：生成成員變更歷程 HTML
+window.generateMemberHistoryHTML = function(projectId) {
+    console.log('🌐 全域函數：generateMemberHistoryHTML 被呼叫:', projectId);
+
+    const history = window.getMemberChangeHistory(projectId);
+
+    if (history.length === 0) {
+        return `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                尚無成員變更歷程記錄
+            </div>
+        `;
+    }
+
+    const actionLabels = {
+        'member_assigned': '<i class="fas fa-user-plus text-success me-2"></i>成員加入',
+        'member_removed': '<i class="fas fa-user-minus text-danger me-2"></i>成員移除',
+        'role_changed': '<i class="fas fa-exchange-alt text-warning me-2"></i>角色變更'
+    };
+
+    return `
+        <div class="member-history-container">
+            <h6 class="mb-3">
+                <i class="fas fa-history me-2"></i>成員變更歷程
+                <span class="badge bg-secondary ms-2">${history.length} 筆記錄</span>
+            </h6>
+            <div class="history-timeline">
+                ${history.map((entry, index) => `
+                    <div class="history-entry ${index === 0 ? 'latest' : ''}" data-timestamp="${entry.timestamp}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="history-action">
+                                ${actionLabels[entry.action] || entry.action}
+                                <strong>${entry.memberName}</strong>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <small class="text-muted">${entry.date}</small>
+                            </div>
+                        </div>
+                        <div class="history-details ps-4">
+                            ${entry.role ? `<div><span class="badge bg-info">${entry.role}</span></div>` : ''}
+                            ${entry.oldRole && entry.newRole ? `
+                                <div class="mt-1">
+                                    <span class="badge bg-secondary">${entry.oldRole}</span>
+                                    <i class="fas fa-arrow-right mx-2"></i>
+                                    <span class="badge bg-success">${entry.newRole}</span>
+                                </div>
+                            ` : ''}
+                            ${entry.details ? `<div class="mt-1 text-muted small">${entry.details}</div>` : ''}
+                            <div class="mt-1">
+                                <small class="text-muted">操作者: ${entry.operator || '系統管理員'}</small>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+};
 
 // 全域實例
 try {

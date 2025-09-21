@@ -1856,6 +1856,9 @@ class TeamUIComponents {
                     <button class="btn btn-primary" onclick="teamManagement.addNewProject()">
                         <i class="fas fa-plus me-2"></i>新增專案
                     </button>
+                    <button class="btn btn-info ms-2" onclick="teamManagement.initializeMemberHistoryForAllProjects()" title="初始化所有專案的歷程記錄結構">
+                        <i class="fas fa-cog me-2"></i>初始化歷程
+                    </button>
                     <button class="btn btn-warning ms-2" onclick="teamManagement.testAddMemberHistory()" title="測試歷程記錄功能">
                         <i class="fas fa-vial me-2"></i>測試歷程
                     </button>
