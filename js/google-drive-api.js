@@ -235,6 +235,7 @@ class GoogleDriveAPI {
     async onLoginSuccess() {
         try {
             console.log('🔄 登入成功，自動同步最新資料...');
+            console.log('🎯 開始執行 onLoginSuccess 方法...');
 
             // 1. 先同步 GitHub 上的角色備註
             await this.syncRoleNotesFromGitHub();
@@ -256,6 +257,7 @@ class GoogleDriveAPI {
 
     // 從 GitHub 同步角色備註
     async syncRoleNotesFromGitHub() {
+        console.log('🚀 開始執行 syncRoleNotesFromGitHub 方法...');
         try {
             console.log('📝 檢查 GitHub 角色備註更新...');
 
