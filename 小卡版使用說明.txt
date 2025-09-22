@@ -1,19 +1,25 @@
-📝 角色備註提交 - 小卡版
+角色備註提交 - 小卡版
 
-🔸 開啟終端機
-🔸 cd 到 ErDashboard 資料夾
-🔸 執行指令：
+使用時機：
+1. 在各自目前在開發專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後
+2. 來ErDashboard執行角色備註腳本
 
-node scripts/submit-note.js 專案 姓名 "備註"
+操作步驟：
+1. 開啟終端機
+2. cd 到/GitHub/ErDashboard 資料夾
+3. 執行指令：
 
-📋 範例：
-node scripts/submit-note.js ErCore 張小明 "• 完成登入API • 修復bug"
+node scripts/submit-note.js 專案名稱 名稱 "備註"
 
-✅ 規則：
+範例：
+node scripts/submit-note.js ErCore KlauderA "• 完成登入API • 修復bug"
+
+規則：
 • 必須條列格式 (•、1.、-)
 • 最多50字
 • 要具體明確
 
-🎯 專案：ErCore, ErNexus, ErShield, ErTidy
+在各自目前在開發專案：
+如：ErCore, ErNexus, ErShield, ErTidy
 
-💡 提交後自動同步到個人歷程！
+提交後自動同步到個人歷程，並回到本來的專案/branch！

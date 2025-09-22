@@ -2,67 +2,90 @@
   "assignments": {
     "ErCore": {
       "projectId": "ErCore",
-      "projectName": "ErCore - 企業級 AI 統一平台",
-      "progress": 75,
+      "projectName": "ErCore",
+      "progress": 30,
       "members": {
-        "A-CC": { "memberId": "A-CC", "role": "frontend", "assignedDate": "2025-01-15", "tasks": ["UI 設計", "前端架構", "組件開發"] },
-        "B-CC": { "memberId": "B-CC", "role": "backend", "assignedDate": "2025-01-15", "tasks": ["API 開發", "資料庫設計", "服務架構"] },
-        "B-CS": { "memberId": "B-CS", "role": "testing", "assignedDate": "2025-01-20", "tasks": ["環境配置", "容器化部署", "運維監控"] },
-        "C-CC": { "memberId": "C-CC", "role": "testing", "assignedDate": "2025-01-20", "tasks": ["功能測試", "效能測試", "品質保證"] }
+        "A-CC": { "memberId": "A-CC", "memberName": "KlauderA", "role": "fullstack", "assignedDate": "2025-01-15", "tasks": ["全端開發"] },
+        "C-CS": { "memberId": "C-CS", "memberName": "KersirC", "role": "testing", "assignedDate": "2025-01-20", "tasks": ["測試"] }
       },
-      "lastUpdated": "2025-09-18",
+      "lastUpdated": "2025-09-22",
       "status": "active"
     },
     "ErNexus": {
       "projectId": "ErNexus",
-      "projectName": "ErNexus - 企業級統一平台",
-      "progress": 60,
+      "projectName": "ErNexus",
+      "progress": 25,
       "members": {
-        "A-CA": { "memberId": "A-CA", "role": "frontend", "assignedDate": "2025-02-01", "tasks": ["Admin Portal UI", "React 組件", "狀態管理"] },
-        "B-CA": { "memberId": "B-CA", "role": "backend", "assignedDate": "2025-02-01", "tasks": ["微服務架構", "JWT 認證", "API 整合"] },
-        "C-CA": { "memberId": "C-CA", "role": "testing", "assignedDate": "2025-02-10", "tasks": ["整合測試", "API 測試", "自動化測試"] }
+        "C-CA": { "memberId": "C-CA", "memberName": "KersirAjenC", "role": "frontend", "assignedDate": "2025-02-01", "tasks": ["前端開發"] },
+        "B-GI": { "memberId": "B-GI", "memberName": "JaymenightB", "role": "backend", "assignedDate": "2025-02-01", "tasks": ["後端開發"] },
+        "A-VC": { "memberId": "A-VC", "memberName": "KopylotA", "role": "testing", "assignedDate": "2025-02-10", "tasks": ["測試"] }
       },
-      "lastUpdated": "2025-09-18",
+      "lastUpdated": "2025-09-22",
       "status": "active"
     },
     "ErShield": {
       "projectId": "ErShield",
-      "projectName": "ErShield - 安全防護平台",
-      "progress": 45,
+      "projectName": "ErShield",
+      "progress": 30,
       "members": {
-        "A-GI": { "memberId": "A-GI", "role": "frontend", "assignedDate": "2025-03-01", "tasks": ["安全儀表板", "Docker 風格設計", "響應式布局"] },
-        "B-GI": { "memberId": "B-GI", "role": "backend", "assignedDate": "2025-03-01", "tasks": ["安全模組", "權限管理", "日誌系統"] },
-        "C-GI": { "memberId": "C-GI", "role": "testing", "assignedDate": "2025-03-10", "tasks": ["安全測試", "滲透測試", "合規驗證"] }
+        "B-CS": { "memberId": "B-CS", "memberName": "KersirB", "role": "testing", "assignedDate": "2025-03-01", "tasks": ["測試"] },
+        "A-GI": { "memberId": "A-GI", "memberName": "JaymenightA", "role": "backend", "assignedDate": "2025-03-01", "tasks": ["後端開發"] },
+        "C-CI": { "memberId": "C-CI", "memberName": "KodesC", "role": "frontend", "assignedDate": "2025-03-10", "tasks": ["前端開發"] }
       },
-      "lastUpdated": "2025-09-18",
+      "lastUpdated": "2025-09-22",
       "status": "active"
     },
     "ErTidy": {
       "projectId": "ErTidy",
-      "projectName": "ErTidy - 企業級智能開發平台",
-      "progress": 30,
+      "projectName": "ErTidy",
+      "progress": 35,
       "members": {
-        "A-CI": { "memberId": "A-CI", "role": "frontend", "assignedDate": "2025-04-01", "tasks": ["智能 IDE", "設計系統", "開發工具 UI"] },
-        "B-CI": { "memberId": "B-CI", "role": "backend", "assignedDate": "2025-04-01", "tasks": ["AI 引擎", "Rust 核心", "智能分析"] },
-        "C-CI": { "memberId": "C-CI", "role": "testing", "assignedDate": "2025-04-10", "tasks": ["AI-TDD 測試", "智能測試", "代碼品質"] }
+        "C-CC": { "memberId": "C-CC", "memberName": "KlauderC", "role": "fullstack", "assignedDate": "2025-04-01", "tasks": ["全端開發"] },
+        "B-CS": { "memberId": "B-CS", "memberName": "KersirB", "role": "testing", "assignedDate": "2025-04-10", "tasks": ["測試"] }
       },
-      "lastUpdated": "2025-09-18",
+      "lastUpdated": "2025-09-22",
       "status": "active"
     },
     "SyncBC-Monorepo": {
       "projectId": "SyncBC-Monorepo",
-      "projectName": "SyncBC-Monorepo - 同步區塊鏈統一代碼庫",
-      "progress": 20,
-      "members": {},
-      "lastUpdated": "2025-09-19",
+      "projectName": "SyncBC-Monorepo",
+      "progress": 30,
+      "members": {
+        "C-VC": { "memberId": "C-VC", "memberName": "KopylotC", "role": "testing", "assignedDate": "2025-05-01", "tasks": ["測試"] },
+        "A-CC": { "memberId": "A-CC", "memberName": "KlauderA", "role": "frontend", "assignedDate": "2025-05-01", "tasks": ["前端開發"] },
+        "B-CI": { "memberId": "B-CI", "memberName": "KodesB", "role": "backend", "assignedDate": "2025-05-10", "tasks": ["後端開發"] }
+      },
+      "lastUpdated": "2025-09-22",
       "status": "active"
     },
     "iFMS-frontend": {
       "projectId": "iFMS-frontend",
-      "projectName": "iFMS-frontend - 智能檔案管理前端",
-      "progress": 10,
+      "projectName": "iFMS-frontend",
+      "progress": 50,
+      "members": {
+        "A-CS": { "memberId": "A-CS", "memberName": "KersirA", "role": "frontend", "assignedDate": "2025-06-01", "tasks": ["前端開發"] },
+        "B-VC": { "memberId": "B-VC", "memberName": "KopylotB", "role": "testing", "assignedDate": "2025-06-10", "tasks": ["測試"] }
+      },
+      "lastUpdated": "2025-09-22",
+      "status": "active"
+    },
+    "EZOOM": {
+      "projectId": "EZOOM",
+      "projectName": "EZOOM",
+      "progress": 52,
+      "members": {
+        "B-CC": { "memberId": "B-CC", "memberName": "KlauderB", "role": "fullstack", "assignedDate": "2025-07-01", "tasks": ["全端開發"] },
+        "A-CS": { "memberId": "A-CS", "memberName": "KersirA", "role": "testing", "assignedDate": "2025-07-10", "tasks": ["測試"] }
+      },
+      "lastUpdated": "2025-09-22",
+      "status": "active"
+    },
+    "智慧監視系統": {
+      "projectId": "智慧監視系統",
+      "projectName": "智慧監視系統",
+      "progress": 0,
       "members": {},
-      "lastUpdated": "2025-09-19",
+      "lastUpdated": "2025-09-22",
       "status": "active"
     }
   },

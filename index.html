@@ -751,6 +751,41 @@
                                             <small>尚無成員變更記錄</small>
                                         </div>
                                     </div>
+                                    <hr class="my-4">
+                                    <div class="usage-guide bg-light p-3 rounded">
+                                        <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>角色備註提交 - 小卡版</h6>
+                                        <div class="mb-3">
+                                            <strong>使用時機：</strong><br>
+                                            1. 在各自目前在開發專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                                            2. 來ErDashboard執行角色備註腳本
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>操作步驟：</strong><br>
+                                            1. 開啟終端機<br>
+                                            2. cd 到/GitHub/ErDashboard 資料夾<br>
+                                            3. 執行指令：
+                                        </div>
+                                        <div class="bg-dark text-light p-2 rounded mb-3">
+                                            <code>node scripts/submit-note.js 專案名稱 名稱 "備註"</code>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>範例：</strong><br>
+                                            <code>node scripts/submit-note.js ErCore KlauderA "• 完成登入API • 修復bug"</code>
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>規則：</strong><br>
+                                            • 必須條列格式 (•、1.、-)<br>
+                                            • 最多50字<br>
+                                            • 要具體明確
+                                        </div>
+                                        <div class="mb-3">
+                                            <strong>在各自目前在開發專案：</strong><br>
+                                            如：ErCore, ErNexus, ErShield, ErTidy
+                                        </div>
+                                        <div class="text-success">
+                                            <strong>提交後自動同步到個人歷程，並回到本來的專案/branch！</strong>
+                                        </div>
+                                    </div>
                                 </div>
                             `;
                         }
@@ -768,6 +803,39 @@
                             <div class="card">
                                 <div class="card-body p-2 text-center text-muted">
                                     <small>載入歷程時發生錯誤</small>
+                                </div>
+                            </div>
+                            <hr class="my-4">
+                            <div class="usage-guide bg-light p-3 rounded">
+                                <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>📝 角色備註提交 - 小卡版</h6>
+                                <div class="mb-3">
+                                    <strong>📤 使用時機：</strong><br>
+                                    🔸 在各自專案（ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                                    🔸 來ErDashboard執行角色備註腳本
+                                </div>
+                                <div class="mb-3">
+                                    🔸 開啟終端機<br>
+                                    🔸 cd 到/GitHub/ErDashboard 資料夾<br>
+                                    🔸 執行指令：
+                                </div>
+                                <div class="bg-dark text-light p-2 rounded mb-3">
+                                    <code>node scripts/submit-note.js 專案 姓名 "備註"</code>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>📋 範例：</strong><br>
+                                    <code>node scripts/submit-note.js ErCore 張小明 "• 完成登入API • 修復bug"</code>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>✅ 規則：</strong><br>
+                                    • 必須條列格式 (•、1.、-)<br>
+                                    • 最多50字<br>
+                                    • 要具體明確
+                                </div>
+                                <div class="mb-3">
+                                    <strong>🎯 專案：</strong>ErCore, ErNexus, ErShield, ErTidy
+                                </div>
+                                <div class="text-success">
+                                    <strong>💡 提交後自動同步到個人歷程！</strong>
                                 </div>
                             </div>
                         </div>

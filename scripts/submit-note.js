@@ -11,7 +11,47 @@ const { execSync } = require('child_process');
 
 // 設定
 const NOTES_DIR = 'role-notes';
-const PROJECTS = ['ErCore', 'ErNexus', 'ErShield', 'ErTidy'];
+
+// 動態讀取專案列表
+function getValidProjects() {
+    try {
+        // 優先從 config/project-assignments.json 讀取（這是 Google Drive 同步的資料）
+        const configPath = path.join(__dirname, '..', 'config', 'project-assignments.json');
+        if (fs.existsSync(configPath)) {
+            const assignments = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+            const projects = Object.keys(assignments.assignments || {});
+            if (projects.length > 0) {
+                console.log(`📋 從 Google Drive 資料讀取到 ${projects.length} 個專案: ${projects.join(', ')}`);
+                return projects;
+            }
+        }
+
+        // 備用：從 project-mapping.json 讀取
+        const mappingPath = path.join(__dirname, 'project-mapping.json');
+        if (fs.existsSync(mappingPath)) {
+            const mapping = JSON.parse(fs.readFileSync(mappingPath, 'utf8'));
+            const projects = Object.keys(mapping.mapping || {});
+            if (projects.length > 0) return projects;
+        }
+
+        // 備用：從 projects 資料夾讀取 .md 檔案
+        const projectsDir = path.join(__dirname, '..', 'projects');
+        if (fs.existsSync(projectsDir)) {
+            const mdFiles = fs.readdirSync(projectsDir)
+                .filter(file => file.endsWith('.md') && file !== 'TEMPLATE.md')
+                .map(file => file.replace('.md', ''));
+            if (mdFiles.length > 0) return mdFiles;
+        }
+
+        // 預設專案列表作為 fallback
+        return ['ErCore', 'ErNexus', 'ErShield', 'ErTidy'];
+    } catch (error) {
+        console.warn('⚠️  無法讀取專案列表，使用預設列表');
+        return ['ErCore', 'ErNexus', 'ErShield', 'ErTidy'];
+    }
+}
+
+const PROJECTS = getValidProjects();
 
 // 確保備註資料夾存在
 if (!fs.existsSync(NOTES_DIR)) {
@@ -38,11 +78,10 @@ if (args.length < 3) {
 
 const [projectName, memberName, noteContent] = args;
 
-// 驗證專案名稱
+// 顯示建議的專案名稱（但不強制限制）
+console.log(`💡 建議的專案名稱: ${PROJECTS.join(', ')}`);
 if (!PROJECTS.includes(projectName)) {
-    console.error(`❌ 錯誤: 不支援的專案名稱 "${projectName}"`);
-    console.error(`支援的專案: ${PROJECTS.join(', ')}`);
-    process.exit(1);
+    console.log(`⚠️  注意: "${projectName}" 不在建議列表中，但仍可使用`);
 }
 
 // 驗證備註內容
@@ -56,8 +95,8 @@ const trimmedNote = noteContent.trim();
 
 // 1. 字數限制檢查 (計算實際字符數，中文字算1個字)
 const charCount = [...trimmedNote].length; // 使用 spread operator 正確計算 Unicode 字符
-if (charCount > 50) {
-    console.error(`❌ 錯誤: 備註內容超過 50 字限制 (目前: ${charCount} 字)`);
+if (charCount > 100) {
+    console.error(`❌ 錯誤: 備註內容超過 100 字限制 (目前: ${charCount} 字)`);
     console.error('請精簡內容，使用條列格式');
     process.exit(1);
 }
