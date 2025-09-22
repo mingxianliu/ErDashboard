@@ -236,18 +236,192 @@ class GoogleDriveAPI {
         try {
             console.log('🔄 登入成功，自動同步最新資料...');
 
-            // 確保有 pullFilesFromGoogleDrive 函數
+            // 1. 先同步 GitHub 上的角色備註
+            await this.syncRoleNotesFromGitHub();
+
+            // 2. 然後同步 Google Drive 資料
             if (typeof window.pullFilesFromGoogleDrive === 'function') {
                 await window.pullFilesFromGoogleDrive();
-                console.log('✅ 自動同步完成');
-
-                // 2 秒後自動重新載入頁面
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                console.log('✅ Google Drive 同步完成');
             }
+
+            // 3 秒後自動重新載入頁面
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
         } catch (error) {
             console.error('自動同步失敗:', error);
+        }
+    }
+
+    // 從 GitHub 同步角色備註
+    async syncRoleNotesFromGitHub() {
+        try {
+            console.log('📝 檢查 GitHub 角色備註更新...');
+
+            // 讀取 GitHub 上的角色備註檔案
+            const roleNotes = await this.fetchRoleNotes();
+
+            if (roleNotes.length > 0) {
+                console.log(`📝 發現 ${roleNotes.length} 個角色備註`);
+
+                // 應用角色備註到系統
+                await this.applyRoleNotes(roleNotes);
+
+                console.log('✅ GitHub 角色備註同步完成');
+            } else {
+                console.log('📋 沒有新的角色備註');
+            }
+        } catch (error) {
+            console.warn('⚠️ GitHub 角色備註同步失敗:', error.message);
+        }
+    }
+
+    // 獲取 GitHub 角色備註
+    async fetchRoleNotes() {
+        try {
+            // 使用 GitHub API 讀取 role-notes 資料夾
+            const apiUrl = 'https://api.github.com/repos/mingxianliu/ErDashboard/contents/role-notes';
+            const response = await fetch(apiUrl);
+
+            if (!response.ok) {
+                if (response.status === 404) {
+                    return []; // 資料夾不存在，返回空陣列
+                }
+                throw new Error(`GitHub API 錯誤: ${response.status}`);
+            }
+
+            const files = await response.json();
+            const noteFiles = [];
+
+            // 讀取每個 JSON 檔案
+            for (const file of files) {
+                if (file.name.endsWith('.json') && file.type === 'file') {
+                    try {
+                        const fileResponse = await fetch(file.download_url);
+                        const noteData = await fileResponse.json();
+                        noteFiles.push({
+                            filename: file.name,
+                            data: noteData,
+                            sha: file.sha
+                        });
+                    } catch (error) {
+                        console.warn(`⚠️ 無法讀取角色備註檔案 ${file.name}:`, error.message);
+                    }
+                }
+            }
+
+            // 按時間排序（最新的在前）
+            return noteFiles.sort((a, b) =>
+                new Date(b.data.timestamp) - new Date(a.data.timestamp)
+            );
+        } catch (error) {
+            console.warn('GitHub 角色備註檢查失敗:', error.message);
+            return [];
+        }
+    }
+
+    // 應用角色備註
+    async applyRoleNotes(roleNotes) {
+        if (!window.teamDataManager) {
+            console.warn('TeamDataManager 未準備好，跳過角色備註更新');
+            return;
+        }
+
+        const assignments = window.teamDataManager.getAllAssignments();
+        let hasUpdates = false;
+
+        for (const noteFile of roleNotes) {
+            const { project, member, note, submitter, timestamp } = noteFile.data;
+
+            if (assignments[project] && assignments[project].members) {
+                // 尋找對應的成員
+                const memberIds = Object.keys(assignments[project].members);
+                const targetMemberId = memberIds.find(id => {
+                    const memberInfo = window.teamDataManager.members[id];
+                    return memberInfo && memberInfo.name === member;
+                });
+
+                if (targetMemberId) {
+                    console.log(`📝 新增 ${project}/${member} 的角色備註`);
+
+                    // 取得現有的個人備註
+                    let personalNotes = assignments[project].members[targetMemberId].personalNotes || [];
+
+                    // 新增新的備註
+                    const newNote = {
+                        id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                        content: note,
+                        timestamp: new Date(timestamp).toLocaleString('zh-TW'),
+                        author: submitter,
+                        source: 'github'
+                    };
+
+                    personalNotes.unshift(newNote);
+                    assignments[project].members[targetMemberId].personalNotes = personalNotes;
+                    hasUpdates = true;
+                } else {
+                    console.warn(`⚠️ 找不到成員 "${member}" 在專案 "${project}" 中`);
+                }
+            } else {
+                console.warn(`⚠️ 找不到專案 "${project}" 或該專案沒有成員`);
+            }
+        }
+
+        // 儲存更新
+        if (hasUpdates) {
+            await window.teamDataManager.saveLocalChanges();
+            console.log('💾 角色備註已儲存到 Google Drive');
+        }
+    }
+
+    // 應用進度更新
+    async applyProgressUpdates(progressUpdates) {
+        if (!window.teamDataManager) {
+            console.warn('TeamDataManager 未準備好，跳過進度更新');
+            return;
+        }
+
+        const assignments = window.teamDataManager.getAllAssignments();
+        let hasUpdates = false;
+
+        for (const update of progressUpdates) {
+            const { project, progress, note, submitter, timestamp } = update.data;
+
+            if (assignments[project]) {
+                // 檢查是否為更新的進度
+                const currentProgress = assignments[project].progress || 0;
+
+                if (progress !== currentProgress) {
+                    console.log(`📈 更新 ${project} 進度: ${currentProgress}% → ${progress}% (${submitter})`);
+
+                    // 更新進度
+                    assignments[project].progress = progress;
+                    assignments[project].lastUpdated = timestamp.split('T')[0];
+
+                    // 加入備註到現有備註中
+                    let notes = [];
+                    try {
+                        notes = JSON.parse(assignments[project].notes || '[]');
+                    } catch (e) {
+                        notes = [];
+                    }
+
+                    notes.unshift({
+                        timestamp: new Date(timestamp).toLocaleString('zh-TW'),
+                        content: `${note} (提交者: ${submitter})`
+                    });
+
+                    assignments[project].notes = JSON.stringify(notes);
+                    hasUpdates = true;
+                }
+            }
+        }
+
+        // 儲存更新
+        if (hasUpdates) {
+            await window.teamDataManager.saveLocalChanges();
+            console.log('💾 進度更新已儲存到 Google Drive');
         }
     }
 

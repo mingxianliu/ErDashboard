@@ -1189,15 +1189,17 @@
                 const progressModal = bootstrap.Modal.getInstance(document.getElementById('progressModal'));
                 if (progressModal) progressModal.hide();
 
-                // 立即重新載入頁面資料
-                await loadDataDirectly();
-
                 // 發送localStorage更新信號確保即時更新
                 localStorage.setItem('teamUpdateSignal', JSON.stringify({
                     action: 'teamDataUpdate',
                     timestamp: Date.now(),
                     source: 'progressUpdate'
                 }));
+
+                // 回到首頁
+                setTimeout(() => {
+                    window.location.href = window.location.pathname;
+                }, 500);
 
             } catch (error) {
                 console.error('儲存專案進度失敗:', error);

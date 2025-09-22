@@ -1,0 +1,19 @@
+📝 角色備註提交 - 小卡版
+
+🔸 開啟終端機
+🔸 cd 到 ErDashboard 資料夾
+🔸 執行指令：
+
+node scripts/submit-note.js 專案 姓名 "備註"
+
+📋 範例：
+node scripts/submit-note.js ErCore 張小明 "• 完成登入API • 修復bug"
+
+✅ 規則：
+• 必須條列格式 (•、1.、-)
+• 最多50字
+• 要具體明確
+
+🎯 專案：ErCore, ErNexus, ErShield, ErTidy
+
+💡 提交後自動同步到個人歷程！
