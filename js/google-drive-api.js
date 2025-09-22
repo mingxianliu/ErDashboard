@@ -328,6 +328,7 @@ class GoogleDriveAPI {
             return;
         }
         const assignments = window.teamDataManager.getAllAssignments();
+        console.log('🔍 系統讀取到的專案:', Object.keys(assignments));
 
         let hasUpdates = false;
 
@@ -337,6 +338,12 @@ class GoogleDriveAPI {
             if (assignments[project] && assignments[project].members) {
                 // 尋找對應的成員 (用 memberName 匹配)
                 const memberIds = Object.keys(assignments[project].members);
+                console.log(`🔍 專案 "${project}" 的成員:`, memberIds.map(id => {
+                    const memberInfo = assignments[project].members[id];
+                    return `${id}: ${memberInfo.memberName || memberInfo.name || 'NO_NAME'}`;
+                }));
+                console.log(`🔍 要找的成員: "${member}"`);
+
                 const targetMemberId = memberIds.find(id => {
                     const memberInfo = assignments[project].members[id];
                     return memberInfo && memberInfo.memberName === member;
