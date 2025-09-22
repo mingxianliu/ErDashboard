@@ -335,11 +335,11 @@ class GoogleDriveAPI {
             const { project, member, note, submitter, timestamp } = noteFile.data;
 
             if (assignments[project] && assignments[project].members) {
-                // 尋找對應的成員
+                // 尋找對應的成員 (用 memberName 匹配)
                 const memberIds = Object.keys(assignments[project].members);
                 const targetMemberId = memberIds.find(id => {
-                    const memberInfo = window.teamDataManager.members[id];
-                    return memberInfo && memberInfo.name === member;
+                    const memberInfo = assignments[project].members[id];
+                    return memberInfo && memberInfo.memberName === member;
                 });
 
                 if (targetMemberId) {
