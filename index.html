@@ -28,6 +28,9 @@
                 <button class="btn btn-info btn-sm me-2" id="pullBtn" style="display: none;" title="從 Google Drive 拉取最新資料到本地">
                     <i class="fas fa-cloud-download-alt"></i> Pull
                 </button>
+                <button class="btn btn-warning btn-sm me-2" id="syncRoleNotesBtn" style="display: none;" title="手動同步角色備註">
+                    <i class="fas fa-comment-dots"></i> 同步備註
+                </button>
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
@@ -2669,6 +2672,7 @@
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
             document.getElementById('syncBtn').style.display = 'inline-block';
             document.getElementById('pullBtn').style.display = 'inline-block';
+            document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
 
             // 直接載入資料
             setTimeout(loadDataDirectly, 500);
@@ -2866,6 +2870,43 @@
                 // 恢復按鈕狀態
                 pullBtn.disabled = false;
                 pullBtn.innerHTML = originalText;
+            }
+        });
+
+        // 手動同步角色備註
+        document.getElementById('syncRoleNotesBtn').addEventListener('click', async function() {
+            const syncBtn = this;
+            const originalText = syncBtn.innerHTML;
+
+            try {
+                // 更新按鈕狀態
+                syncBtn.disabled = true;
+                syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+
+                showSyncToast('開始同步', '正在從 GitHub 同步角色備註...', 'info');
+
+                // 檢查 Google Drive API
+                if (!window.googleDriveAPI) {
+                    throw new Error('Google Drive API 未載入');
+                }
+
+                // 執行角色備註同步
+                await window.googleDriveAPI.syncRoleNotesFromGitHub();
+
+                showSyncToast('同步完成', '角色備註已成功同步！', 'success');
+
+                // 1秒後自動重新載入頁面
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+
+            } catch (error) {
+                console.error('角色備註同步失敗:', error);
+                showSyncToast('同步失敗', error.message, 'error');
+            } finally {
+                // 恢復按鈕狀態
+                syncBtn.disabled = false;
+                syncBtn.innerHTML = originalText;
             }
         });
 
