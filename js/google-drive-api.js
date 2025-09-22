@@ -6,10 +6,11 @@
 
 class GoogleDriveAPI {
     constructor() {
-        this.accessToken = sessionStorage.getItem('google_access_token');
+        // 先不設定 token，等驗證有效性後再設定
+        this.accessToken = null;
         this.folderId = 'YOUR_FOLDER_ID_HERE';
         this.tokenClient = null;
-        this.isAuthenticated = !!this.accessToken;
+        this.isAuthenticated = false;
         this.isConfigured = false;
         this.initGoogleAPI();
     }
@@ -81,15 +82,45 @@ class GoogleDriveAPI {
 
             this.isConfigured = true;
 
+            // 檢查 sessionStorage 中是否有 token 並驗證其有效性
+            const savedToken = sessionStorage.getItem('google_access_token');
+            if (savedToken) {
+                this.accessToken = savedToken;
+                // 嘗試驗證 token 是否仍然有效
+                try {
+                    const testResponse = await fetch('https://www.googleapis.com/drive/v3/files?pageSize=1', {
+                        headers: {
+                            'Authorization': `Bearer ${savedToken}`
+                        }
+                    });
+                    if (testResponse.ok) {
+                        this.isAuthenticated = true;
+                        console.log('✅ 使用已儲存的有效 token');
+                    } else {
+                        // Token 無效，清除它
+                        sessionStorage.removeItem('google_access_token');
+                        this.accessToken = null;
+                        console.log('⚠️ 已儲存的 token 無效，需要重新登入');
+                    }
+                } catch (error) {
+                    // Token 無效，清除它
+                    sessionStorage.removeItem('google_access_token');
+                    this.accessToken = null;
+                }
+            }
+
             this.tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CLIENT_ID,
                 scope: SCOPES,
-                callback: (response) => {
+                callback: async (response) => {
                     if (response.access_token) {
                         this.accessToken = response.access_token;
                         this.isAuthenticated = true;
                         sessionStorage.setItem('google_access_token', response.access_token);
                         console.log('✅ Google Drive OAuth 成功');
+
+                        // 登入成功後自動同步資料
+                        await this.onLoginSuccess();
                     } else {
                         console.error('❌ OAuth 回應沒有 access_token');
                     }
@@ -163,6 +194,9 @@ class GoogleDriveAPI {
                         this.isAuthenticated = true;
                         sessionStorage.setItem('google_access_token', response.access_token);
                         console.log('✅ Google Drive 登入成功');
+
+                        // 登入成功後自動同步資料
+                        this.onLoginSuccess();
                         resolve(true);
                     } else {
                         console.error('❌ 登入失敗：沒有取得 access token');
@@ -197,6 +231,26 @@ class GoogleDriveAPI {
         console.log('✅ Google Drive 已登出');
     }
 
+    // 登入成功後的處理
+    async onLoginSuccess() {
+        try {
+            console.log('🔄 登入成功，自動同步最新資料...');
+
+            // 確保有 pullFilesFromGoogleDrive 函數
+            if (typeof window.pullFilesFromGoogleDrive === 'function') {
+                await window.pullFilesFromGoogleDrive();
+                console.log('✅ 自動同步完成');
+
+                // 2 秒後自動重新載入頁面
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('自動同步失敗:', error);
+        }
+    }
+
     // 通用的 API 重試機制，處理 token 過期
     async retryWithReAuth(apiFunction, maxRetries = 1) {
         let retries = 0;
@@ -204,8 +258,14 @@ class GoogleDriveAPI {
             try {
                 return await apiFunction();
             } catch (error) {
-                // 檢查是否為 401 未授權錯誤
-                if ((error.message.includes('401') || error.message.includes('Unauthorized')) && retries < maxRetries) {
+                // 檢查是否為 401 未授權錯誤（包括網路錯誤的 401 回應）
+                const is401Error = error.message && (
+                    error.message.includes('401') ||
+                    error.message.includes('Unauthorized') ||
+                    error.message.includes('建立檔案失敗')
+                );
+
+                if (is401Error && retries < maxRetries) {
                     console.log(`🔑 Token 已過期 (嘗試 ${retries + 1}/${maxRetries + 1})，重新驗證...`);
                     // 清除過期的 token
                     sessionStorage.removeItem('google_access_token');
