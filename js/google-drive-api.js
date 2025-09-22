@@ -235,7 +235,6 @@ class GoogleDriveAPI {
     async onLoginSuccess() {
         try {
             console.log('🔄 登入成功，自動同步最新資料...');
-            console.log('🎯 開始執行 onLoginSuccess 方法...');
 
             // 1. 先同步 GitHub 上的角色備註
             await this.syncRoleNotesFromGitHub();
@@ -257,17 +256,14 @@ class GoogleDriveAPI {
 
     // 從 GitHub 同步角色備註
     async syncRoleNotesFromGitHub() {
-        console.log('🚀 開始執行 syncRoleNotesFromGitHub 方法...');
         try {
             console.log('📝 檢查 GitHub 角色備註更新...');
 
             // 讀取 GitHub 上的角色備註檔案
             const roleNotes = await this.fetchRoleNotes();
 
-            console.log('🔍 GitHub API 回應:', roleNotes);
-
             if (roleNotes.length > 0) {
-                console.log(`📝 發現 ${roleNotes.length} 個角色備註`);
+                console.log(`📝 發現 ${roleNotes.length} 個角色備註，開始同步...`);
 
                 // 應用角色備註到系統
                 await this.applyRoleNotes(roleNotes);
@@ -278,7 +274,6 @@ class GoogleDriveAPI {
             }
         } catch (error) {
             console.error('❌ GitHub 角色備註同步失敗:', error);
-            console.error('錯誤詳細:', error.stack);
         }
     }
 
@@ -328,17 +323,11 @@ class GoogleDriveAPI {
 
     // 應用角色備註
     async applyRoleNotes(roleNotes) {
-        console.log('🔧 開始應用角色備註...');
-
         if (!window.teamDataManager) {
             console.warn('TeamDataManager 未準備好，跳過角色備註更新');
             return;
         }
-
-        console.log('📊 TeamDataManager 已準備好');
         const assignments = window.teamDataManager.getAllAssignments();
-        console.log('📋 可用專案:', Object.keys(assignments));
-        console.log('👥 可用成員:', Object.keys(window.teamDataManager.members || {}));
 
         let hasUpdates = false;
 
