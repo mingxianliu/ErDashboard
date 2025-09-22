@@ -262,6 +262,8 @@ class GoogleDriveAPI {
             // 讀取 GitHub 上的角色備註檔案
             const roleNotes = await this.fetchRoleNotes();
 
+            console.log('🔍 GitHub API 回應:', roleNotes);
+
             if (roleNotes.length > 0) {
                 console.log(`📝 發現 ${roleNotes.length} 個角色備註`);
 
@@ -273,7 +275,8 @@ class GoogleDriveAPI {
                 console.log('📋 沒有新的角色備註');
             }
         } catch (error) {
-            console.warn('⚠️ GitHub 角色備註同步失敗:', error.message);
+            console.error('❌ GitHub 角色備註同步失敗:', error);
+            console.error('錯誤詳細:', error.stack);
         }
     }
 
@@ -323,12 +326,18 @@ class GoogleDriveAPI {
 
     // 應用角色備註
     async applyRoleNotes(roleNotes) {
+        console.log('🔧 開始應用角色備註...');
+
         if (!window.teamDataManager) {
             console.warn('TeamDataManager 未準備好，跳過角色備註更新');
             return;
         }
 
+        console.log('📊 TeamDataManager 已準備好');
         const assignments = window.teamDataManager.getAllAssignments();
+        console.log('📋 可用專案:', Object.keys(assignments));
+        console.log('👥 可用成員:', Object.keys(window.teamDataManager.members || {}));
+
         let hasUpdates = false;
 
         for (const noteFile of roleNotes) {
