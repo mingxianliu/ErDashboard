@@ -1991,7 +1991,7 @@ class TeamManagement {
                     <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>角色備註提交 - 小卡版</h6>
                     <div class="mb-3">
                         <strong>使用時機：</strong><br>
-                        1. 在各自專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                        1. 在各自目前在開發專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
                         2. 來ErDashboard執行角色備註腳本
                     </div>
                     <div class="mb-3">
@@ -2014,11 +2014,11 @@ class TeamManagement {
                         • 要具體明確
                     </div>
                     <div class="mb-3">
-                        <strong>專案：</strong><br>
+                        <strong>在各自目前在開發專案：</strong><br>
                         如：ErCore, ErNexus, ErShield, ErTidy
                     </div>
                     <div class="text-success">
-                        <strong>提交後自動同步到個人歷程！</strong>
+                        <strong>提交後自動同步到個人歷程，並回到本來的專案/branch！</strong>
                     </div>
                 </div>
             `;
@@ -2078,7 +2078,7 @@ class TeamManagement {
                     <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>角色備註提交 - 小卡版</h6>
                     <div class="mb-3">
                         <strong>使用時機：</strong><br>
-                        1. 在各自專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                        1. 在各自目前在開發專案（如：ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
                         2. 來ErDashboard執行角色備註腳本
                     </div>
                     <div class="mb-3">
@@ -2101,11 +2101,11 @@ class TeamManagement {
                         • 要具體明確
                     </div>
                     <div class="mb-3">
-                        <strong>專案：</strong><br>
+                        <strong>在各自目前在開發專案：</strong><br>
                         如：ErCore, ErNexus, ErShield, ErTidy
                     </div>
                     <div class="text-success">
-                        <strong>提交後自動同步到個人歷程！</strong>
+                        <strong>提交後自動同步到個人歷程，並回到本來的專案/branch！</strong>
                     </div>
                 </div>
             </div>
