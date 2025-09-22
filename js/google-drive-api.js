@@ -348,18 +348,29 @@ class GoogleDriveAPI {
                     // 取得現有的個人備註
                     let personalNotes = assignments[project].members[targetMemberId].personalNotes || [];
 
-                    // 新增新的備註
-                    const newNote = {
-                        id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-                        content: note,
-                        timestamp: new Date(timestamp).toLocaleString('zh-TW'),
-                        author: submitter,
-                        source: 'github'
-                    };
+                    // 檢查是否已經存在相同的備註 (避免重複加入)
+                    const isDuplicate = personalNotes.some(existingNote =>
+                        existingNote.content === note &&
+                        existingNote.source === 'github' &&
+                        existingNote.author === submitter
+                    );
 
-                    personalNotes.unshift(newNote);
-                    assignments[project].members[targetMemberId].personalNotes = personalNotes;
-                    hasUpdates = true;
+                    if (!isDuplicate) {
+                        // 新增新的備註
+                        const newNote = {
+                            id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                            content: note,
+                            timestamp: new Date(timestamp).toLocaleString('zh-TW'),
+                            author: submitter,
+                            source: 'github'
+                        };
+
+                        personalNotes.unshift(newNote);
+                        assignments[project].members[targetMemberId].personalNotes = personalNotes;
+                        hasUpdates = true;
+                    } else {
+                        console.log(`⚠️ 跳過重複的備註: ${project}/${member}`);
+                    }
                 } else {
                     console.warn(`⚠️ 找不到成員 "${member}" 在專案 "${project}" 中`);
                 }
