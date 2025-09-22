@@ -1,0 +1,9 @@
+{
+  "project": "ErCore",
+  "member": "測試用戶",
+  "note": "• 這是一個超過五十個字符限制的測試備註內容用來驗證字數限制功能是否正常工作應該要被系統拒絕才對",
+  "submitter": "Erich Liu",
+  "timestamp": "2025-09-22T07:48:00.274Z",
+  "date": "2025-09-22",
+  "type": "role_note"
+}
