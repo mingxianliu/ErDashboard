@@ -1,7 +1,11 @@
 📝 角色備註提交 - 小卡版
 
+📤 使用時機：
+🔸 在各自專案（ErCore/ErNexus/ErShield/ErTidy）發PR後
+🔸 來ErDashboard執行角色備註腳本
+
 🔸 開啟終端機
-🔸 cd 到 ErDashboard 資料夾
+🔸 cd 到/GitHub/ErDashboard 資料夾
 🔸 執行指令：
 
 node scripts/submit-note.js 專案 姓名 "備註"

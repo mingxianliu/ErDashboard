@@ -1986,6 +1986,39 @@ class TeamManagement {
                     <i class="fas fa-info-circle me-2"></i>
                     尚無角色變更歷程記錄
                 </div>
+                <hr class="my-4">
+                <div class="usage-guide bg-light p-3 rounded">
+                    <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>📝 角色備註提交 - 小卡版</h6>
+                    <div class="mb-3">
+                        <strong>📤 使用時機：</strong><br>
+                        🔸 在各自專案（ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                        🔸 來ErDashboard執行角色備註腳本
+                    </div>
+                    <div class="mb-3">
+                        🔸 開啟終端機<br>
+                        🔸 cd 到/GitHub/ErDashboard 資料夾<br>
+                        🔸 執行指令：
+                    </div>
+                    <div class="bg-dark text-light p-2 rounded mb-3">
+                        <code>node scripts/submit-note.js 專案 姓名 "備註"</code>
+                    </div>
+                    <div class="mb-3">
+                        <strong>📋 範例：</strong><br>
+                        <code>node scripts/submit-note.js ErCore 張小明 "• 完成登入API • 修復bug"</code>
+                    </div>
+                    <div class="mb-3">
+                        <strong>✅ 規則：</strong><br>
+                        • 必須條列格式 (•、1.、-)<br>
+                        • 最多50字<br>
+                        • 要具體明確
+                    </div>
+                    <div class="mb-3">
+                        <strong>🎯 專案：</strong>ErCore, ErNexus, ErShield, ErTidy
+                    </div>
+                    <div class="text-success">
+                        <strong>💡 提交後自動同步到個人歷程！</strong>
+                    </div>
+                </div>
             `;
         }
 
@@ -2037,6 +2070,39 @@ class TeamManagement {
                             </div>
                         </div>
                     `).join('')}
+                </div>
+                <hr class="my-4">
+                <div class="usage-guide bg-light p-3 rounded">
+                    <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>📝 角色備註提交 - 小卡版</h6>
+                    <div class="mb-3">
+                        <strong>📤 使用時機：</strong><br>
+                        🔸 在各自專案（ErCore/ErNexus/ErShield/ErTidy）發PR後<br>
+                        🔸 來ErDashboard執行角色備註腳本
+                    </div>
+                    <div class="mb-3">
+                        🔸 開啟終端機<br>
+                        🔸 cd 到/GitHub/ErDashboard 資料夾<br>
+                        🔸 執行指令：
+                    </div>
+                    <div class="bg-dark text-light p-2 rounded mb-3">
+                        <code>node scripts/submit-note.js 專案 姓名 "備註"</code>
+                    </div>
+                    <div class="mb-3">
+                        <strong>📋 範例：</strong><br>
+                        <code>node scripts/submit-note.js ErCore 張小明 "• 完成登入API • 修復bug"</code>
+                    </div>
+                    <div class="mb-3">
+                        <strong>✅ 規則：</strong><br>
+                        • 必須條列格式 (•、1.、-)<br>
+                        • 最多50字<br>
+                        • 要具體明確
+                    </div>
+                    <div class="mb-3">
+                        <strong>🎯 專案：</strong>ErCore, ErNexus, ErShield, ErTidy
+                    </div>
+                    <div class="text-success">
+                        <strong>💡 提交後自動同步到個人歷程！</strong>
+                    </div>
                 </div>
             </div>
         `;
