@@ -323,11 +323,35 @@ class GoogleDriveAPI {
 
     // 應用角色備註
     async applyRoleNotes(roleNotes) {
-        if (!window.teamDataManager) {
-            console.warn('TeamDataManager 未準備好，跳過角色備註更新');
-            return;
+        console.log('📌 開始應用角色備註，收到', roleNotes.length, '個備註');
+
+        // 嘗試不同的資料來源
+        let assignments = null;
+
+        // 方法1: 從 teamDataManager 讀取
+        if (window.teamDataManager && window.teamDataManager.getAllAssignments) {
+            console.log('✅ 使用 teamDataManager');
+            assignments = window.teamDataManager.getAllAssignments();
         }
-        const assignments = window.teamDataManager.getAllAssignments();
+        // 方法2: 從 localStorage 讀取
+        else if (localStorage.getItem('project-assignments')) {
+            console.log('✅ 使用 localStorage');
+            const data = JSON.parse(localStorage.getItem('project-assignments'));
+            assignments = data.assignments || {};
+        }
+        // 方法3: 從 config 檔案讀取
+        else {
+            console.log('✅ 嘗試從 config 檔案讀取');
+            try {
+                const response = await fetch('config/project-assignments.json');
+                const data = await response.json();
+                assignments = data.assignments || {};
+            } catch (error) {
+                console.error('❌ 無法讀取 config 檔案:', error);
+                return;
+            }
+        }
+
         console.log('🔍 系統讀取到的專案:', Object.keys(assignments));
 
         let hasUpdates = false;
@@ -388,8 +412,12 @@ class GoogleDriveAPI {
 
         // 儲存更新
         if (hasUpdates) {
-            await window.teamDataManager.saveLocalChanges();
-            console.log('💾 角色備註已儲存到 Google Drive');
+            if (window.teamDataManager && window.teamDataManager.saveLocalChanges) {
+                await window.teamDataManager.saveLocalChanges();
+                console.log('💾 角色備註已儲存到 Google Drive');
+            } else {
+                console.log('💾 角色備註已更新（但無法儲存到 Google Drive）');
+            }
         }
     }
 
