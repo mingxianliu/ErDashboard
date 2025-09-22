@@ -389,7 +389,7 @@
                                                 <button class="btn btn-sm btn-outline-primary" onclick="editTaskCard('${project.projectId}', '${member.memberId}')" title="編輯任務小卡">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-info" onclick="editPersonalNotes('${project.projectId}', '${member.memberId}')" title="個人備註">
+                                                <button class="btn btn-sm btn-outline-info" onclick="editPersonalNotes('${project.projectId}', '${member.memberId}')" title="角色備註">
                                                     <i class="fas fa-sticky-note"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-warning" onclick="changeMember('${project.projectId}', '${member.memberId}')" title="變更成員">
@@ -1377,7 +1377,7 @@
             }
         }
 
-        // 編輯個人備註
+        // 編輯角色備註
         async function editPersonalNotes(projectId, memberId) {
             try {
                 // 使用全域 TeamDataManager
@@ -1405,7 +1405,7 @@
                     memberName: memberName
                 };
 
-                // 格式化個人備註顯示
+                // 格式化角色備註顯示
                 const personalNotes = member.personalNotes || [];
                 const notesHtml = formatPersonalNotes(personalNotes);
 
@@ -1415,7 +1415,7 @@
                         <div class="modal-dialog modal-lg">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h5 class="modal-title">個人備註 - ${memberName} (${project.projectName})</h5>
+                                    <h5 class="modal-title">角色備註 - ${memberName} (${project.projectName})</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                 </div>
                                 <div class="modal-body">
@@ -1460,10 +1460,10 @@
             }
         }
 
-        // 格式化個人備註顯示
+        // 格式化角色備註顯示
         function formatPersonalNotes(notes) {
             if (!notes || !Array.isArray(notes) || notes.length === 0) {
-                return '<p class="text-muted m-0">尚無個人備註</p>';
+                return '<p class="text-muted m-0">尚無角色備註</p>';
             }
 
             return notes.map((note, index) =>
@@ -1525,7 +1525,7 @@
                     // 清空輸入框
                     newNoteInput.value = '';
 
-                    showSyncToast('備註已新增', '個人備註已儲存', 'success');
+                    showSyncToast('備註已新增', '角色備註已儲存', 'success');
                 }
             } catch (error) {
                 console.error('新增角色備註失敗:', error);
@@ -1533,9 +1533,9 @@
             }
         }
 
-        // 刪除個人備註
+        // 刪除角色備註
         async function deletePersonalNote(index) {
-            if (!confirm('確定要刪除此個人備註嗎？')) {
+            if (!confirm('確定要刪除此角色備註嗎？')) {
                 return;
             }
 
@@ -1561,7 +1561,7 @@
                         // 更新顯示
                         updatePersonalNotesDisplay(personalNotes);
 
-                        showSyncToast('備註已刪除', '個人備註已移除', 'info');
+                        showSyncToast('備註已刪除', '角色備註已移除', 'info');
                     }
                 }
             } catch (error) {
@@ -1570,9 +1570,9 @@
             }
         }
 
-        // 清除所有個人備註
+        // 清除所有角色備註
         async function clearAllPersonalNotes() {
-            if (!confirm('確定要清除所有個人備註嗎？此操作無法復原。')) {
+            if (!confirm('確定要清除所有角色備註嗎？此操作無法復原。')) {
                 return;
             }
 
@@ -1595,7 +1595,7 @@
                     // 更新顯示
                     updatePersonalNotesDisplay([]);
 
-                    showSyncToast('備註已清除', '所有個人備註已清除', 'info');
+                    showSyncToast('備註已清除', '所有角色備註已清除', 'info');
                 }
             } catch (error) {
                 console.error('清除個人備註失敗:', error);
@@ -1692,7 +1692,7 @@
             }
         }
 
-        // 更新個人備註顯示
+        // 更新角色備註顯示
         function updatePersonalNotesDisplay(notesList) {
             const notesListDiv = document.getElementById('personalNotesList');
             if (notesListDiv) {
@@ -1755,7 +1755,7 @@
                                                 <div class="col-6">
                                                     <div class="text-center">
                                                         <div class="fs-4 fw-bold text-primary">${personalNotesCount}</div>
-                                                        <small class="text-muted">個人備註</small>
+                                                        <small class="text-muted">角色備註</small>
                                                     </div>
                                                 </div>
                                                 <div class="col-6">
