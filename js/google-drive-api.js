@@ -258,10 +258,15 @@ class GoogleDriveAPI {
                 console.log('✅ Google Drive 同步完成');
             }
 
-            // 3 秒後自動重新載入頁面
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
+            // 登入成功後觸發資料載入
+            console.log('✅ 登入流程完成，觸發資料載入');
+
+            // 通知主頁面重新載入資料
+            if (typeof window.loadDataDirectly === 'function') {
+                setTimeout(() => {
+                    window.loadDataDirectly();
+                }, 1000);
+            }
         } catch (error) {
             console.error('自動同步失敗:', error);
         }
