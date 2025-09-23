@@ -2733,6 +2733,9 @@
         
         // 顯示主 Dashboard
         function showMainDashboard() {
+            // 隱藏登入介面
+            document.getElementById('keyAuthentication').style.display = 'none';
+
             // 顯示工具列按鈕
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
@@ -2743,8 +2746,18 @@
             document.getElementById('fixRolesBtn').style.display = 'inline-block';
 
             // 顯示主要內容區域
-            document.getElementById('summaryCards').style.display = 'flex';
-            document.getElementById('projectsList').style.display = 'block';
+            const summaryCards = document.getElementById('summaryCards');
+            const projectsList = document.getElementById('projectsList');
+
+            if (summaryCards) {
+                summaryCards.style.display = 'flex';
+                console.log('✅ summaryCards 已顯示');
+            }
+
+            if (projectsList) {
+                projectsList.style.display = 'block';
+                console.log('✅ projectsList 已顯示');
+            }
 
             console.log('✅ 主 Dashboard 介面已顯示');
         }
@@ -2770,9 +2783,10 @@
                 document.getElementById('summaryCards').style.display = 'none';
                 document.getElementById('projectsList').style.display = 'none';
                 
-                // 清空私鑰輸入欄
+                // 清空所有輸入欄位
                 document.getElementById('privateKeyInput').value = '';
-                
+                document.getElementById('googleConfigInput').value = '';
+
                 // 隱藏成功/錯誤訊息
                 document.getElementById('keyError').classList.add('d-none');
                 document.getElementById('keySuccess').classList.add('d-none');
