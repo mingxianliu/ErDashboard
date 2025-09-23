@@ -57,14 +57,15 @@ jobs:
         git config user.name "PR AutoBot"
         git config user.email "pr-autobot@erdashboard"
 
+        # 添加所有變更到暫存區
+        git add .
+
         # 檢查是否有變更
-        if git diff --quiet && git diff --staged --quiet; then
+        if git diff --staged --quiet; then
           echo "沒有變更需要推送"
           exit 0
         fi
 
-        # 添加所有變更到暫存區
-        git add .
         git commit -m "自動備註: ${{ steps.event_info.outputs.PROJECT_NAME }} - ${{ steps.event_info.outputs.TITLE }}"
         git push
         echo "✅ PR 備註已自動提交！"
