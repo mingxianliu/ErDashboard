@@ -354,19 +354,50 @@ class GoogleDriveAPI {
 
         console.log('🔍 系統讀取到的專案:', Object.keys(assignments));
 
+        // 檢查特定專案
+        if (!assignments['iFMS-Frontend']) {
+            console.warn('⚠️ 系統資料中沒有 iFMS-Frontend 專案');
+            // 嘗試找類似的專案名稱
+            const similarProjects = Object.keys(assignments).filter(p => p.toLowerCase().includes('ifms'));
+            if (similarProjects.length > 0) {
+                console.log('💡 找到類似的專案:', similarProjects);
+            }
+        }
+
         let hasUpdates = false;
 
         for (const noteFile of roleNotes) {
             const { project, member, note, submitter, timestamp } = noteFile.data;
 
-            if (assignments[project] && assignments[project].members) {
+            // 處理專案名稱的大小寫問題
+            let actualProject = project;
+            if (!assignments[project]) {
+                // 嘗試不同的專案名稱格式
+                const projectVariations = [
+                    project,
+                    project.toLowerCase(),
+                    project.replace('Frontend', 'frontend'),
+                    project.replace('frontend', 'Frontend'),
+                    'iFMS-frontend' // 特別處理 iFMS
+                ];
+
+                for (const variation of projectVariations) {
+                    if (assignments[variation]) {
+                        actualProject = variation;
+                        console.log(`💡 專案名稱對應: "${project}" → "${actualProject}"`);
+                        break;
+                    }
+                }
+            }
+
+            if (assignments[actualProject] && assignments[actualProject].members) {
                 // 尋找對應的成員 (用 memberName 匹配)
-                const memberIds = Object.keys(assignments[project].members);
+                const memberIds = Object.keys(assignments[actualProject].members);
 
                 // 建立成員名稱對照表
                 const memberNameMap = {};
                 const memberDebugInfo = memberIds.map(id => {
-                    const memberInfo = assignments[project].members[id];
+                    const memberInfo = assignments[actualProject].members[id];
                     const name = memberInfo.memberName || memberInfo.name || id;
                     memberNameMap[id] = name;
                     return `${id}: ${name}`;
@@ -377,7 +408,7 @@ class GoogleDriveAPI {
 
                 // 根據成員 ID 或名稱匹配
                 const targetMemberId = memberIds.find(id => {
-                    const memberInfo = assignments[project].members[id];
+                    const memberInfo = assignments[actualProject].members[id];
                     // 方法1: 用 memberName 匹配
                     if (memberInfo && memberInfo.memberName === member) return true;
                     // 方法2: 用 name 匹配
@@ -409,7 +440,7 @@ class GoogleDriveAPI {
                     console.log(`📝 新增 ${project}/${member} 的角色備註`);
 
                     // 取得現有的個人備註
-                    let personalNotes = assignments[project].members[targetMemberId].personalNotes || [];
+                    let personalNotes = assignments[actualProject].members[targetMemberId].personalNotes || [];
 
                     // 檢查是否已經存在相同的備註 (避免重複加入)
                     const isDuplicate = personalNotes.some(existingNote =>
