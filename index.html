@@ -491,6 +491,14 @@
                                                     <i class="fas fa-chart-line"></i>
                                                 </button>
                                             </div>
+                                            <div class="mb-2">
+                                                <span class="badge bg-warning text-dark"
+                                                      id="project-test-${project.projectId}"
+                                                      style="display: none;"
+                                                      title="有新推送，待測試">
+                                                    <i class="fas fa-exclamation-triangle"></i> 待測試
+                                                </span>
+                                            </div>
                                             <div class="progress mb-3" style="height: 25px;">
                                                 <div class="progress-bar d-flex align-items-center justify-content-center" style="width: ${project.progress}%">
                                                     <span class="fw-bold">${project.progress}%</span>
@@ -2872,13 +2880,33 @@
             }
         });
 
+        // 專案測試標記控制函數
+        window.showProjectTestPending = function(projectId) {
+            const indicator = document.getElementById(`project-test-${projectId}`);
+            if (indicator) {
+                indicator.style.display = 'inline-block';
+                console.log(`專案 ${projectId} 標記為待測試`);
+            }
+        };
+
+        window.hideProjectTestPending = function(projectId) {
+            const indicator = document.getElementById(`project-test-${projectId}`);
+            if (indicator) {
+                indicator.style.display = 'none';
+                console.log(`專案 ${projectId} 測試完成`);
+            }
+        };
+
+        window.hideAllProjectTestPending = function() {
+            const indicators = document.querySelectorAll('[id^="project-test-"]');
+            indicators.forEach(indicator => {
+                indicator.style.display = 'none';
+            });
+            console.log('清除所有專案測試標記');
+        };
+
         // 測試推送按鈕
         document.getElementById('testPushBtn').addEventListener('click', function() {
-            if (!window.markdownDashboard) {
-                alert('Dashboard 尚未初始化');
-                return;
-            }
-
             const choice = prompt('選擇測試功能:\n1 - 模擬推送事件\n2 - 模擬合併事件', '1');
 
             if (choice === '1') {
@@ -2886,12 +2914,12 @@
                 const projects = ['ErCore', 'ErNexus', 'ErShield', 'ErTidy', 'SyncBC-Monorepo', 'iFMS-Frontend'];
                 const randomProject = projects[Math.floor(Math.random() * projects.length)];
 
-                window.markdownDashboard.simulatePushEvent(randomProject);
+                window.showProjectTestPending(randomProject);
                 alert(`模擬推送到 ${randomProject}`);
 
             } else if (choice === '2') {
                 // 模擬合併事件
-                window.markdownDashboard.simulateMergeEvent();
+                window.hideAllProjectTestPending();
                 alert('模擬合併到 main/develop，所有測試標記已清除');
             }
         });
