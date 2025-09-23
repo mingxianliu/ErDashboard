@@ -216,10 +216,11 @@
                 }
 
                 // 從 TeamDataManager 獲取資料
-                const assignments = teamDataManager.getAllAssignments();
+                const assignments = teamDataManager.getAllAssignments() || {};
 
                 // 確保所有成員都有必要的欄位
-                Object.values(assignments).forEach(project => {
+                if (assignments && typeof assignments === 'object') {
+                    Object.values(assignments).forEach(project => {
                     if (project.members) {
                         Object.values(project.members).forEach(member => {
                             if (member.isExecuting === undefined || member.isExecuting === null) {
@@ -230,7 +231,8 @@
                             }
                         });
                     }
-                });
+                    });
+                }
 
                 // 前端渲染資料已準備完成
 
