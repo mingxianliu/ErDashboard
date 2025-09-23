@@ -2733,16 +2733,20 @@
         
         // 顯示主 Dashboard
         function showMainDashboard() {
+            // 顯示工具列按鈕
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
             document.getElementById('devLogBtn').style.display = 'inline-block';
             document.getElementById('syncBtn').style.display = 'inline-block';
             document.getElementById('pullBtn').style.display = 'inline-block';
-            // 同步備註功能已整合到重新載入按鈕
             document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
             document.getElementById('fixRolesBtn').style.display = 'inline-block';
 
-            // 注意：資料載入由登入成功回調處理，這裡不重複載入
+            // 顯示主要內容區域
+            document.getElementById('summaryCards').style.display = 'flex';
+            document.getElementById('projectsList').style.display = 'block';
+
+            console.log('✅ 主 Dashboard 介面已顯示');
         }
         
         // 登出功能
