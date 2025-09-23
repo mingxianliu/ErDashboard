@@ -82,7 +82,47 @@ function getMemberName(title, githubUser, eventType) {
     return defaultMember;
 }
 
-const memberName = getMemberName(title, githubUser, eventType);
+// 載入專案配置以驗證成員
+let projectData = null;
+try {
+    const configPath = 'config/project-assignments.json';
+    const configContent = require('fs').readFileSync(configPath, 'utf8');
+    projectData = JSON.parse(configContent);
+} catch (error) {
+    console.log('⚠️ 無法載入專案配置，將使用預設成員指定');
+}
+
+// 驗證成員是否在專案中
+function validateMemberInProject(memberName, projectName, projectData) {
+    if (!projectData || !projectData.assignments || !projectData.assignments[projectName]) {
+        return memberName; // 無法驗證時保持原樣
+    }
+
+    const project = projectData.assignments[projectName];
+    const members = project.members || {};
+
+    // 檢查成員是否在專案中
+    for (const [memberId, memberInfo] of Object.entries(members)) {
+        if (memberInfo.memberName === memberName) {
+            console.log(`✅ 成員 ${memberName} 確認在 ${projectName} 專案中`);
+            return memberName;
+        }
+    }
+
+    // 成員不在專案中，選擇專案的第一個成員
+    const projectMembers = Object.values(members);
+    if (projectMembers.length > 0) {
+        const fallbackMember = projectMembers[0].memberName;
+        console.log(`⚠️ 成員 ${memberName} 不在 ${projectName} 專案中，改用 ${fallbackMember}`);
+        return fallbackMember;
+    }
+
+    console.log(`⚠️ ${projectName} 專案無成員，保持原成員 ${memberName}`);
+    return memberName;
+}
+
+const initialMemberName = getMemberName(title, githubUser, eventType);
+const memberName = validateMemberInProject(initialMemberName, projectName, projectData);
 
 // 清理標題中的成員標記
 function cleanTitle(title) {
