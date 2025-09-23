@@ -460,7 +460,7 @@ class GoogleDriveAPI {
                         };
 
                         personalNotes.unshift(newNote);
-                        assignments[project].members[targetMemberId].personalNotes = personalNotes;
+                        assignments[actualProject].members[targetMemberId].personalNotes = personalNotes;
                         hasUpdates = true;
                     } else {
                         console.log(`⚠️ 跳過重複的備註: ${project}/${member}`);
