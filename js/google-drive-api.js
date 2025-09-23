@@ -362,15 +362,47 @@ class GoogleDriveAPI {
             if (assignments[project] && assignments[project].members) {
                 // 尋找對應的成員 (用 memberName 匹配)
                 const memberIds = Object.keys(assignments[project].members);
-                console.log(`🔍 專案 "${project}" 的成員:`, memberIds.map(id => {
+
+                // 建立成員名稱對照表
+                const memberNameMap = {};
+                const memberDebugInfo = memberIds.map(id => {
                     const memberInfo = assignments[project].members[id];
-                    return `${id}: ${memberInfo.memberName || memberInfo.name || 'NO_NAME'}`;
-                }));
+                    const name = memberInfo.memberName || memberInfo.name || id;
+                    memberNameMap[id] = name;
+                    return `${id}: ${name}`;
+                });
+
+                console.log(`🔍 專案 "${project}" 的成員:`, memberDebugInfo);
                 console.log(`🔍 要找的成員: "${member}"`);
 
+                // 根據成員 ID 或名稱匹配
                 const targetMemberId = memberIds.find(id => {
                     const memberInfo = assignments[project].members[id];
-                    return memberInfo && memberInfo.memberName === member;
+                    // 方法1: 用 memberName 匹配
+                    if (memberInfo && memberInfo.memberName === member) return true;
+                    // 方法2: 用 name 匹配
+                    if (memberInfo && memberInfo.name === member) return true;
+                    // 方法3: 直接用 ID 匹配（如果成員名稱就是 ID）
+                    if (id === member) return true;
+                    // 方法4: 根據已知的對應關係匹配
+                    const knownMapping = {
+                        'A-CC': 'KlauderA',
+                        'C-CS': 'KersirC',
+                        'C-CA': 'KersirAjenC',
+                        'B-GI': 'JaymenightB',
+                        'A-VC': 'KopylotA',
+                        'B-CS': 'KersirB',
+                        'A-GI': 'JaymenightA',
+                        'C-CI': 'KodesC',
+                        'C-CC': 'KlauderC',
+                        'C-VC': 'KopylotC',
+                        'B-CI': 'KodesB',
+                        'A-CS': 'KersirA',
+                        'B-VC': 'KopylotB',
+                        'B-CC': 'KlauderB'
+                    };
+                    if (knownMapping[id] === member) return true;
+                    return false;
                 });
 
                 if (targetMemberId) {
