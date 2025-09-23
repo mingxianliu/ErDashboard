@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>修復空項目 - 智慧監視系統</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+    </style>
+</head>
+<body>
+    <h1>🔧 修復空項目工具</h1>
+    <p>這個工具可以刪除「智慧監視系統」空項目（團隊成員(0)）</p>
+
+    <button id="fixBtn">刪除「智慧監視系統」空項目</button>
+    <button id="checkBtn">檢查所有項目狀態</button>
+
+    <div id="result"></div>
+
+    <script>
+    // 檢查項目狀態
+    document.getElementById('checkBtn').addEventListener('click', function() {
+        const resultDiv = document.getElementById('result');
+
+        try {
+            // 檢查 localStorage 中的團隊數據
+            const teamData = localStorage.getItem('teamData');
+            const assignments = localStorage.getItem('assignments');
+
+            let info = '<h3>📊 當前數據狀態:</h3>';
+
+            if (teamData) {
+                const data = JSON.parse(teamData);
+                info += `<p><strong>teamData:</strong> 找到 ${Object.keys(data).length} 個項目</p>`;
+                info += `<pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>`;
+            }
+
+            if (assignments) {
+                const data = JSON.parse(assignments);
+                info += `<p><strong>assignments:</strong> 找到 ${Object.keys(data.assignments || {}).length} 個分配</p>`;
+                Object.keys(data.assignments || {}).forEach(project => {
+                    const memberCount = Object.keys(data.assignments[project].members || {}).length;
+                    info += `<p>• ${project}: ${memberCount} 個成員</p>`;
+                });
+            }
+
+            resultDiv.innerHTML = info;
+            resultDiv.className = 'warning';
+
+        } catch (error) {
+            resultDiv.innerHTML = '❌ 檢查失敗: ' + error.message;
+            resultDiv.className = 'error';
+        }
+    });
+
+    // 修復空項目
+    document.getElementById('fixBtn').addEventListener('click', function() {
+        const resultDiv = document.getElementById('result');
+
+        try {
+            // 方法1: 清除 localStorage 中的空項目
+            const assignments = localStorage.getItem('assignments');
+            if (assignments) {
+                const data = JSON.parse(assignments);
+
+                if (data.assignments && data.assignments['智慧監視系統']) {
+                    delete data.assignments['智慧監視系統'];
+                    localStorage.setItem('assignments', JSON.stringify(data));
+
+                    resultDiv.innerHTML = '✅ 已從 localStorage 中刪除「智慧監視系統」項目！<br>請重新載入頁面查看效果。';
+                    resultDiv.className = 'success';
+
+                    // 3秒後自動重新載入
+                    setTimeout(() => {
+                        if (window.opener) {
+                            window.opener.location.reload();
+                        }
+                        window.close();
+                    }, 3000);
+
+                } else {
+                    resultDiv.innerHTML = '⚠️ 在 localStorage 中找不到「智慧監視系統」項目。';
+                    resultDiv.className = 'warning';
+                }
+            } else {
+                resultDiv.innerHTML = '❌ 找不到 assignments 數據。';
+                resultDiv.className = 'error';
+            }
+
+        } catch (error) {
+            console.error('刪除項目失敗:', error);
+            resultDiv.innerHTML = '❌ 刪除失敗: ' + error.message;
+            resultDiv.className = 'error';
+        }
+    });
+
+    // 自動檢查狀態
+    setTimeout(() => {
+        document.getElementById('checkBtn').click();
+    }, 1000);
+    </script>
+</body>
+</html>
