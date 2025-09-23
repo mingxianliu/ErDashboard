@@ -410,7 +410,11 @@ ${templateContent}`,
         `;
 
         summaryCards.style.display = 'flex';
+        summaryCards.style.visibility = 'visible';
+        summaryCards.style.opacity = '1';
         console.log('✅ Summary Cards 渲染完成');
+        console.log('📊 Summary Cards 內容長度:', summaryCards.innerHTML.length);
+        console.log('📊 Summary Cards 可見性:', window.getComputedStyle(summaryCards).display);
     }
 
     renderProjectsList() {
@@ -425,6 +429,8 @@ ${templateContent}`,
                 </div>
             `;
             projectsList.style.display = 'block';
+            projectsList.style.visibility = 'visible';
+            projectsList.style.opacity = '1';
             return;
         }
 
@@ -517,7 +523,11 @@ ${templateContent}`,
 
         projectsList.innerHTML = `<div class="row">${html}</div>`;
         projectsList.style.display = 'block';
+        projectsList.style.visibility = 'visible';
+        projectsList.style.opacity = '1';
         console.log('✅ Projects List 渲染完成');
+        console.log('📋 Projects List 內容長度:', projectsList.innerHTML.length);
+        console.log('📋 Projects List 可見性:', window.getComputedStyle(projectsList).display);
     }
 
     // 更新專案進度並同步到 Google Drive

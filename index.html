@@ -2684,20 +2684,15 @@
                     successDiv.classList.remove('d-none');
                     errorDiv.classList.add('d-none');
                     
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         document.getElementById('keyAuthentication').style.display = 'none';
+
+                        // 登入成功後自動載入資料（與重新載入按鈕相同的流程）
+                        console.log('🚀 登入成功，載入資料...');
                         showMainDashboard();
 
-                        // 啟動新的 Markdown Dashboard（這會自動載入資料）
-                        if (typeof MarkdownProjectDashboard !== 'undefined') {
-                            console.log('🚀 登入成功，啟動 Dashboard...');
-                            window.markdownDashboard = new MarkdownProjectDashboard();
-                        } else {
-                            // 備用載入方式
-                            console.log('🚀 登入成功，使用備用載入方式...');
-                            console.error('MarkdownProjectDashboard 類別未定義，使用備用載入');
-                            loadDataDirectly();
-                        }
+                        // 與重新載入按鈕相同的流程
+                        await loadDataDirectly();
                     }, 1000);
                 } else {
                     document.getElementById('keyErrorText').textContent = '私鑰驗證失敗，請確認私鑰正確';
