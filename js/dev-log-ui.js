@@ -193,9 +193,6 @@ class DevLogUI {
      */
     async loadData() {
         try {
-            // 載入成員列表
-            await this.loadMembers();
-
             // 載入專案列表
             await this.loadProjects();
 
@@ -213,70 +210,9 @@ class DevLogUI {
         }
     }
 
-    /**
-     * 載入成員列表
-     */
-    async loadMembers() {
-        try {
-            this.allMembers.clear();
+    // 成員載入功能已移除，使用預設成員名稱
 
-            // 添加一些預設成員
-            const defaultMembers = ['KlauderA', 'KlauderB', 'ErichC', 'JohnD'];
-            defaultMembers.forEach(member => this.allMembers.add(member));
-
-            if (window.teamDataManager && window.teamDataManager.assignments) {
-                console.log('📊 載入專案成員資料...');
-                for (const [projectId, project] of Object.entries(window.teamDataManager.assignments)) {
-                    if (project.members) {
-                        for (const [memberId, member] of Object.entries(project.members)) {
-                            this.allMembers.add(member.memberName || memberId);
-                        }
-                    }
-                }
-                console.log('✅ 成員列表載入完成:', Array.from(this.allMembers));
-            } else {
-                console.log('⚠️ 使用預設成員列表:', Array.from(this.allMembers));
-            }
-
-            // 更新成員選擇器
-            this.updateMemberSelectors();
-
-        } catch (error) {
-            console.error('❌ 載入成員列表失敗:', error);
-            // 使用預設成員
-            const defaultMembers = ['KlauderA', 'KlauderB', 'ErichC', 'JohnD'];
-            defaultMembers.forEach(member => this.allMembers.add(member));
-            this.updateMemberSelectors();
-        }
-    }
-
-    /**
-     * 更新成員選擇器
-     */
-    updateMemberSelectors() {
-        const selectors = ['globalMemberSelect', 'projectMemberSelect'];
-
-        selectors.forEach(selectorId => {
-            const selector = document.getElementById(selectorId);
-            const currentValue = selector.value;
-
-            // 清空並重新填充
-            selector.innerHTML = '<option value="">選擇成員</option>';
-
-            const sortedMembers = Array.from(this.allMembers).sort();
-            sortedMembers.forEach(member => {
-                const option = document.createElement('option');
-                option.value = member;
-                option.textContent = member;
-                selector.appendChild(option);
-            });
-
-            // 恢復之前的選擇
-            if (currentValue && this.allMembers.has(currentValue)) {
-                selector.value = currentValue;
-            }
-        });
-    }
+    // 成員選擇器相關功能已移除
 
     /**
      * 載入專案列表
@@ -472,34 +408,27 @@ class DevLogUI {
      */
     async addGlobalLog() {
         const input = document.getElementById('globalLogInput');
-        const memberSelect = document.getElementById('globalMemberSelect');
-
         const content = input.value.trim();
-        const member = memberSelect.value;
 
         if (!content) {
             alert('請輸入記錄內容');
             return;
         }
 
-        if (!member) {
-            alert('請選擇成員');
-            return;
-        }
-
         try {
-            await window.devLogManager.addGlobalLog(content, member);
+            // 使用預設成員名稱
+            const defaultMember = '系統管理員';
+            await window.devLogManager.addGlobalLog(content, defaultMember);
 
             // 清空輸入
             input.value = '';
-            memberSelect.value = '';
 
             // 重新載入記錄
             await this.loadGlobalLogs();
 
             // 自動同步
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
+            if (window.devLogManager) {
+                await window.devLogManager.saveDevLogs();
             }
 
         } catch (error) {
@@ -518,34 +447,27 @@ class DevLogUI {
         }
 
         const input = document.getElementById('projectLogInput');
-        const memberSelect = document.getElementById('projectMemberSelect');
-
         const content = input.value.trim();
-        const member = memberSelect.value;
 
         if (!content) {
             alert('請輸入記錄內容');
             return;
         }
 
-        if (!member) {
-            alert('請選擇成員');
-            return;
-        }
-
         try {
-            await window.devLogManager.addProjectLog(this.currentProjectId, content, member);
+            // 使用預設成員名稱
+            const defaultMember = '系統管理員';
+            await window.devLogManager.addProjectLog(this.currentProjectId, content, defaultMember);
 
             // 清空輸入
             input.value = '';
-            memberSelect.value = '';
 
             // 重新載入記錄
             await this.loadProjectLogs(this.currentProjectId);
 
             // 自動同步
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
+            if (window.devLogManager) {
+                await window.devLogManager.saveDevLogs();
             }
 
         } catch (error) {
