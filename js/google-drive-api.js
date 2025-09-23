@@ -343,26 +343,53 @@ class GoogleDriveAPI {
 
         // 方法1: 從 teamDataManager 讀取
         if (window.teamDataManager && window.teamDataManager.getAllAssignments) {
-            console.log('✅ 使用 teamDataManager');
-            assignments = window.teamDataManager.getAllAssignments();
+            console.log('✅ 嘗試使用 teamDataManager');
+            const tmAssignments = window.teamDataManager.getAllAssignments();
+            if (tmAssignments && Object.keys(tmAssignments).length > 0) {
+                console.log('✅ teamDataManager 資料有效，包含', Object.keys(tmAssignments).length, '個專案');
+                assignments = tmAssignments;
+            } else {
+                console.warn('⚠️ teamDataManager 資料為空或無效');
+            }
         }
+
         // 方法2: 從 localStorage 讀取
-        else if (localStorage.getItem('project-assignments')) {
-            console.log('✅ 使用 localStorage');
-            const data = JSON.parse(localStorage.getItem('project-assignments'));
-            assignments = data.assignments || {};
+        if (!assignments && localStorage.getItem('project-assignments')) {
+            console.log('✅ 嘗試使用 localStorage');
+            try {
+                const data = JSON.parse(localStorage.getItem('project-assignments'));
+                if (data.assignments && Object.keys(data.assignments).length > 0) {
+                    console.log('✅ localStorage 資料有效，包含', Object.keys(data.assignments).length, '個專案');
+                    assignments = data.assignments;
+                } else {
+                    console.warn('⚠️ localStorage 資料為空或無效');
+                }
+            } catch (error) {
+                console.error('❌ localStorage 資料解析失敗:', error);
+            }
         }
+
         // 方法3: 從 config 檔案讀取
-        else {
+        if (!assignments) {
             console.log('✅ 嘗試從 config 檔案讀取');
             try {
                 const response = await fetch('config/project-assignments.json');
                 const data = await response.json();
-                assignments = data.assignments || {};
+                if (data.assignments && Object.keys(data.assignments).length > 0) {
+                    console.log('✅ config 檔案資料有效，包含', Object.keys(data.assignments).length, '個專案');
+                    assignments = data.assignments;
+                } else {
+                    console.warn('⚠️ config 檔案資料為空或無效');
+                }
             } catch (error) {
                 console.error('❌ 無法讀取 config 檔案:', error);
-                return;
             }
+        }
+
+        // 最終檢查
+        if (!assignments || Object.keys(assignments).length === 0) {
+            console.error('❌ 無法載入任何專案資料，放棄角色備註同步');
+            return;
         }
 
         console.log('🔍 系統讀取到的專案:', Object.keys(assignments));
