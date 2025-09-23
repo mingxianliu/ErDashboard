@@ -96,6 +96,19 @@ class GoogleDriveAPI {
                     if (testResponse.ok) {
                         this.isAuthenticated = true;
                         console.log('✅ 使用已儲存的有效 token');
+
+                        // 自動執行同步（不重新載入頁面，避免無限循環）
+                        setTimeout(async () => {
+                            try {
+                                console.log('🔄 自動執行初始同步...');
+                                await this.syncRoleNotesFromGitHub();
+                                if (typeof window.pullFilesFromGoogleDrive === 'function') {
+                                    await window.pullFilesFromGoogleDrive();
+                                }
+                            } catch (error) {
+                                console.error('初始同步失敗:', error);
+                            }
+                        }, 1000); // 延遲1秒，確保頁面準備好
                     } else {
                         // Token 無效，清除它
                         sessionStorage.removeItem('google_access_token');
