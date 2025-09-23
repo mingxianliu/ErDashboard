@@ -258,15 +258,10 @@ class GoogleDriveAPI {
                 console.log('✅ Google Drive 同步完成');
             }
 
-            // 登入成功後觸發資料載入
-            console.log('✅ 登入流程完成，觸發資料載入');
+            // 登入成功後的處理完成
+            console.log('✅ Google Drive 登入流程完成');
 
-            // 通知主頁面重新載入資料
-            if (typeof window.loadDataDirectly === 'function') {
-                setTimeout(() => {
-                    window.loadDataDirectly();
-                }, 1000);
-            }
+            // 注意：資料載入已由主頁面的登入回調處理，這裡不重複載入
         } catch (error) {
             console.error('自動同步失敗:', error);
         }
