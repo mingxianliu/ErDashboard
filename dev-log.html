@@ -234,23 +234,43 @@
     <script src="js/google-drive-api.js?v=20250922f"></script>
     <script src="js/team-data-manager.js?v=20250918u"></script>
     <script src="js/dev-log.js?v=20250923a"></script>
-    <script src="js/dev-log-ui.js?v=20250923b"></script>
+    <script src="js/dev-log-ui.js?v=20250923c"></script>
     <script>
         // 初始化研發記錄簿
         document.addEventListener('DOMContentLoaded', async () => {
             try {
                 console.log('📋 開始載入研發記錄簿...');
 
+                // 檢查認證狀態
+                const hasAuth = sessionStorage.getItem('KEY_AUTHENTICATED');
+                const hasGDriveConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+
+                if (!hasAuth || !hasGDriveConfig) {
+                    console.log('⚠️ 未登入，顯示登入提示');
+                    document.getElementById('keyAuthentication').style.display = 'block';
+                    return;
+                }
+
                 // 等待所有腳本載入
+                console.log('🔄 等待腳本載入...');
                 await new Promise(resolve => {
-                    if (window.DevLogUI && window.DevLogManager && window.TeamDataManager) {
+                    if (window.DevLogUI && window.DevLogManager && window.TeamDataManager && window.googleDriveAPI) {
+                        console.log('✅ 所有腳本已載入');
                         resolve();
                     } else {
                         let checkCount = 0;
                         const checkInterval = setInterval(() => {
                             checkCount++;
-                            if (window.DevLogUI && window.DevLogManager && window.TeamDataManager) {
+                            console.log(`⏳ 檢查腳本載入狀態... (${checkCount}/50)`, {
+                                DevLogUI: !!window.DevLogUI,
+                                DevLogManager: !!window.DevLogManager,
+                                TeamDataManager: !!window.TeamDataManager,
+                                googleDriveAPI: !!window.googleDriveAPI
+                            });
+
+                            if (window.DevLogUI && window.DevLogManager && window.TeamDataManager && window.googleDriveAPI) {
                                 clearInterval(checkInterval);
+                                console.log('✅ 所有腳本已載入');
                                 resolve();
                             } else if (checkCount > 50) { // 5秒超時
                                 clearInterval(checkInterval);
@@ -263,42 +283,69 @@
 
                 // 初始化 devLogManager
                 if (!window.devLogManager) {
+                    console.log('🔄 初始化 DevLogManager...');
                     window.devLogManager = new DevLogManager();
                 }
 
                 // 初始化 devLogUI
                 if (!window.devLogUI) {
+                    console.log('🔄 初始化 DevLogUI...');
                     window.devLogUI = new DevLogUI();
                 }
 
                 // 啟動 UI
+                console.log('🚀 啟動 DevLogUI...');
                 await window.devLogUI.init();
+
+                console.log('✅ 研發記錄簿初始化完成');
 
             } catch (error) {
                 console.error('❌ 研發記錄簿初始化失敗:', error);
 
-                // 顯示錯誤訊息
-                document.getElementById('keyAuthentication').style.display = 'block';
-                document.getElementById('keyAuthentication').innerHTML = `
-                    <div class="card mx-auto" style="max-width: 600px;">
-                        <div class="card-header bg-danger text-white">
-                            <h5 class="mb-0">
-                                <i class="fas fa-exclamation-triangle me-2"></i>載入失敗
-                            </h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-muted">研發記錄簿載入失敗，請重新整理頁面或回到首頁。</p>
-                            <div class="d-grid gap-2">
-                                <button class="btn btn-primary" onclick="window.location.reload()">
-                                    <i class="fas fa-sync-alt me-2"></i>重新整理
-                                </button>
-                                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
-                                    <i class="fas fa-home me-2"></i>回到首頁
+                // 檢查是否是認證問題
+                if (error.message.includes('Google Drive') || error.message.includes('認證') || error.message.includes('登入')) {
+                    document.getElementById('keyAuthentication').style.display = 'block';
+                    document.getElementById('keyAuthentication').innerHTML = `
+                        <div class="card mx-auto" style="max-width: 600px;">
+                            <div class="card-header bg-warning text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>需要重新登入
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">您的登入狀態已過期或無效，請回到首頁重新登入。</p>
+                                <p class="text-danger small">錯誤訊息：${error.message}</p>
+                                <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                                    <i class="fas fa-home me-2"></i>回到首頁登入
                                 </button>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                } else {
+                    // 其他錯誤
+                    document.getElementById('keyAuthentication').style.display = 'block';
+                    document.getElementById('keyAuthentication').innerHTML = `
+                        <div class="card mx-auto" style="max-width: 600px;">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>載入失敗
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">研發記錄簿載入失敗，請嘗試以下解決方案：</p>
+                                <p class="text-danger small">錯誤訊息：${error.message}</p>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary" onclick="window.location.reload()">
+                                        <i class="fas fa-sync-alt me-2"></i>重新整理頁面
+                                    </button>
+                                    <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                                        <i class="fas fa-home me-2"></i>回到首頁
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         });
     </script>

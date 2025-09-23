@@ -77,29 +77,83 @@ class DevLogUI {
      * 等待認證完成
      */
     async waitForAuth() {
-        // 初始化 TeamDataManager
-        if (!window.teamDataManager) {
-            window.teamDataManager = new TeamDataManager();
-            await window.teamDataManager.init();
+        try {
+            // 初始化 Google Drive API
+            if (window.googleDriveAPI && !window.googleDriveAPI.isReady()) {
+                console.log('🔄 初始化 Google Drive API...');
+                await this.initGoogleDriveAPI();
+            }
+
+            // 初始化 TeamDataManager
+            if (!window.teamDataManager) {
+                console.log('🔄 初始化 TeamDataManager...');
+                window.teamDataManager = new TeamDataManager();
+                await window.teamDataManager.init();
+            } else if (!window.teamDataManager.isLoaded) {
+                console.log('🔄 重新載入 TeamDataManager...');
+                await window.teamDataManager.init();
+            }
+
+            return new Promise((resolve, reject) => {
+                let attempts = 0;
+                const maxAttempts = 50; // 5秒超時
+
+                const checkAuth = () => {
+                    attempts++;
+
+                    if (window.teamDataManager && window.teamDataManager.isLoaded) {
+                        console.log('✅ TeamDataManager 已準備完成');
+                        resolve();
+                    } else if (attempts >= maxAttempts) {
+                        console.error('❌ 認證超時');
+                        reject(new Error('認證超時'));
+                    } else {
+                        console.log(`⏳ 等待認證... (嘗試 ${attempts}/${maxAttempts})`);
+                        setTimeout(checkAuth, 100);
+                    }
+                };
+                checkAuth();
+            });
+        } catch (error) {
+            console.error('❌ 認證初始化失敗:', error);
+            throw error;
         }
+    }
 
-        return new Promise((resolve, reject) => {
-            let attempts = 0;
-            const maxAttempts = 50; // 5秒超時
+    /**
+     * 初始化 Google Drive API
+     */
+    async initGoogleDriveAPI() {
+        try {
+            if (!window.googleDriveAPI) {
+                throw new Error('Google Drive API 未載入');
+            }
 
-            const checkAuth = () => {
-                attempts++;
+            // 等待 Google Drive API 準備
+            let waitCount = 0;
+            while (!window.googleDriveAPI.isReady() && waitCount < 30) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                waitCount++;
+            }
 
-                if (window.teamDataManager && window.teamDataManager.isLoaded) {
-                    resolve();
-                } else if (attempts >= maxAttempts) {
-                    reject(new Error('認證超時'));
-                } else {
-                    setTimeout(checkAuth, 100);
+            if (!window.googleDriveAPI.isReady()) {
+                throw new Error('Google Drive API 初始化超時');
+            }
+
+            // 嘗試登入
+            if (!window.googleDriveAPI.isSignedIn()) {
+                console.log('🔄 嘗試 Google Drive 自動登入...');
+                const loginSuccess = await window.googleDriveAPI.signIn();
+                if (!loginSuccess) {
+                    throw new Error('Google Drive 登入失敗');
                 }
-            };
-            checkAuth();
-        });
+            }
+
+            console.log('✅ Google Drive API 已準備');
+        } catch (error) {
+            console.error('❌ Google Drive API 初始化失敗:', error);
+            throw error;
+        }
     }
 
     /**
