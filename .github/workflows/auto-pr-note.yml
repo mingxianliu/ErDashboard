@@ -2,7 +2,7 @@ name: 接收 PR 備註請求
 
 on:
   repository_dispatch:
-    types: [pr-note]
+    types: [pr-note, dev-note]
 
 jobs:
   submit-pr-note:
@@ -19,31 +19,35 @@ jobs:
       with:
         node-version: '16'
 
-    - name: 提取 PR 資訊
-      id: pr_info
+    - name: 提取事件資訊
+      id: event_info
       run: |
         echo "PROJECT_NAME=${{ github.event.client_payload.project_name }}" >> $GITHUB_OUTPUT
         echo "GITHUB_USER=${{ github.event.client_payload.github_user }}" >> $GITHUB_OUTPUT
-        echo "PR_TITLE=${{ github.event.client_payload.pr_title }}" >> $GITHUB_OUTPUT
-        echo "PR_NUMBER=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
+        echo "EVENT_TYPE=${{ github.event.client_payload.event_type }}" >> $GITHUB_OUTPUT
+        echo "TITLE=${{ github.event.client_payload.title || github.event.client_payload.pr_title }}" >> $GITHUB_OUTPUT
+        echo "NUMBER=${{ github.event.client_payload.number || github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
         echo "REPO_NAME=${{ github.event.client_payload.repo_name }}" >> $GITHUB_OUTPUT
+        echo "URL=${{ github.event.client_payload.url || github.event.client_payload.pr_url }}" >> $GITHUB_OUTPUT
 
-    - name: 建立角色備註
+    - name: 建立開發備註
       run: |
-        PROJECT_NAME="${{ steps.pr_info.outputs.PROJECT_NAME }}"
-        GITHUB_USER="${{ steps.pr_info.outputs.GITHUB_USER }}"
-        PR_TITLE="${{ steps.pr_info.outputs.PR_TITLE }}"
-        PR_NUMBER="${{ steps.pr_info.outputs.PR_NUMBER }}"
-        REPO_NAME="${{ steps.pr_info.outputs.REPO_NAME }}"
+        PROJECT_NAME="${{ steps.event_info.outputs.PROJECT_NAME }}"
+        GITHUB_USER="${{ steps.event_info.outputs.GITHUB_USER }}"
+        EVENT_TYPE="${{ steps.event_info.outputs.EVENT_TYPE }}"
+        TITLE="${{ steps.event_info.outputs.TITLE }}"
+        NUMBER="${{ steps.event_info.outputs.NUMBER }}"
+        REPO_NAME="${{ steps.event_info.outputs.REPO_NAME }}"
 
-        echo "🚀 自動提交 PR 備註:"
+        echo "🚀 自動提交開發備註:"
         echo "專案: ${PROJECT_NAME}"
         echo "倉庫: ${REPO_NAME}"
         echo "開發者: ${GITHUB_USER}"
-        echo "PR: #${PR_NUMBER} ${PR_TITLE}"
+        echo "類型: ${EVENT_TYPE}"
+        echo "內容: ${TITLE}"
 
-        # 使用 PR 備註腳本
-        node scripts/submit-pr-note.js "${PROJECT_NAME}" "${GITHUB_USER}" "${PR_TITLE}" "${PR_NUMBER}"
+        # 使用開發備註腳本
+        node scripts/submit-dev-note.js "${PROJECT_NAME}" "${GITHUB_USER}" "${EVENT_TYPE}" "${TITLE}" "${NUMBER}"
 
     - name: 推送結果
       run: |

@@ -9,7 +9,10 @@ name: 自動提交 PR 備註到 ErDashboard
 
 on:
   pull_request:
-    types: [opened, ready_for_review]
+    types: [opened, ready_for_review, closed]
+  push:
+    branches: [main, master, develop]
+    # 當直接推送到主要分支時也觸發
 
 jobs:
   notify-erdashboard:
@@ -36,26 +39,70 @@ jobs:
         echo "PROJECT_NAME=${PROJECT_NAME}" >> $GITHUB_OUTPUT
         echo "✅ 檢測到專案: ${PROJECT_NAME}"
 
+    - name: 分析事件類型和內容
+      id: event_info
+      run: |
+        if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+          # PR 事件
+          if [[ "${{ github.event.action }}" == "closed" && "${{ github.event.pull_request.merged }}" == "true" ]]; then
+            EVENT_TYPE="merge"
+            TITLE="Merged: ${{ github.event.pull_request.title }}"
+            USER="${{ github.event.pull_request.user.login }}"
+            NUMBER="${{ github.event.pull_request.number }}"
+            URL="${{ github.event.pull_request.html_url }}"
+          else
+            EVENT_TYPE="pr"
+            TITLE="${{ github.event.pull_request.title }}"
+            USER="${{ github.event.pull_request.user.login }}"
+            NUMBER="${{ github.event.pull_request.number }}"
+            URL="${{ github.event.pull_request.html_url }}"
+          fi
+        else
+          # Push 事件
+          EVENT_TYPE="push"
+          COMMIT_MSG="$(echo '${{ github.event.head_commit.message }}' | head -n1)"
+
+          # 檢查是否為 feat commit
+          if [[ "${COMMIT_MSG}" =~ ^feat.* ]]; then
+            EVENT_TYPE="feat"
+            TITLE="${COMMIT_MSG}"
+          else
+            TITLE="${COMMIT_MSG}"
+          fi
+
+          USER="${{ github.event.pusher.name }}"
+          NUMBER="${{ github.sha }}"
+          URL="${{ github.event.head_commit.url }}"
+        fi
+
+        echo "EVENT_TYPE=${EVENT_TYPE}" >> $GITHUB_OUTPUT
+        echo "TITLE=${TITLE}" >> $GITHUB_OUTPUT
+        echo "USER=${USER}" >> $GITHUB_OUTPUT
+        echo "NUMBER=${NUMBER}" >> $GITHUB_OUTPUT
+        echo "URL=${URL}" >> $GITHUB_OUTPUT
+
     - name: 觸發 ErDashboard 自動備註
       uses: peter-evans/repository-dispatch@v2
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         repository: mingxianliu/ErDashboard
-        event-type: pr-note
+        event-type: dev-note
         client-payload: |
           {
             "project_name": "${{ steps.project.outputs.PROJECT_NAME }}",
-            "github_user": "${{ github.event.pull_request.user.login }}",
-            "pr_title": "${{ github.event.pull_request.title }}",
-            "pr_number": "${{ github.event.pull_request.number }}",
+            "github_user": "${{ steps.event_info.outputs.USER }}",
+            "event_type": "${{ steps.event_info.outputs.EVENT_TYPE }}",
+            "title": "${{ steps.event_info.outputs.TITLE }}",
+            "number": "${{ steps.event_info.outputs.NUMBER }}",
             "repo_name": "${{ github.event.repository.name }}",
-            "pr_url": "${{ github.event.pull_request.html_url }}"
+            "url": "${{ steps.event_info.outputs.URL }}"
           }
 
     - name: 完成通知
       run: |
         echo "🚀 已觸發 ErDashboard 自動備註："
         echo "   專案: ${{ steps.project.outputs.PROJECT_NAME }}"
-        echo "   開發者: ${{ github.event.pull_request.user.login }}"
-        echo "   PR: #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}"
+        echo "   開發者: ${{ steps.event_info.outputs.USER }}"
+        echo "   類型: ${{ steps.event_info.outputs.EVENT_TYPE }}"
+        echo "   內容: ${{ steps.event_info.outputs.TITLE }}"
         echo "✅ ErDashboard 將自動建立角色備註！"
