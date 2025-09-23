@@ -92,6 +92,57 @@ try {
     console.log('⚠️ 無法載入專案配置，將使用預設成員指定');
 }
 
+// 輪流分配成員
+function getNextMemberInRoundRobin(projectName, projectData) {
+    if (!projectData || !projectData.assignments || !projectData.assignments[projectName]) {
+        return null;
+    }
+
+    const project = projectData.assignments[projectName];
+    const members = project.members || {};
+    const projectMembers = Object.values(members);
+
+    if (projectMembers.length === 0) {
+        return null;
+    }
+
+    // 讀取分配歷史
+    const fs = require('fs');
+    const historyPath = 'config/assignment-history.json';
+    let history = {};
+
+    try {
+        if (fs.existsSync(historyPath)) {
+            const historyContent = fs.readFileSync(historyPath, 'utf8');
+            history = JSON.parse(historyContent);
+        }
+    } catch (error) {
+        console.log('⚠️ 無法讀取分配歷史，從頭開始');
+    }
+
+    // 初始化專案歷史
+    if (!history[projectName]) {
+        history[projectName] = { lastAssignedIndex: -1 };
+    }
+
+    // 計算下一個成員索引
+    const lastIndex = history[projectName].lastAssignedIndex;
+    const nextIndex = (lastIndex + 1) % projectMembers.length;
+    const nextMember = projectMembers[nextIndex].memberName;
+
+    // 更新歷史
+    history[projectName].lastAssignedIndex = nextIndex;
+
+    try {
+        fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+    } catch (error) {
+        console.log('⚠️ 無法寫入分配歷史');
+    }
+
+    console.log(`🔄 輪流分配：${projectName} 專案第 ${nextIndex + 1}/${projectMembers.length} 個成員 ${nextMember}`);
+    return nextMember;
+}
+
 // 驗證成員是否在專案中
 function validateMemberInProject(memberName, projectName, projectData, isDefaultMapping = false) {
     if (!projectData || !projectData.assignments || !projectData.assignments[projectName]) {
@@ -101,8 +152,13 @@ function validateMemberInProject(memberName, projectName, projectData, isDefault
     const project = projectData.assignments[projectName];
     const members = project.members || {};
 
-    // 如果是預設映射（GitHub用戶名映射），不做處理，讓後面的邏輯決定
-    // 預設映射的成員可能不在專案中，所以繼續檢查
+    // 如果是預設映射且沒有明確指定成員，使用輪流分配
+    if (isDefaultMapping) {
+        const roundRobinMember = getNextMemberInRoundRobin(projectName, projectData);
+        if (roundRobinMember) {
+            return roundRobinMember;
+        }
+    }
 
     // 檢查成員是否在專案中
     for (const [memberId, memberInfo] of Object.entries(members)) {
