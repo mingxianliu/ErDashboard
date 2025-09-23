@@ -18,19 +18,44 @@ class DevLogManager {
      */
     async loadDevLogs() {
         try {
-            if (window.teamDataManager && window.teamDataManager.isLoaded) {
-                const data = await window.teamDataManager.loadFile(this.filename);
-                if (data) {
-                    this.devLogs = data;
-                    console.log('✅ 研發記錄載入成功', this.devLogs);
-                } else {
-                    console.log('ℹ️ 尚無研發記錄，使用預設結構');
+            // 先嘗試從本地快取載入
+            const cachedData = localStorage.getItem('cachedDevLogs');
+            if (cachedData) {
+                try {
+                    this.devLogs = JSON.parse(cachedData);
+                    console.log('✅ 從本地快取載入研發記錄', this.devLogs);
+                } catch (e) {
+                    console.warn('⚠️ 本地快取解析失敗，使用預設結構');
                     this.devLogs = { global: [], projects: {} };
                 }
             } else {
-                console.log('⚠️ TeamDataManager 未載入，使用預設結構');
                 this.devLogs = { global: [], projects: {} };
             }
+
+            // 嘗試從 Google Drive 載入
+            if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+                try {
+                    console.log('🔄 嘗試從 Google Drive 載入研發記錄...');
+                    const driveData = await window.googleDriveAPI.loadFile(this.filename);
+                    if (driveData) {
+                        // 處理包裝格式的資料
+                        const actualData = driveData.data || driveData;
+                        if (actualData && (actualData.global || actualData.projects)) {
+                            this.devLogs = actualData;
+                            // 更新本地快取
+                            localStorage.setItem('cachedDevLogs', JSON.stringify(this.devLogs));
+                            console.log('✅ 從 Google Drive 載入研發記錄成功', this.devLogs);
+                        }
+                    }
+                } catch (driveError) {
+                    console.warn('⚠️ Google Drive 載入失敗，使用本地資料:', driveError.message);
+                }
+            }
+
+            // 確保結構正確
+            if (!this.devLogs.global) this.devLogs.global = [];
+            if (!this.devLogs.projects) this.devLogs.projects = {};
+
             this.isLoaded = true;
             return this.devLogs;
         } catch (error) {
@@ -50,13 +75,24 @@ class DevLogManager {
                 await this.loadDevLogs();
             }
 
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveFile(this.filename, this.devLogs);
-                console.log('✅ 研發記錄儲存成功');
-                return true;
+            // 儲存到本地快取
+            localStorage.setItem('cachedDevLogs', JSON.stringify(this.devLogs));
+            console.log('✅ 研發記錄已儲存到本地');
+
+            // 嘗試儲存到 Google Drive
+            if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+                try {
+                    console.log('🔄 儲存研發記錄到 Google Drive...');
+                    await window.googleDriveAPI.saveFile(this.filename, this.devLogs);
+                    console.log('✅ 研發記錄已同步到 Google Drive');
+                    return true;
+                } catch (driveError) {
+                    console.warn('⚠️ Google Drive 儲存失敗，但本地已儲存:', driveError.message);
+                    return true; // 本地儲存成功就算成功
+                }
             } else {
-                console.error('❌ TeamDataManager 未載入，無法儲存');
-                return false;
+                console.log('⚠️ Google Drive 未登入，僅儲存到本地');
+                return true;
             }
         } catch (error) {
             console.error('❌ 儲存研發記錄失敗:', error);
