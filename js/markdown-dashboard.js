@@ -501,6 +501,9 @@ class MarkdownProjectDashboard {
         if (lastUpdateElement) {
             const now = new Date();
             lastUpdateElement.textContent = `最後更新：${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW', {hour: '2-digit', minute: '2-digit'})}`;
+            console.log('[DEBUG] 更新時間已設定:', lastUpdateElement.textContent);
+        } else {
+            console.error('[ERROR] 找不到 lastUpdate 元素');
         }
     }
 
