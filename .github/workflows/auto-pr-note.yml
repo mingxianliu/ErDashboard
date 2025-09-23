@@ -63,5 +63,8 @@ jobs:
           exit 0
         fi
 
+        # 添加所有變更到暫存區
+        git add .
+        git commit -m "自動備註: ${{ steps.event_info.outputs.PROJECT_NAME }} - ${{ steps.event_info.outputs.TITLE }}"
         git push
         echo "✅ PR 備註已自動提交！"

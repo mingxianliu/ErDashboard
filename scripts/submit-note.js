@@ -152,19 +152,24 @@ try {
     console.log(`   提交者: ${submitter}`);
     console.log(`   時間: ${noteData.timestamp}`);
 
-    // 自動提交到 GitHub
-    console.log(`\n🚀 自動提交到 GitHub...`);
-    try {
-        execSync(`git add ${filepath}`, { stdio: 'inherit' });
-        execSync(`git commit -m "note: ${projectName}/${memberName} - ${noteContent.substring(0, 50)}${noteContent.length > 50 ? '...' : ''}"`, { stdio: 'inherit' });
-        execSync(`git push`, { stdio: 'inherit' });
-        console.log(`✅ 已成功推送到 GitHub`);
-        console.log(`\n💡 管理員登入系統時會自動同步此角色備註`);
-    } catch (error) {
-        console.log(`\n⚠️  請手動提交到 GitHub:`);
-        console.log(`   git add ${filepath}`);
-        console.log(`   git commit -m "note: ${projectName}/${memberName} - ${noteContent.substring(0, 50)}${noteContent.length > 50 ? '...' : ''}"`);
-        console.log(`   git push`);
+    // 檢查是否在 GitHub Actions 環境中
+    if (process.env.GITHUB_ACTIONS) {
+        console.log(`\n🤖 GitHub Actions 模式：跳過自動提交，由 Actions 處理`);
+    } else {
+        // 自動提交到 GitHub
+        console.log(`\n🚀 自動提交到 GitHub...`);
+        try {
+            execSync(`git add ${filepath}`, { stdio: 'inherit' });
+            execSync(`git commit -m "note: ${projectName}/${memberName} - ${noteContent.substring(0, 50)}${noteContent.length > 50 ? '...' : ''}"`, { stdio: 'inherit' });
+            execSync(`git push`, { stdio: 'inherit' });
+            console.log(`✅ 已成功推送到 GitHub`);
+            console.log(`\n💡 管理員登入系統時會自動同步此角色備註`);
+        } catch (error) {
+            console.log(`\n⚠️  請手動提交到 GitHub:`);
+            console.log(`   git add ${filepath}`);
+            console.log(`   git commit -m "note: ${projectName}/${memberName} - ${noteContent.substring(0, 50)}${noteContent.length > 50 ? '...' : ''}"`);
+            console.log(`   git push`);
+        }
     }
 
 } catch (error) {
