@@ -31,6 +31,9 @@
                 <button class="btn btn-warning btn-sm me-2" id="syncRoleNotesBtn" style="display: none;" title="手動同步角色備註">
                     <i class="fas fa-comment-dots"></i> 同步備註
                 </button>
+                <button class="btn btn-danger btn-sm me-2" id="fixRolesBtn" style="display: none;" title="修復角色資料">
+                    <i class="fas fa-tools"></i> 修復角色
+                </button>
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
@@ -139,8 +142,8 @@
         };
         document.head.appendChild(configScript);
     </script>
-    <script src="js/google-drive-api.js?v=20250923a"></script>
-    <script src="js/team-data-manager.js?v=20250918u" onerror="console.error('❌ 載入 team-data-manager.js 失敗')"></script>
+    <script src="js/google-drive-api.js?v=20250923b-1758618068"></script>
+    <script src="js/team-data-manager.js?v=20250923d-1758618068" onerror="console.error('❌ 載入 team-data-manager.js 失敗')"></script>
     <script src="js/team-statistics.js?v=20250918u" onerror="console.error('❌ 載入 team-statistics.js 失敗')"></script>
     <script src="js/team-ui-components.js?v=20250920k" onerror="console.error('❌ 載入 team-ui-components.js 失敗')"></script>
     <script src="js/team-management-main.js?v=20250920e" onerror="console.error('❌ 載入 team-management-main.js 失敗')"></script>
@@ -278,7 +281,10 @@
                 const projectsList = document.getElementById('projectsList');
 
                 if (assignments && Object.keys(assignments).length > 0) {
-                    const projects = Object.values(assignments);
+                    const projects = Object.keys(assignments).map(projectId => ({
+                        ...assignments[projectId],
+                        projectId: projectId
+                    }));
 
                     // 顯示統計
                     if (summaryCards) {
@@ -583,7 +589,15 @@
                 }
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
+
+                if (!project) {
+                    throw new Error(`找不到專案: ${projectId}`);
+                }
+
                 const member = project.members[memberId];
+                if (!member) {
+                    throw new Error(`找不到成員: ${memberId}`);
+                }
 
                 // 移除硬編碼的成員名稱映射，改用實際資料
                 const allMembers = teamDataManager.getAllMembers() || {};
@@ -1347,8 +1361,10 @@
                 // 生成可用成員選項
                 let memberOptions = '';
                 Object.values(members).forEach(member => {
-                    const selected = member.id === memberId ? 'selected' : '';
-                    memberOptions += `<option value="${member.id}" ${selected}>${member.name} (${member.id})</option>`;
+                    const memberIdToCheck = member.memberId || member.id;
+                    const memberName = member.memberName || member.name;
+                    const selected = memberIdToCheck === memberId ? 'selected' : '';
+                    memberOptions += `<option value="${memberIdToCheck}" ${selected}>${memberName} (${memberIdToCheck})</option>`;
                 });
 
                 // 顯示成員變更模態框
@@ -1502,10 +1518,14 @@
                 }
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
-                const member = project.members[memberId];
 
-                if (!project || !member) {
-                    throw new Error('找不到指定的專案或成員');
+                if (!project) {
+                    throw new Error(`找不到專案: ${projectId}`);
+                }
+
+                const member = project.members[memberId];
+                if (!member) {
+                    throw new Error(`找不到成員: ${memberId}`);
                 }
 
                 // 從實際成員資料取得名稱
@@ -2719,6 +2739,7 @@
             document.getElementById('pullBtn').style.display = 'inline-block';
             // 同步備註功能已整合到重新載入按鈕
             // document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
+            document.getElementById('fixRolesBtn').style.display = 'inline-block';
 
             // 直接載入資料
             setTimeout(loadDataDirectly, 500);
@@ -2737,6 +2758,7 @@
                 document.getElementById('devLogBtn').style.display = 'none';
                 document.getElementById('syncBtn').style.display = 'none';
                 document.getElementById('pullBtn').style.display = 'none';
+                document.getElementById('fixRolesBtn').style.display = 'none';
 
                 // 顯示認證介面
                 document.getElementById('keyAuthentication').style.display = 'block';
@@ -2818,6 +2840,63 @@
             } finally {
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = originalText;
+            }
+        });
+
+        // 修復角色按鈕
+        document.getElementById('fixRolesBtn').addEventListener('click', async function() {
+            const fixBtn = this;
+            const originalText = fixBtn.innerHTML;
+
+            try {
+                fixBtn.disabled = true;
+                fixBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 修復中...';
+
+                // 確保 Google Drive API 已登入
+                if (!window.googleDriveAPI || !window.googleDriveAPI.isAuthenticated) {
+                    alert('❌ 需要先登入 Google Drive');
+                    return;
+                }
+
+                // 載入正確的本地資料
+                console.log('📁 載入本地正確資料...');
+                const response = await fetch('config/project-assignments.json');
+                const correctData = await response.json();
+
+                console.log('✅ 本地資料載入成功');
+                console.log('📊 專案數量: ' + Object.keys(correctData.assignments).length);
+
+                // 檢查角色
+                for (const [projectId, project] of Object.entries(correctData.assignments)) {
+                    if (project.members) {
+                        for (const [memberId, member] of Object.entries(project.members)) {
+                            console.log(`${projectId} -> ${member.memberName}: ${member.role}`);
+                        }
+                    }
+                }
+
+                // 強制上傳到 Google Drive
+                console.log('☁️ 上傳到 Google Drive...');
+                await window.googleDriveAPI.saveFile('project-assignments.json', correctData, 'assignments');
+
+                // 清除瀏覽器快取
+                localStorage.removeItem('teamAssignments');
+                localStorage.removeItem('cachedTeamMembers');
+                localStorage.removeItem('teamMemberChanges');
+                localStorage.removeItem('teamGroupChanges');
+
+                console.log('🧹 已清除快取');
+                alert('✅ 修復完成！頁面將重新載入');
+
+                // 重新載入頁面
+                setTimeout(() => window.location.reload(), 1000);
+
+            } catch (error) {
+                console.error('❌ 修復失敗:', error);
+                alert('❌ 修復失敗: ' + error.message);
+            } finally {
+                fixBtn.disabled = false;
+                fixBtn.innerHTML = originalText;
             }
         });
 

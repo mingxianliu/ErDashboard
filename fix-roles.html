@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>修復角色資料</title>
+</head>
+<body>
+    <h1>修復角色資料</h1>
+    <button onclick="fixRoles()">修復角色</button>
+    <div id="status"></div>
+
+    <script src="js/google-drive-api.js?v=20250923a"></script>
+
+    <script>
+        function log(message) {
+            document.getElementById('status').innerHTML += message + '<br>';
+            console.log(message);
+        }
+
+        async function fixRoles() {
+            try {
+                log('🔧 開始修復角色資料...');
+
+                // 初始化 Google Drive API
+                if (!window.googleDriveAPI) {
+                    log('❌ Google Drive API 未載入');
+                    return;
+                }
+
+                if (!window.googleDriveAPI.isAuthenticated) {
+                    log('🔐 需要登入 Google Drive...');
+                    const loginSuccess = await window.googleDriveAPI.signIn();
+                    if (!loginSuccess) {
+                        log('❌ 登入失敗');
+                        return;
+                    }
+                }
+
+                // 載入正確的本地資料
+                log('📁 載入本地正確資料...');
+                const response = await fetch('config/project-assignments.json');
+                const correctData = await response.json();
+
+                log('✅ 本地資料載入成功');
+                log('📊 專案數量: ' + Object.keys(correctData.assignments).length);
+
+                // 檢查角色
+                for (const [projectId, project] of Object.entries(correctData.assignments)) {
+                    if (project.members) {
+                        for (const [memberId, member] of Object.entries(project.members)) {
+                            log(`${projectId} -> ${member.memberName}: ${member.role}`);
+                        }
+                    }
+                }
+
+                // 強制上傳到 Google Drive
+                log('☁️ 上傳到 Google Drive...');
+                await window.googleDriveAPI.saveFile('project-assignments.json', correctData, 'assignments');
+
+                log('✅ 修復完成！請重新載入主頁面');
+
+                // 清除瀏覽器快取
+                localStorage.removeItem('teamAssignments');
+                localStorage.removeItem('cachedTeamMembers');
+                localStorage.removeItem('teamMemberChanges');
+                localStorage.removeItem('teamGroupChanges');
+
+                log('🧹 已清除快取');
+
+            } catch (error) {
+                log('❌ 修復失敗: ' + error.message);
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

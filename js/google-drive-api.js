@@ -299,7 +299,12 @@ class GoogleDriveAPI {
 
             if (!response.ok) {
                 if (response.status === 404) {
+                    console.log('📁 role-notes 資料夾不存在');
                     return []; // 資料夾不存在，返回空陣列
+                }
+                if (response.status === 403) {
+                    console.log('⚠️ GitHub API 403 - 權限不足或速率限制，跳過角色備註同步');
+                    return []; // 權限問題，跳過同步
                 }
                 throw new Error(`GitHub API 錯誤: ${response.status}`);
             }
@@ -329,7 +334,12 @@ class GoogleDriveAPI {
                 new Date(b.data.timestamp) - new Date(a.data.timestamp)
             );
         } catch (error) {
-            console.warn('GitHub 角色備註檢查失敗:', error.message);
+            // 對於 403 錯誤（權限問題），靜默處理
+            if (error.message.includes('403')) {
+                console.log('ℹ️ GitHub API 權限限制，跳過角色備註檢查');
+            } else {
+                console.warn('GitHub 角色備註檢查失敗:', error.message);
+            }
             return [];
         }
     }

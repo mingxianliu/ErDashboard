@@ -168,13 +168,35 @@ class TeamDataManager {
                 }
             }
 
-            // 如果 Google Drive 沒有資料，必須有雲端資料
+            // 如果 Google Drive 沒有資料，嘗試從本地載入
             if (!data) {
-                throw new Error('無法載入專案分配資料，請確認已登入 Google Drive 且資料存在');
+                console.log('⚠️ Google Drive 無資料，嘗試從本地 config 載入...');
+                try {
+                    const response = await fetch('config/project-assignments.json');
+                    if (response.ok) {
+                        data = await response.json();
+                        console.log('✅ 從本地 config 載入專案分配資料成功');
+                    } else {
+                        throw new Error('本地檔案載入失敗');
+                    }
+                } catch (localError) {
+                    console.error('❌ 本地檔案載入也失敗:', localError);
+                    throw new Error('無法從 Google Drive 或本地載入專案分配資料');
+                }
             }
 
             this.assignments = (data && data.assignments) ? data.assignments : {};
             this.constraints = (data && data.constraints) ? data.constraints : {};
+
+            // 確保每個專案都有 memberHistory 陣列
+            if (this.assignments) {
+                Object.keys(this.assignments).forEach(projectId => {
+                    if (!this.assignments[projectId].memberHistory) {
+                        this.assignments[projectId].memberHistory = [];
+                        console.log(`✅ 為專案 ${projectId} 初始化 memberHistory 陣列`);
+                    }
+                });
+            }
         } catch (error) {
             console.error('載入專案分配資料失敗:', error);
             this.assignments = {};
@@ -215,6 +237,15 @@ class TeamDataManager {
                         console.warn(`⚠️ assignments 未初始化，無法載入 ${projectId} 的本地變更`);
                     }
                 });
+
+                // 再次確保每個專案都有 memberHistory 陣列（包括本地變更的專案）
+                Object.keys(this.assignments).forEach(projectId => {
+                    if (!this.assignments[projectId].memberHistory) {
+                        this.assignments[projectId].memberHistory = [];
+                        console.log(`✅ 為專案 ${projectId} 補充 memberHistory 陣列`);
+                    }
+                });
+
                 console.log('✅ 已載入本地專案分配變更');
             }
         } catch (error) {
