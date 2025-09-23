@@ -216,11 +216,50 @@
                 }
 
                 // 從 TeamDataManager 獲取資料
-                const assignments = teamDataManager.getAllAssignments() || {};
+                let assignments = teamDataManager.getAllAssignments();
+
+                // 如果 teamDataManager 沒有資料，嘗試從 localStorage 或 config 載入
+                if (!assignments || Object.keys(assignments).length === 0) {
+                    console.log('🔄 teamDataManager 資料為空，嘗試其他資料來源...');
+
+                    // 嘗試從 localStorage
+                    const localData = localStorage.getItem('project-assignments');
+                    if (localData) {
+                        try {
+                            const parsed = JSON.parse(localData);
+                            if (parsed.assignments) {
+                                assignments = parsed.assignments;
+                                console.log('✅ 從 localStorage 載入資料');
+                            }
+                        } catch (e) {
+                            console.error('❌ localStorage 資料解析失敗:', e);
+                        }
+                    }
+
+                    // 如果還是沒有資料，嘗試從 config 載入
+                    if (!assignments || Object.keys(assignments).length === 0) {
+                        try {
+                            const response = await fetch('config/project-assignments.json');
+                            if (response.ok) {
+                                const data = await response.json();
+                                if (data.assignments) {
+                                    assignments = data.assignments;
+                                    console.log('✅ 從 config 檔案載入資料');
+                                }
+                            }
+                        } catch (e) {
+                            console.error('❌ config 檔案載入失敗:', e);
+                        }
+                    }
+                }
+
+                // 如果沒有資料，使用空物件
+                if (!assignments) {
+                    assignments = {};
+                }
 
                 // 確保所有成員都有必要的欄位
-                if (assignments && typeof assignments === 'object') {
-                    Object.values(assignments).forEach(project => {
+                Object.values(assignments).forEach(project => {
                     if (project.members) {
                         Object.values(project.members).forEach(member => {
                             if (member.isExecuting === undefined || member.isExecuting === null) {
@@ -231,8 +270,7 @@
                             }
                         });
                     }
-                    });
-                }
+                });
 
                 // 前端渲染資料已準備完成
 
