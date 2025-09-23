@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [pr-note, dev-note]
 
+permissions:
+  contents: write
+
 jobs:
   submit-pr-note:
     runs-on: ubuntu-latest
