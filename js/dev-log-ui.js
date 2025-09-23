@@ -221,19 +221,65 @@ class DevLogUI {
         try {
             this.projects = {};
 
-            // 預設專案
+            // 完整的預設專案列表
             const defaultProjects = {
                 'ErCore': { projectName: 'ErCore', projectId: 'ErCore' },
-                'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
                 'ErNexus': { projectName: 'ErNexus', projectId: 'ErNexus' },
-                'ErShield': { projectName: 'ErShield', projectId: 'ErShield' }
+                'ErShield': { projectName: 'ErShield', projectId: 'ErShield' },
+                'ErTidy': { projectName: 'ErTidy', projectId: 'ErTidy' },
+                'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
+                'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
+                'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
+                '智慧監視系統': { projectName: '智慧監視系統', projectId: '智慧監視系統' }
             };
 
+            // 嘗試載入實際專案資料
+            let loaded = false;
+
+            // 方法1: 從 teamDataManager 讀取
             if (window.teamDataManager && window.teamDataManager.assignments && Object.keys(window.teamDataManager.assignments).length > 0) {
-                console.log('📊 使用實際專案資料');
+                console.log('📊 使用 teamDataManager 專案資料');
                 this.projects = window.teamDataManager.assignments;
-            } else {
-                console.log('⚠️ 使用預設專案列表');
+                loaded = true;
+            }
+
+            // 方法2: 從 localStorage 讀取
+            if (!loaded) {
+                try {
+                    const localData = localStorage.getItem('project-assignments');
+                    if (localData) {
+                        const parsed = JSON.parse(localData);
+                        if (parsed.assignments && Object.keys(parsed.assignments).length > 0) {
+                            console.log('📊 使用 localStorage 專案資料');
+                            this.projects = parsed.assignments;
+                            loaded = true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ localStorage 資料解析失敗:', error);
+                }
+            }
+
+            // 方法3: 從 config 檔案讀取
+            if (!loaded) {
+                try {
+                    const response = await fetch('config/project-assignments.json');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.assignments && Object.keys(data.assignments).length > 0) {
+                            console.log('📊 使用 config 檔案專案資料');
+                            this.projects = data.assignments;
+                            loaded = true;
+                        }
+                    }
+                } catch (error) {
+                    console.warn('⚠️ config 檔案讀取失敗:', error);
+                }
+            }
+
+            // 如果都失敗，使用完整的預設專案列表
+            if (!loaded) {
+                console.log('⚠️ 使用完整預設專案列表');
                 this.projects = defaultProjects;
             }
 
@@ -260,10 +306,16 @@ class DevLogUI {
 
         } catch (error) {
             console.error('❌ 載入專案列表失敗:', error);
-            // 使用預設專案
+            // 使用完整的預設專案
             const defaultProjects = {
                 'ErCore': { projectName: 'ErCore', projectId: 'ErCore' },
-                'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' }
+                'ErNexus': { projectName: 'ErNexus', projectId: 'ErNexus' },
+                'ErShield': { projectName: 'ErShield', projectId: 'ErShield' },
+                'ErTidy': { projectName: 'ErTidy', projectId: 'ErTidy' },
+                'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
+                'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
+                'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
+                '智慧監視系統': { projectName: '智慧監視系統', projectId: '智慧監視系統' }
             };
             this.projects = defaultProjects;
             this.updateProjectSelector();
