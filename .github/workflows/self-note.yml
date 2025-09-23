@@ -1,0 +1,60 @@
+name: ErDashboard 自動備註
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  self-note:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: 建立開發備註
+      run: |
+        # 提取 commit 資訊
+        COMMIT_MESSAGE="${{ github.event.head_commit.message }}"
+        COMMIT_AUTHOR="${{ github.event.head_commit.author.username }}"
+        COMMIT_SHA="${{ github.sha }}"
+
+        # 提取第一行作為標題
+        TITLE=$(echo "$COMMIT_MESSAGE" | head -n1)
+
+        echo "📝 建立 ErDashboard 自動備註"
+        echo "作者: $COMMIT_AUTHOR"
+        echo "標題: $TITLE"
+        echo "SHA: $COMMIT_SHA"
+
+        # 使用開發備註腳本
+        node scripts/submit-dev-note.js "ErDashboard" "$COMMIT_AUTHOR" "push" "$TITLE" "$COMMIT_SHA"
+
+    - name: 推送備註
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+
+        # 檢查是否有變更
+        if git diff --quiet && git diff --staged --quiet; then
+          echo "沒有變更需要推送"
+          exit 0
+        fi
+
+        # 添加所有 role-notes 變更
+        git add role-notes/
+
+        if git diff --staged --quiet; then
+          echo "沒有變更需要推送"
+          exit 0
+        fi
+
+        git commit -m "auto-note: ${{ github.event.head_commit.author.username }} - ${TITLE:0:50}"
+        git push
+
+        echo "✅ 自動備註已提交！"
