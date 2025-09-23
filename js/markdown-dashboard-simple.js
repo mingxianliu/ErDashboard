@@ -440,17 +440,17 @@ ${templateContent}`,
                 <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
                     <div class="card h-100 project-card" data-project-id="${project.id}">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0 d-flex align-items-center">
+                            <h6 class="mb-0">
                                 <i class="fas fa-project-diagram me-2"></i>
                                 ${project.name.split(' - ')[0]}
-                                <span class="project-test-pending ms-2"
-                                      id="project-test-${project.id}"
-                                      style="display: none; color: #ff6b35;"
-                                      title="有新推送，待測試">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                </span>
                             </h6>
                             <div class="d-flex align-items-center">
+                                <span class="badge bg-warning text-dark me-2"
+                                      id="project-test-${project.id}"
+                                      style="display: none;"
+                                      title="有新推送，待測試">
+                                    <i class="fas fa-exclamation-triangle"></i> 待測試
+                                </span>
                                 <span class="badge bg-primary me-2 progress-badge"
                                       onclick="editProgress('${project.id}', ${project.progress})"
                                       style="cursor: pointer;" title="點擊編輯進度">
@@ -647,7 +647,7 @@ ${templateContent}`,
     }
 
     hideAllProjectTestPending() {
-        const indicators = document.querySelectorAll('.project-test-pending');
+        const indicators = document.querySelectorAll('[id^="project-test-"]');
         indicators.forEach(indicator => {
             indicator.style.display = 'none';
         });
@@ -1163,9 +1163,3 @@ window.clearProjectNotes = async function(projectId) {
 
 // 確保類別可以被全域存取
 window.MarkdownProjectDashboard = MarkdownProjectDashboard;
-
-// 安全的全域初始化 - 只在需要時創建
-if (typeof window.markdownDashboard === 'undefined') {
-    console.log('🔄 創建全域 markdownDashboard 實例');
-    window.markdownDashboard = new MarkdownProjectDashboard();
-}
