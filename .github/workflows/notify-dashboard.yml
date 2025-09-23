@@ -1,0 +1,38 @@
+name: 通知 Dashboard 測試狀態
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    types: [closed]
+    branches: [ main, develop ]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 通知推送事件
+        if: github.event_name == 'push'
+        run: |
+          # 開啟 webhook 頁面通知
+          curl -G "https://mingxianliu.github.io/ErDashboard/github-webhook.html" \
+            --data-urlencode "action=push" \
+            --data-urlencode "project=${{ github.event.repository.name }}" \
+            --data-urlencode "branch=${{ github.ref_name }}" \
+            --data-urlencode "author=${{ github.actor }}" \
+            --max-time 5 || true
+          
+          echo "✓ 已通知 Dashboard: ${{ github.event.repository.name }} 有新推送"
+
+      - name: 通知合併事件
+        if: github.event_name == 'pull_request' && github.event.pull_request.merged == true
+        run: |
+          # 開啟 webhook 頁面通知
+          curl -G "https://mingxianliu.github.io/ErDashboard/github-webhook.html" \
+            --data-urlencode "action=merge" \
+            --data-urlencode "project=${{ github.event.repository.name }}" \
+            --data-urlencode "branch=${{ github.base_ref }}" \
+            --data-urlencode "author=${{ github.actor }}" \
+            --max-time 5 || true
+          
+          echo "✓ 已通知 Dashboard: 清除所有待測試標記"

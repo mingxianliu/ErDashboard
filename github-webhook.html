@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Webhook 接收器</title>
+</head>
+<body>
+    <h3>GitHub Webhook 接收器</h3>
+    <div id="status">等待接收...</div>
+    
+    <script>
+    // 從 URL 參數接收 GitHub Actions 的通知
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    const project = params.get('project');
+    const branch = params.get('branch');
+    const author = params.get('author');
+    
+    if (action && project) {
+        const statusDiv = document.getElementById('status');
+        
+        // 儲存事件到 localStorage
+        const event = {
+            action: action,
+            project: project,
+            branch: branch || 'unknown',
+            author: author || 'unknown',
+            timestamp: new Date().toISOString()
+        };
+        
+        // 儲存待測試狀態
+        if (action === 'push') {
+            let pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
+            pendingTests[project] = {
+                status: true,
+                branch: branch,
+                author: author,
+                timestamp: event.timestamp
+            };
+            localStorage.setItem('pending-tests', JSON.stringify(pendingTests));
+            
+            statusDiv.innerHTML = `✓ 已標記 ${project} 待測試<br>分支: ${branch}<br>作者: ${author}`;
+            
+        } else if (action === 'merge') {
+            // 清除所有待測試標記
+            localStorage.setItem('pending-tests', '{}');
+            
+            statusDiv.innerHTML = `✓ 已清除所有待測試標記<br>合併到: ${branch}`;
+        }
+        
+        // 通知主頁面
+        localStorage.setItem('github-webhook-event', JSON.stringify(event));
+        
+        // 3秒後自動關閉
+        setTimeout(() => {
+            window.close();
+        }, 3000);
+    }
+    </script>
+</body>
+</html>

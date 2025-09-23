@@ -2905,6 +2905,40 @@
             console.log('清除所有專案測試標記');
         };
 
+        // 監聽 GitHub webhook 事件（跨頁面通訊）
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'github-webhook-event' && e.newValue) {
+                try {
+                    const event = JSON.parse(e.newValue);
+                    console.log('收到 GitHub webhook 事件:', event);
+
+                    if (event.action === 'push' && event.project) {
+                        console.log(`標記 ${event.project} 為待測試`);
+                        window.showProjectTestPending(event.project);
+                    } else if (event.action === 'merge') {
+                        console.log('清除所有待測試標記');
+                        window.hideAllProjectTestPending();
+                    }
+
+                    // 清除事件，避免重複處理
+                    localStorage.removeItem('github-webhook-event');
+                } catch (error) {
+                    console.error('處理 webhook 事件失敗:', error);
+                }
+            }
+        });
+
+        // 頁面載入時檢查待測試狀態
+        setTimeout(() => {
+            const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
+            Object.keys(pendingTests).forEach(projectId => {
+                if (pendingTests[projectId] && pendingTests[projectId].status) {
+                    console.log(`恢復待測試標記: ${projectId}`);
+                    window.showProjectTestPending(projectId);
+                }
+            });
+        }, 2000);
+
         // 測試推送按鈕
         document.getElementById('testPushBtn').addEventListener('click', function() {
             const choice = prompt('選擇測試功能:\n1 - 模擬推送事件\n2 - 模擬合併事件', '1');
