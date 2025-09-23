@@ -2734,7 +2734,11 @@
         // 顯示主 Dashboard
         function showMainDashboard() {
             // 隱藏登入介面
-            document.getElementById('keyAuthentication').style.display = 'none';
+            const keyAuth = document.getElementById('keyAuthentication');
+            if (keyAuth) {
+                keyAuth.style.display = 'none';
+                console.log('✅ 登入介面已隱藏');
+            }
 
             // 顯示工具列按鈕
             document.getElementById('logoutBtn').style.display = 'inline-block';
@@ -2751,12 +2755,20 @@
 
             if (summaryCards) {
                 summaryCards.style.display = 'flex';
-                console.log('✅ summaryCards 已顯示');
+                summaryCards.style.visibility = 'visible';
+                summaryCards.style.opacity = '1';
+                console.log('✅ summaryCards 已顯示，當前 display:', summaryCards.style.display);
+            } else {
+                console.error('❌ 找不到 summaryCards 元素');
             }
 
             if (projectsList) {
                 projectsList.style.display = 'block';
-                console.log('✅ projectsList 已顯示');
+                projectsList.style.visibility = 'visible';
+                projectsList.style.opacity = '1';
+                console.log('✅ projectsList 已顯示，當前 display:', projectsList.style.display);
+            } else {
+                console.error('❌ 找不到 projectsList 元素');
             }
 
             console.log('✅ 主 Dashboard 介面已顯示');
