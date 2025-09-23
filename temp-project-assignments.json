@@ -80,18 +80,6 @@
       },
       "lastUpdated": "2025-09-20",
       "status": "active"
-    },
-    "SmartMonitor": {
-      "projectId": "SmartMonitor",
-      "projectName": "智慧監視系統",
-      "progress": 0,
-      "members": {
-        "C-CA": { "memberId": "C-CA", "role": "frontend", "assignedDate": "2025-08-01", "tasks": ["前端開發", "監視介面"] },
-        "B-CA": { "memberId": "B-CA", "role": "backend", "assignedDate": "2025-08-01", "tasks": ["後端開發", "AI分析"] },
-        "A-CS": { "memberId": "A-CS", "role": "testing", "assignedDate": "2025-08-01", "tasks": ["驗測部署", "系統測試"] }
-      },
-      "lastUpdated": "2025-09-20",
-      "status": "active"
     }
   },
   "constraints": {

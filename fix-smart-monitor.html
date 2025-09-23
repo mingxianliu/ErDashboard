@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>智慧監視系統修復工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; border: none; border-radius: 4px; }
+        .btn-danger { background: #dc3545; color: white; border: none; border-radius: 4px; }
+        #result { margin-top: 20px; padding: 15px; border-radius: 5px; max-height: 500px; overflow-y: auto; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔧 智慧監視系統修復工具</h1>
+    <p>修復「智慧監視系統」空項目（團隊成員(0)）問題</p>
+
+    <div>
+        <button id="checkBtn" class="btn-primary">🔍 檢查數據狀態</button>
+        <button id="fixLocalBtn" class="btn-danger">🗑️ 刪除本地數據</button>
+        <button id="fixGlobalBtn" class="btn-danger">🗑️ 刪除全局數據</button>
+        <button id="reloadBtn" class="btn-primary">🔄 重新載入 Dashboard</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+    const resultDiv = document.getElementById('result');
+
+    // 檢查數據狀態
+    document.getElementById('checkBtn').addEventListener('click', function() {
+        try {
+            let info = '<h3>📊 數據檢查結果</h3>';
+
+            // 1. 檢查所有 localStorage 鍵
+            const allKeys = Object.keys(localStorage);
+            info += `<h4>localStorage 鍵 (${allKeys.length}個):</h4>`;
+            info += `<p>${allKeys.join(', ')}</p>`;
+
+            // 2. 檢查可能包含項目數據的鍵
+            const dataKeys = allKeys.filter(key =>
+                key.includes('team') || key.includes('project') || key.includes('assignment')
+            );
+
+            dataKeys.forEach(key => {
+                const data = localStorage.getItem(key);
+                if (data) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        info += `<h4>${key}:</h4>`;
+
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            const keys = Object.keys(parsed);
+                            info += `<p>包含 ${keys.length} 個鍵: ${keys.join(', ')}</p>`;
+
+                            // 檢查是否包含智慧監視系統
+                            if (keys.includes('智慧監視系統')) {
+                                info += `<p style="color: red;">⚠️ 找到「智慧監視系統」！</p>`;
+                            }
+
+                            // 顯示前500字符
+                            info += `<pre>${JSON.stringify(parsed, null, 2).substring(0, 500)}...</pre>`;
+                        }
+                    } catch (e) {
+                        info += `<p>${key}: 解析失敗 - ${e.message}</p>`;
+                    }
+                }
+            });
+
+            // 3. 檢查全局 TeamDataManager
+            if (window.opener && window.opener.globalTeamDataManager) {
+                try {
+                    const teamManager = window.opener.globalTeamDataManager;
+                    const projects = teamManager.getAllProjects();
+                    info += `<h4>globalTeamDataManager:</h4>`;
+                    info += `<p>找到 ${Object.keys(projects).length} 個項目</p>`;
+
+                    Object.keys(projects).forEach(project => {
+                        const memberCount = Object.keys(projects[project].members || {}).length;
+                        const highlight = project === '智慧監視系統' ? ' style="color: red; font-weight: bold;"' : '';
+                        info += `<p${highlight}>• ${project}: ${memberCount} 個成員</p>`;
+                    });
+                } catch (e) {
+                    info += `<p>globalTeamDataManager 訪問失敗: ${e.message}</p>`;
+                }
+            } else {
+                info += `<p>globalTeamDataManager 不可用</p>`;
+            }
+
+            resultDiv.innerHTML = info;
+            resultDiv.className = 'info';
+
+        } catch (error) {
+            resultDiv.innerHTML = `❌ 檢查失敗: ${error.message}`;
+            resultDiv.className = 'error';
+        }
+    });
+
+    // 修復本地數據
+    document.getElementById('fixLocalBtn').addEventListener('click', function() {
+        try {
+            let fixed = false;
+            let results = [];
+
+            // 檢查並修復所有可能的 localStorage 數據
+            Object.keys(localStorage).forEach(key => {
+                try {
+                    const data = localStorage.getItem(key);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+
+                        if (typeof parsed === 'object' && parsed !== null) {
+                            // 檢查並刪除智慧監視系統
+                            if (parsed['智慧監視系統']) {
+                                delete parsed['智慧監視系統'];
+                                localStorage.setItem(key, JSON.stringify(parsed));
+                                results.push(`✅ 已從 ${key} 中刪除智慧監視系統`);
+                                fixed = true;
+                            }
+
+                            // 檢查 assignments 結構
+                            if (parsed.assignments && parsed.assignments['智慧監視系統']) {
+                                delete parsed.assignments['智慧監視系統'];
+                                localStorage.setItem(key, JSON.stringify(parsed));
+                                results.push(`✅ 已從 ${key}.assignments 中刪除智慧監視系統`);
+                                fixed = true;
+                            }
+                        }
+                    }
+                } catch (e) {
+                    // 忽略無法解析的數據
+                }
+            });
+
+            if (fixed) {
+                resultDiv.innerHTML = `<h3>🎉 本地修復完成</h3>${results.join('<br>')}`;
+                resultDiv.className = 'success';
+            } else {
+                resultDiv.innerHTML = `⚠️ 在本地數據中未找到智慧監視系統項目`;
+                resultDiv.className = 'warning';
+            }
+
+        } catch (error) {
+            resultDiv.innerHTML = `❌ 本地修復失敗: ${error.message}`;
+            resultDiv.className = 'error';
+        }
+    });
+
+    // 修復全局數據
+    document.getElementById('fixGlobalBtn').addEventListener('click', async function() {
+        try {
+            if (window.opener && window.opener.globalTeamDataManager) {
+                const teamManager = window.opener.globalTeamDataManager;
+
+                // 獲取所有項目
+                const projects = teamManager.getAllProjects();
+
+                if (projects['智慧監視系統']) {
+                    // 刪除智慧監視系統項目
+                    delete projects['智慧監視系統'];
+
+                    // 如果有 removeProject 方法
+                    if (typeof teamManager.removeProject === 'function') {
+                        await teamManager.removeProject('智慧監視系統');
+                    }
+
+                    // 保存變更
+                    if (typeof teamManager.saveLocalChanges === 'function') {
+                        await teamManager.saveLocalChanges();
+                    }
+
+                    resultDiv.innerHTML = `✅ 已從 globalTeamDataManager 中刪除智慧監視系統！`;
+                    resultDiv.className = 'success';
+
+                    // 3秒後重新載入主頁面
+                    setTimeout(() => {
+                        if (window.opener) {
+                            window.opener.location.reload();
+                        }
+                    }, 3000);
+
+                } else {
+                    resultDiv.innerHTML = `⚠️ 在 globalTeamDataManager 中未找到智慧監視系統項目`;
+                    resultDiv.className = 'warning';
+                }
+
+            } else {
+                resultDiv.innerHTML = `❌ 無法訪問 globalTeamDataManager，請確保從 Dashboard 主頁面開啟此工具`;
+                resultDiv.className = 'error';
+            }
+
+        } catch (error) {
+            resultDiv.innerHTML = `❌ 全局修復失敗: ${error.message}`;
+            resultDiv.className = 'error';
+        }
+    });
+
+    // 重新載入 Dashboard
+    document.getElementById('reloadBtn').addEventListener('click', function() {
+        if (window.opener) {
+            window.opener.location.reload();
+            window.close();
+        } else {
+            window.location.href = 'https://mingxianliu.github.io/ErDashboard/';
+        }
+    });
+
+    // 自動檢查狀態
+    setTimeout(() => {
+        document.getElementById('checkBtn').click();
+    }, 500);
+    </script>
+</body>
+</html>
