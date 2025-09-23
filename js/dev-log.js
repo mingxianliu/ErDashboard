@@ -236,5 +236,8 @@ class DevLogManager {
     }
 }
 
-// 全域實例
-window.devLogManager = new DevLogManager();
+// 導出類別
+window.DevLogManager = DevLogManager;
+
+// 全域實例留空，由主頁面初始化
+// window.devLogManager = new DevLogManager();

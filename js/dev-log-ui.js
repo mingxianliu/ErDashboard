@@ -16,8 +16,17 @@ class DevLogUI {
      */
     async init() {
         try {
+            // 檢查認證狀態
+            if (!this.checkAuth()) {
+                this.showAuthRequired();
+                return;
+            }
+
             // 等待認證
             await this.waitForAuth();
+
+            // 顯示主要界面
+            this.showMainInterface();
 
             // 初始化模態框
             this.deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -31,17 +40,60 @@ class DevLogUI {
             console.log('✅ 研發記錄簿 UI 初始化完成');
         } catch (error) {
             console.error('❌ 研發記錄簿 UI 初始化失敗:', error);
+            this.showAuthRequired();
         }
+    }
+
+    /**
+     * 檢查認證狀態
+     */
+    checkAuth() {
+        // 檢查是否有必要的認證信息
+        const hasAuth = sessionStorage.getItem('KEY_AUTHENTICATED');
+        const hasGDriveConfig = sessionStorage.getItem('GOOGLE_DRIVE_CONFIG');
+
+        return hasAuth && hasGDriveConfig;
+    }
+
+    /**
+     * 顯示需要認證
+     */
+    showAuthRequired() {
+        document.getElementById('keyAuthentication').style.display = 'block';
+        document.getElementById('devLogTabs').style.display = 'none';
+        document.getElementById('devLogTabContent').style.display = 'none';
+    }
+
+    /**
+     * 顯示主要界面
+     */
+    showMainInterface() {
+        document.getElementById('keyAuthentication').style.display = 'none';
+        document.getElementById('devLogTabs').style.display = 'block';
+        document.getElementById('devLogTabContent').style.display = 'block';
     }
 
     /**
      * 等待認證完成
      */
     async waitForAuth() {
-        return new Promise((resolve) => {
+        // 初始化 TeamDataManager
+        if (!window.teamDataManager) {
+            window.teamDataManager = new TeamDataManager();
+            await window.teamDataManager.init();
+        }
+
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 50; // 5秒超時
+
             const checkAuth = () => {
+                attempts++;
+
                 if (window.teamDataManager && window.teamDataManager.isLoaded) {
                     resolve();
+                } else if (attempts >= maxAttempts) {
+                    reject(new Error('認證超時'));
                 } else {
                     setTimeout(checkAuth, 100);
                 }
@@ -568,10 +620,8 @@ class DevLogUI {
     }
 }
 
-// 全域實例
-window.devLogUI = new DevLogUI();
+// 導出類別
+window.DevLogUI = DevLogUI;
 
-// 頁面載入完成後初始化
-document.addEventListener('DOMContentLoaded', () => {
-    window.devLogUI.init();
-});
+// 全域實例留空，由主頁面初始化
+// window.devLogUI = new DevLogUI();

@@ -40,8 +40,25 @@
 
     <div class="container-fluid mt-4">
 
+        <!-- 私鑰驗證 -->
+        <div id="keyAuthentication" class="text-center py-5" style="display: none;">
+            <div class="card mx-auto" style="max-width: 600px;">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>需要登入
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">請先登入 ErDashboard 系統才能使用研發記錄簿。</p>
+                    <button class="btn btn-primary" onclick="window.location.href='index.html'">
+                        <i class="fas fa-home me-2"></i>回到首頁登入
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- 功能分頁 -->
-        <ul class="nav nav-tabs" id="devLogTabs" role="tablist">
+        <ul class="nav nav-tabs" id="devLogTabs" role="tablist" style="display: none;">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="global-tab" data-bs-toggle="tab" data-bs-target="#global" type="button" role="tab">
                     <i class="fas fa-globe me-2"></i>總體記錄
@@ -54,7 +71,7 @@
             </li>
         </ul>
 
-        <div class="tab-content" id="devLogTabContent">
+        <div class="tab-content" id="devLogTabContent" style="display: none;">
 
             <!-- 總體記錄 -->
             <div class="tab-pane fade show active" id="global" role="tabpanel">
@@ -217,6 +234,73 @@
     <script src="js/google-drive-api.js?v=20250922f"></script>
     <script src="js/team-data-manager.js?v=20250918u"></script>
     <script src="js/dev-log.js?v=20250923a"></script>
-    <script src="js/dev-log-ui.js?v=20250923a"></script>
+    <script src="js/dev-log-ui.js?v=20250923b"></script>
+    <script>
+        // 初始化研發記錄簿
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                console.log('📋 開始載入研發記錄簿...');
+
+                // 等待所有腳本載入
+                await new Promise(resolve => {
+                    if (window.DevLogUI && window.DevLogManager && window.TeamDataManager) {
+                        resolve();
+                    } else {
+                        let checkCount = 0;
+                        const checkInterval = setInterval(() => {
+                            checkCount++;
+                            if (window.DevLogUI && window.DevLogManager && window.TeamDataManager) {
+                                clearInterval(checkInterval);
+                                resolve();
+                            } else if (checkCount > 50) { // 5秒超時
+                                clearInterval(checkInterval);
+                                console.error('❌ 腳本載入超時');
+                                resolve();
+                            }
+                        }, 100);
+                    }
+                });
+
+                // 初始化 devLogManager
+                if (!window.devLogManager) {
+                    window.devLogManager = new DevLogManager();
+                }
+
+                // 初始化 devLogUI
+                if (!window.devLogUI) {
+                    window.devLogUI = new DevLogUI();
+                }
+
+                // 啟動 UI
+                await window.devLogUI.init();
+
+            } catch (error) {
+                console.error('❌ 研發記錄簿初始化失敗:', error);
+
+                // 顯示錯誤訊息
+                document.getElementById('keyAuthentication').style.display = 'block';
+                document.getElementById('keyAuthentication').innerHTML = `
+                    <div class="card mx-auto" style="max-width: 600px;">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>載入失敗
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-muted">研發記錄簿載入失敗，請重新整理頁面或回到首頁。</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="window.location.reload()">
+                                    <i class="fas fa-sync-alt me-2"></i>重新整理
+                                </button>
+                                <button class="btn btn-secondary" onclick="window.location.href='index.html'">
+                                    <i class="fas fa-home me-2"></i>回到首頁
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        });
+    </script>
 </body>
 </html>
