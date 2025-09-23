@@ -2883,9 +2883,18 @@
         // 專案測試標記控制函數
         window.showProjectTestPending = function(projectId) {
             const indicator = document.getElementById(`project-test-${projectId}`);
+            console.log(`🔍 尝试显示 ${projectId} 的测试徽章`);
+            console.log(`🔍 查找元素 ID: project-test-${projectId}`);
+            console.log(`🔍 找到元素:`, indicator);
+
             if (indicator) {
                 indicator.style.display = 'inline-block';
-                console.log(`專案 ${projectId} 標記為待測試`);
+                console.log(`✅ 專案 ${projectId} 標記為待測試`);
+            } else {
+                console.log(`❌ 找不到 ${projectId} 的测试徽章元素`);
+                // 列出所有可用的测试徽章元素
+                const allTestBadges = document.querySelectorAll('[id^="project-test-"]');
+                console.log('🔍 所有可用的测试徽章元素:', Array.from(allTestBadges).map(el => el.id));
             }
         };
 
@@ -2929,7 +2938,7 @@
         });
 
         // 頁面載入時檢查待測試狀態
-        setTimeout(() => {
+        const checkAndRestorePendingTests = () => {
             const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
             Object.keys(pendingTests).forEach(projectId => {
                 if (pendingTests[projectId] && pendingTests[projectId].status) {
@@ -2937,7 +2946,13 @@
                     window.showProjectTestPending(projectId);
                 }
             });
-        }, 2000);
+        };
+
+        // 初始檢查
+        setTimeout(checkAndRestorePendingTests, 2000);
+
+        // 定期檢查 (每 30 秒)
+        setInterval(checkAndRestorePendingTests, 30000);
 
         // 測試推送按鈕
         document.getElementById('testPushBtn').addEventListener('click', function() {

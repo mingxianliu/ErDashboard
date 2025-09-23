@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GitHub Webhook 接收器</title>
+    <!-- 自動重新整理每 3 秒檢查一次 -->
+    <meta http-equiv="refresh" content="3">
 </head>
 <body>
     <h3>GitHub Webhook 接收器</h3>
     <div id="status">等待接收...</div>
-    
+
     <script>
     console.log('=== Webhook 頁面載入 ===');
     console.log('URL:', window.location.href);
+    console.log('載入時間:', new Date().toISOString());
 
     // 從 URL 參數接收 GitHub Actions 的通知
     const params = new URLSearchParams(window.location.search);
@@ -48,14 +51,14 @@
             localStorage.setItem('pending-tests', JSON.stringify(pendingTests));
             console.log('已儲存 pending-tests:', pendingTests);
 
-            statusDiv.innerHTML = `✓ 已標記 ${project} 待測試<br>分支: ${branch}<br>作者: ${author}<br>時間: ${event.timestamp}`;
+            statusDiv.innerHTML = `✓ 已標記 ${project} 待測試<br>分支: ${branch}<br>作者: ${author}<br>時間: ${event.timestamp}<br><br>頁面將自動重整檢查更新...`;
 
         } else if (action === 'merge') {
             // 清除所有待測試標記
             localStorage.setItem('pending-tests', '{}');
             console.log('已清除所有待測試標記');
 
-            statusDiv.innerHTML = `✓ 已清除所有待測試標記<br>合併到: ${branch}`;
+            statusDiv.innerHTML = `✓ 已清除所有待測試標記<br>合併到: ${branch}<br><br>頁面將自動重整檢查更新...`;
         }
 
         // 通知主頁面
@@ -68,14 +71,21 @@
             newValue: JSON.stringify(event)
         }));
 
-        // 5秒後自動關閉（延長時間方便檢查）
-        setTimeout(() => {
-            console.log('準備關閉視窗');
-            window.close();
-        }, 5000);
+        // 設定一個標記表示已處理過
+        localStorage.setItem('webhook-processed-' + Date.now(), JSON.stringify(event));
+
+        console.log('✓ 事件處理完成，等待頁面重整...');
     } else {
         console.log('缺少必要參數');
-        document.getElementById('status').innerHTML = '缺少必要參數: action=' + action + ', project=' + project;
+        document.getElementById('status').innerHTML = '缺少必要參數: action=' + action + ', project=' + project + '<br><br>頁面將繼續監聽...';
+    }
+
+    // 檢查是否有未處理的待測試項目
+    const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
+    console.log('目前的待測試項目:', pendingTests);
+
+    if (Object.keys(pendingTests).length > 0) {
+        document.getElementById('status').innerHTML += '<br><br>📊 目前待測試專案: ' + Object.keys(pendingTests).join(', ');
     }
     </script>
 </body>
