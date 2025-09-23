@@ -440,9 +440,15 @@ ${templateContent}`,
                 <div class="col-xl-3 col-lg-6 col-md-6 col-sm-12 mb-4">
                     <div class="card h-100 project-card" data-project-id="${project.id}">
                         <div class="card-header d-flex justify-content-between align-items-center">
-                            <h6 class="mb-0">
+                            <h6 class="mb-0 d-flex align-items-center">
                                 <i class="fas fa-project-diagram me-2"></i>
                                 ${project.name.split(' - ')[0]}
+                                <span class="project-test-pending ms-2"
+                                      id="project-test-${project.id}"
+                                      style="display: none; color: #ff6b35;"
+                                      title="有新推送，待測試">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </span>
                             </h6>
                             <div class="d-flex align-items-center">
                                 <span class="badge bg-primary me-2 progress-badge"
@@ -487,12 +493,6 @@ ${templateContent}`,
                                                       style="background-color: ${member.roleColor}; font-size: 0.75em; padding: 4px 8px; border-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
                                                     <span class="me-1" style="font-size: 0.9em;">${member.roleIcon}</span>
                                                     ${member.roleName}
-                                                </span>
-                                                <span class="test-pending-indicator ms-2"
-                                                      id="test-indicator-${project.id}-${member.id}"
-                                                      style="display: none; color: #ff6b35; font-size: 0.8em; cursor: pointer;"
-                                                      title="有新推送，等待測試">
-                                                    <i class="fas fa-exclamation-triangle"></i>
                                                 </span>
                                             </div>
                                         </div>
@@ -629,41 +629,40 @@ ${templateContent}`,
         }
     }
 
-    // 測試提示標記管理
-    showTestPendingIndicator(projectId, memberId) {
-        const indicator = document.getElementById(`test-indicator-${projectId}-${memberId}`);
+    // 專案推送狀態管理
+    showProjectTestPending(projectId) {
+        const indicator = document.getElementById(`project-test-${projectId}`);
         if (indicator) {
             indicator.style.display = 'inline';
-            console.log(`顯示測試提示: ${projectId}-${memberId}`);
+            console.log(`專案 ${projectId} 待測試`);
         }
     }
 
-    hideTestPendingIndicator(projectId, memberId) {
-        const indicator = document.getElementById(`test-indicator-${projectId}-${memberId}`);
+    hideProjectTestPending(projectId) {
+        const indicator = document.getElementById(`project-test-${projectId}`);
         if (indicator) {
             indicator.style.display = 'none';
-            console.log(`隱藏測試提示: ${projectId}-${memberId}`);
+            console.log(`專案 ${projectId} 測試完成`);
         }
     }
 
-    hideAllTestPendingIndicators() {
-        const indicators = document.querySelectorAll('.test-pending-indicator');
+    hideAllProjectTestPending() {
+        const indicators = document.querySelectorAll('.project-test-pending');
         indicators.forEach(indicator => {
             indicator.style.display = 'none';
         });
-        console.log('清除所有測試提示標記');
+        console.log('清除所有專案測試標記');
     }
 
-    // 模擬推送事件 (測試用)
-    simulatePushEvent(projectId, memberId) {
-        console.log(`模擬推送事件: ${projectId}-${memberId}`);
-        this.showTestPendingIndicator(projectId, memberId);
+    // 模擬事件 (測試用)
+    simulatePushEvent(projectId) {
+        console.log(`模擬推送到 ${projectId}`);
+        this.showProjectTestPending(projectId);
     }
 
-    // 模擬合併事件 (測試用)
     simulateMergeEvent() {
-        console.log('模擬合併到 main/develop，清除所有測試提示');
-        this.hideAllTestPendingIndicators();
+        console.log('模擬合併到 main/develop');
+        this.hideAllProjectTestPending();
     }
 }
 

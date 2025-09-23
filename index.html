@@ -2879,27 +2879,20 @@
                 return;
             }
 
-            const choice = prompt('選擇測試功能:\n1 - 模擬推送事件\n2 - 模擬合併事件\n3 - 清除所有標記', '1');
+            const choice = prompt('選擇測試功能:\n1 - 模擬推送事件\n2 - 模擬合併事件', '1');
 
             if (choice === '1') {
-                // 模擬推送事件 - 隨機選擇一個成員
+                // 模擬推送事件 - 隨機選擇一個專案
                 const projects = ['ErCore', 'ErNexus', 'ErShield', 'ErTidy', 'SyncBC-Monorepo', 'iFMS-Frontend'];
-                const members = ['A-CC', 'C-CA', 'B-CS', 'C-CC', 'A-CS'];
                 const randomProject = projects[Math.floor(Math.random() * projects.length)];
-                const randomMember = members[Math.floor(Math.random() * members.length)];
 
-                window.markdownDashboard.simulatePushEvent(randomProject, randomMember);
-                alert(`模擬推送: ${randomProject}-${randomMember}`);
+                window.markdownDashboard.simulatePushEvent(randomProject);
+                alert(`模擬推送到 ${randomProject}`);
 
             } else if (choice === '2') {
                 // 模擬合併事件
                 window.markdownDashboard.simulateMergeEvent();
                 alert('模擬合併到 main/develop，所有測試標記已清除');
-
-            } else if (choice === '3') {
-                // 清除所有標記
-                window.markdownDashboard.hideAllTestPendingIndicators();
-                alert('所有測試標記已清除');
             }
         });
 
