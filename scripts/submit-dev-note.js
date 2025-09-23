@@ -101,15 +101,8 @@ function validateMemberInProject(memberName, projectName, projectData, isDefault
     const project = projectData.assignments[projectName];
     const members = project.members || {};
 
-    // 如果是預設映射（GitHub用戶名映射），直接使用專案第一個成員
-    if (isDefaultMapping) {
-        const projectMembers = Object.values(members);
-        if (projectMembers.length > 0) {
-            const assignedMember = projectMembers[0].memberName;
-            console.log(`🎯 預設映射：直接分配給 ${projectName} 專案第一個成員 ${assignedMember}`);
-            return assignedMember;
-        }
-    }
+    // 如果是預設映射（GitHub用戶名映射），不做處理，讓後面的邏輯決定
+    // 預設映射的成員可能不在專案中，所以繼續檢查
 
     // 檢查成員是否在專案中
     for (const [memberId, memberInfo] of Object.entries(members)) {
