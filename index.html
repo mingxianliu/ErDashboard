@@ -3208,13 +3208,20 @@
             // Pull 前先備份本地的 memberHistory
             const backupMemberHistory = {};
             try {
-                const currentAssignments = window.teamDataManager.getAllAssignments();
-                Object.keys(currentAssignments).forEach(projectId => {
-                    if (currentAssignments[projectId].memberHistory) {
-                        backupMemberHistory[projectId] = [...currentAssignments[projectId].memberHistory];
+                if (window.teamDataManager && typeof window.teamDataManager.getAllAssignments === 'function') {
+                    const currentAssignments = window.teamDataManager.getAllAssignments();
+                    if (currentAssignments) {
+                        Object.keys(currentAssignments).forEach(projectId => {
+                            if (currentAssignments[projectId].memberHistory) {
+                                backupMemberHistory[projectId] = [...currentAssignments[projectId].memberHistory];
+                            }
+                        });
                     }
-                });
+                } else {
+                    console.log('⚠️ TeamDataManager 尚未初始化，跳過 memberHistory 備份');
+                }
             } catch (e) {
+                console.warn('⚠️ 備份 memberHistory 失敗:', e.message);
             }
 
             const filesToPull = [
@@ -3340,12 +3347,19 @@
 
             // 顯示拉取後的 memberHistory 數量
             try {
-                const assignments = window.teamDataManager.getAllAssignments();
-                Object.keys(assignments).forEach(projectId => {
-                    const memberHistoryCount = assignments[projectId].memberHistory?.length || 0;
-                });
+                if (window.teamDataManager && typeof window.teamDataManager.getAllAssignments === 'function') {
+                    const assignments = window.teamDataManager.getAllAssignments();
+                    if (assignments) {
+                        Object.keys(assignments).forEach(projectId => {
+                            const memberHistoryCount = assignments[projectId].memberHistory?.length || 0;
+                            console.log(`📊 ${projectId} memberHistory 數量: ${memberHistoryCount}`);
+                        });
+                    }
+                } else {
+                    console.log('⚠️ TeamDataManager 尚未初始化，無法顯示 memberHistory 數量');
+                }
             } catch (e) {
-                console.warn('⚠️ 無法顯示 memberHistory 數量:', e);
+                console.warn('⚠️ 無法顯示 memberHistory 數量:', e.message);
             }
 
             // 只有成功拉取到檔案時才重新載入頁面
