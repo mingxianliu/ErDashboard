@@ -491,16 +491,14 @@
                                                     <i class="fas fa-chart-line"></i>
                                                 </button>
                                             </div>
-                                            <div class="mb-2">
-                                                <span class="badge bg-warning text-dark"
-                                                      id="project-test-${project.projectId}"
-                                                      style="display: none;"
-                                                      title="有新推送，待測試">
-                                                    <i class="fas fa-exclamation-triangle"></i> 待測試
-                                                </span>
-                                            </div>
                                             <div class="progress mb-3" style="height: 25px;">
                                                 <div class="progress-bar d-flex align-items-center justify-content-center" style="width: ${project.progress}%">
+                                                    <span class="badge bg-warning text-dark me-2"
+                                                          id="project-test-${project.projectId}"
+                                                          style="display: none; font-size: 0.75rem;"
+                                                          title="有新推送，待測試">
+                                                        <i class="fas fa-exclamation-triangle"></i> 待測試
+                                                    </span>
                                                     <span class="fw-bold">${project.progress}%</span>
                                                 </div>
                                             </div>
