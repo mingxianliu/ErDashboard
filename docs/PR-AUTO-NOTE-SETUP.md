@@ -36,15 +36,33 @@ esac
 
 ### 3. 設定開發者對應
 
-在 ErDashboard 的 `scripts/submit-pr-note.js` 中新增 GitHub 用戶名對應：
+在 ErDashboard 的 `scripts/submit-dev-note.js` 中設定預設對應：
 
 ```javascript
-const userMapping = {
+const defaultUserMapping = {
     'mingxianliu': 'KlauderA',
-    '你的github用戶名': '你的成員名稱',
-    // 加入更多對應
+    '你的github用戶名': '你的預設成員名稱',
+    // 加入更多預設對應
 };
 ```
+
+### 4. 🎯 成員身份指定（進階功能）
+
+如果多人共用同一 GitHub 帳號，可在 commit 或 PR 中指定成員身份：
+
+#### Commit Message 中指定：
+```bash
+git commit -m "feat: 新增登入功能 [member:KlauderA]"
+git commit -m "fix: 修復bug [member:KlauderB]"
+```
+
+#### PR Title 中指定：
+```
+[KlauderA] 實作用戶權限管理
+[KlauderB] 修復登入頁面樣式問題
+```
+
+詳細規範請參考：[docs/MEMBER-IDENTITY-SPEC.md](./MEMBER-IDENTITY-SPEC.md)
 
 ## 🚀 運作流程
 
@@ -64,22 +82,29 @@ graph LR
 
 ### PR 活動
 ```
-📋 • PR #123: 修復登入bug
+📋 KlauderA • PR #123: 修復登入bug
 ```
 
 ### PR 合併
 ```
-🎉 • Merged: 修復登入bug
+🎉 KlauderA • Merged: 修復登入bug
 ```
 
 ### Feat 提交
 ```
-✨ • 新功能: 用戶管理功能
+✨ KlauderA • 新功能: 用戶管理功能
 ```
 
 ### 一般推送
 ```
-🔨 • 更新文檔
+🔨 KlauderA • 更新文檔
+```
+
+### 指定成員身份
+```bash
+# 這個 commit 會為 KlauderB 建立備註
+git commit -m "feat: 新增 API [member:KlauderB]"
+→ ✨ KlauderB • 新功能: 新增 API
 ```
 
 ## 🔧 進階設定

@@ -40,6 +40,9 @@
                 <button class="btn btn-warning btn-sm me-2" id="teamManagementBtn" style="display: none;">
                     <i class="fas fa-users-cog"></i> 團隊管理
                 </button>
+                <button class="btn btn-info btn-sm me-2" id="devLogBtn" style="display: none;" title="研發記錄簿">
+                    <i class="fas fa-clipboard-list"></i> 研發記錄簿
+                </button>
                 <button class="btn btn-danger btn-sm" id="logoutBtn" style="display: none;">
                     <i class="fas fa-sign-out-alt"></i> 登出
                 </button>
@@ -141,6 +144,7 @@
     <script src="js/team-statistics.js?v=20250918u" onerror="console.error('❌ 載入 team-statistics.js 失敗')"></script>
     <script src="js/team-ui-components.js?v=20250920k" onerror="console.error('❌ 載入 team-ui-components.js 失敗')"></script>
     <script src="js/team-management-main.js?v=20250920e" onerror="console.error('❌ 載入 team-management-main.js 失敗')"></script>
+    <script src="js/dev-log.js?v=20250923a" onerror="console.error('❌ 載入 dev-log.js 失敗')"></script>
     <script src="js/markdown-dashboard-simple.js?v=20250920b"></script>
     <script>
         // 使用 TeamDataManager 載入資料
@@ -2670,6 +2674,7 @@
         function showMainDashboard() {
             document.getElementById('logoutBtn').style.display = 'inline-block';
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
+            document.getElementById('devLogBtn').style.display = 'inline-block';
             document.getElementById('syncBtn').style.display = 'inline-block';
             document.getElementById('pullBtn').style.display = 'inline-block';
             // 同步備註功能已整合到重新載入按鈕
@@ -2689,6 +2694,7 @@
                 // 隱藏登出按鈕和團隊管理按鈕
                 this.style.display = 'none';
                 document.getElementById('teamManagementBtn').style.display = 'none';
+                document.getElementById('devLogBtn').style.display = 'none';
                 document.getElementById('syncBtn').style.display = 'none';
                 document.getElementById('pullBtn').style.display = 'none';
 
@@ -3494,6 +3500,12 @@
                 console.error('錯誤堆疊:', error.stack);
                 alert('開啟團隊管理失敗: ' + error.message);
             }
+        });
+
+        // 研發記錄簿功能
+        document.getElementById('devLogBtn').addEventListener('click', function() {
+            console.log('📋 研發記錄簿按鈕被點擊');
+            window.location.href = 'dev-log.html';
         });
 
         // 啟動 Dashboard

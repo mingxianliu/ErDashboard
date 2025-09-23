@@ -33,38 +33,88 @@ if (args.length < 5) {
 
 const [projectName, githubUser, eventType, title, numberOrHash] = args;
 
-// GitHub 用戶名到成員名稱的對應
-const userMapping = {
+// 解析成員身份指定
+function extractMemberFromTitle(title) {
+    // 解析 commit message 中的 [member:成員名稱]
+    const memberRegex = /\[member:([^\]]+)\]/;
+    const match = title.match(memberRegex);
+    return match ? match[1] : null;
+}
+
+function extractMemberFromPRTitle(title) {
+    // 解析 PR title 中的 [成員名稱]
+    const prRegex = /^\[([^\]]+)\]/;
+    const match = title.match(prRegex);
+    return match ? match[1] : null;
+}
+
+// GitHub 用戶名到預設成員名稱的對應
+const defaultUserMapping = {
     'mingxianliu': 'KlauderA',
-    // 在這裡加入更多對應關係
-    // 'github用戶名': '成員名稱',
+    // 在這裡加入更多預設對應關係
+    // 'github用戶名': '預設成員名稱',
 };
 
-// 取得成員名稱
-const memberName = userMapping[githubUser] || githubUser;
+// 取得成員名稱（依優先級）
+function getMemberName(title, githubUser, eventType) {
+    // 1. 優先檢查標題中的成員指定
+    let specifiedMember = null;
+
+    if (eventType === 'pr' || eventType === 'merge') {
+        // PR 相關事件：先檢查 PR title 格式 [成員名稱]
+        specifiedMember = extractMemberFromPRTitle(title);
+    }
+
+    if (!specifiedMember) {
+        // 檢查 commit message 格式 [member:成員名稱]
+        specifiedMember = extractMemberFromTitle(title);
+    }
+
+    // 2. 有指定成員就用指定的
+    if (specifiedMember) {
+        console.log(`🎯 檢測到指定成員: ${specifiedMember}`);
+        return specifiedMember;
+    }
+
+    // 3. 沒有指定就用預設對應
+    const defaultMember = defaultUserMapping[githubUser] || githubUser;
+    console.log(`📍 使用預設對應: ${githubUser} → ${defaultMember}`);
+    return defaultMember;
+}
+
+const memberName = getMemberName(title, githubUser, eventType);
+
+// 清理標題中的成員標記
+function cleanTitle(title) {
+    return title
+        .replace(/\[member:[^\]]+\]/g, '')  // 移除 [member:xxx]
+        .replace(/^\[[^\]]+\]\s*/, '')       // 移除開頭的 [xxx]
+        .trim();
+}
 
 // 根據事件類型建立不同的備註內容
 let noteContent;
 let emoji;
+const cleanedTitle = cleanTitle(title);
 
 switch (eventType) {
     case 'pr':
         emoji = '📋';
-        noteContent = `• PR #${numberOrHash}: ${title}`;
+        noteContent = `• PR #${numberOrHash}: ${cleanedTitle}`;
         break;
     case 'merge':
         emoji = '🎉';
-        noteContent = `• ${title}`;
+        noteContent = `• ${cleanedTitle}`;
         break;
     case 'feat':
         emoji = '✨';
         // 移除 feat: 前綴避免重複
-        const cleanTitle = title.replace(/^feat:\s*/, '');
-        noteContent = `• 新功能: ${cleanTitle}`;
+        const featTitle = cleanedTitle.replace(/^feat:\s*/, '');
+        noteContent = `• 新功能: ${featTitle}`;
         break;
     case 'push':
         emoji = '🔨';
-        noteContent = `• ${title}`;
+        noteContent = `• ${cleanedTitle}`;
         break;
     default:
         emoji = '💻';
@@ -75,6 +125,8 @@ console.log(`${emoji} 自動提交開發備註:`);
 console.log(`   專案: ${projectName}`);
 console.log(`   開發者: ${githubUser} → ${memberName}`);
 console.log(`   類型: ${eventType}`);
+console.log(`   原始標題: ${title}`);
+console.log(`   清理後標題: ${cleanedTitle}`);
 console.log(`   備註: ${noteContent}`);
 
 try {
