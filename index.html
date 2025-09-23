@@ -37,6 +37,9 @@
                 <button class="btn btn-outline-light btn-sm me-2" id="refreshBtn">
                     <i class="fas fa-sync-alt"></i> 重新載入
                 </button>
+                <button class="btn btn-info btn-sm me-2" id="testPushBtn" style="display: none;" title="測試推送提示功能">
+                    <i class="fas fa-vial"></i> 測試推送
+                </button>
                 <button class="btn btn-secondary btn-sm me-2" id="gdriveSetupBtn" title="設定 Google Drive 整合">
                     <i class="fab fa-google-drive"></i> 雲端設定
                 </button>
@@ -2743,6 +2746,7 @@
             document.getElementById('pullBtn').style.display = 'inline-block';
             document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
             document.getElementById('fixRolesBtn').style.display = 'inline-block';
+            document.getElementById('testPushBtn').style.display = 'inline-block';
 
             // 顯示主要內容區域
             const summaryCards = document.getElementById('summaryCards');
@@ -2865,6 +2869,37 @@
             } finally {
                 refreshBtn.disabled = false;
                 refreshBtn.innerHTML = originalText;
+            }
+        });
+
+        // 測試推送按鈕
+        document.getElementById('testPushBtn').addEventListener('click', function() {
+            if (!window.markdownDashboard) {
+                alert('Dashboard 尚未初始化');
+                return;
+            }
+
+            const choice = prompt('選擇測試功能:\n1 - 模擬推送事件\n2 - 模擬合併事件\n3 - 清除所有標記', '1');
+
+            if (choice === '1') {
+                // 模擬推送事件 - 隨機選擇一個成員
+                const projects = ['ErCore', 'ErNexus', 'ErShield', 'ErTidy', 'SyncBC-Monorepo', 'iFMS-Frontend'];
+                const members = ['A-CC', 'C-CA', 'B-CS', 'C-CC', 'A-CS'];
+                const randomProject = projects[Math.floor(Math.random() * projects.length)];
+                const randomMember = members[Math.floor(Math.random() * members.length)];
+
+                window.markdownDashboard.simulatePushEvent(randomProject, randomMember);
+                alert(`模擬推送: ${randomProject}-${randomMember}`);
+
+            } else if (choice === '2') {
+                // 模擬合併事件
+                window.markdownDashboard.simulateMergeEvent();
+                alert('模擬合併到 main/develop，所有測試標記已清除');
+
+            } else if (choice === '3') {
+                // 清除所有標記
+                window.markdownDashboard.hideAllTestPendingIndicators();
+                alert('所有測試標記已清除');
             }
         });
 

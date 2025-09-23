@@ -488,6 +488,12 @@ ${templateContent}`,
                                                     <span class="me-1" style="font-size: 0.9em;">${member.roleIcon}</span>
                                                     ${member.roleName}
                                                 </span>
+                                                <span class="test-pending-indicator ms-2"
+                                                      id="test-indicator-${project.id}-${member.id}"
+                                                      style="display: none; color: #ff6b35; font-size: 0.8em; cursor: pointer;"
+                                                      title="有新推送，等待測試">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                </span>
                                             </div>
                                         </div>
                                     `).join('')}
@@ -621,6 +627,43 @@ ${templateContent}`,
         } else {
             console.error('[ERROR] 找不到 lastUpdate 元素');
         }
+    }
+
+    // 測試提示標記管理
+    showTestPendingIndicator(projectId, memberId) {
+        const indicator = document.getElementById(`test-indicator-${projectId}-${memberId}`);
+        if (indicator) {
+            indicator.style.display = 'inline';
+            console.log(`顯示測試提示: ${projectId}-${memberId}`);
+        }
+    }
+
+    hideTestPendingIndicator(projectId, memberId) {
+        const indicator = document.getElementById(`test-indicator-${projectId}-${memberId}`);
+        if (indicator) {
+            indicator.style.display = 'none';
+            console.log(`隱藏測試提示: ${projectId}-${memberId}`);
+        }
+    }
+
+    hideAllTestPendingIndicators() {
+        const indicators = document.querySelectorAll('.test-pending-indicator');
+        indicators.forEach(indicator => {
+            indicator.style.display = 'none';
+        });
+        console.log('清除所有測試提示標記');
+    }
+
+    // 模擬推送事件 (測試用)
+    simulatePushEvent(projectId, memberId) {
+        console.log(`模擬推送事件: ${projectId}-${memberId}`);
+        this.showTestPendingIndicator(projectId, memberId);
+    }
+
+    // 模擬合併事件 (測試用)
+    simulateMergeEvent() {
+        console.log('模擬合併到 main/develop，清除所有測試提示');
+        this.hideAllTestPendingIndicators();
     }
 }
 
