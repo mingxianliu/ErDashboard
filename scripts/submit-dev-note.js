@@ -93,13 +93,23 @@ try {
 }
 
 // 驗證成員是否在專案中
-function validateMemberInProject(memberName, projectName, projectData) {
+function validateMemberInProject(memberName, projectName, projectData, isDefaultMapping = false) {
     if (!projectData || !projectData.assignments || !projectData.assignments[projectName]) {
         return memberName; // 無法驗證時保持原樣
     }
 
     const project = projectData.assignments[projectName];
     const members = project.members || {};
+
+    // 如果是預設映射（GitHub用戶名映射），直接使用專案第一個成員
+    if (isDefaultMapping) {
+        const projectMembers = Object.values(members);
+        if (projectMembers.length > 0) {
+            const assignedMember = projectMembers[0].memberName;
+            console.log(`🎯 預設映射：直接分配給 ${projectName} 專案第一個成員 ${assignedMember}`);
+            return assignedMember;
+        }
+    }
 
     // 檢查成員是否在專案中
     for (const [memberId, memberInfo] of Object.entries(members)) {
@@ -122,7 +132,9 @@ function validateMemberInProject(memberName, projectName, projectData) {
 }
 
 const initialMemberName = getMemberName(title, githubUser, eventType);
-const memberName = validateMemberInProject(initialMemberName, projectName, projectData);
+// 檢查是否為預設映射
+const isDefaultMapping = defaultUserMapping[githubUser] && !extractMemberFromTitle(title) && !(eventType === 'pr' || eventType === 'merge' ? extractMemberFromPRTitle(title) : false);
+const memberName = validateMemberInProject(initialMemberName, projectName, projectData, isDefaultMapping);
 
 // 清理標題中的成員標記
 function cleanTitle(title) {
