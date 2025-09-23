@@ -1,0 +1,60 @@
+name: 接收 PR 備註請求
+
+on:
+  repository_dispatch:
+    types: [pr-note]
+
+jobs:
+  submit-pr-note:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout ErDashboard
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    - name: 提取 PR 資訊
+      id: pr_info
+      run: |
+        echo "PROJECT_NAME=${{ github.event.client_payload.project_name }}" >> $GITHUB_OUTPUT
+        echo "GITHUB_USER=${{ github.event.client_payload.github_user }}" >> $GITHUB_OUTPUT
+        echo "PR_TITLE=${{ github.event.client_payload.pr_title }}" >> $GITHUB_OUTPUT
+        echo "PR_NUMBER=${{ github.event.client_payload.pr_number }}" >> $GITHUB_OUTPUT
+        echo "REPO_NAME=${{ github.event.client_payload.repo_name }}" >> $GITHUB_OUTPUT
+
+    - name: 建立角色備註
+      run: |
+        PROJECT_NAME="${{ steps.pr_info.outputs.PROJECT_NAME }}"
+        GITHUB_USER="${{ steps.pr_info.outputs.GITHUB_USER }}"
+        PR_TITLE="${{ steps.pr_info.outputs.PR_TITLE }}"
+        PR_NUMBER="${{ steps.pr_info.outputs.PR_NUMBER }}"
+        REPO_NAME="${{ steps.pr_info.outputs.REPO_NAME }}"
+
+        echo "🚀 自動提交 PR 備註:"
+        echo "專案: ${PROJECT_NAME}"
+        echo "倉庫: ${REPO_NAME}"
+        echo "開發者: ${GITHUB_USER}"
+        echo "PR: #${PR_NUMBER} ${PR_TITLE}"
+
+        # 使用 PR 備註腳本
+        node scripts/submit-pr-note.js "${PROJECT_NAME}" "${GITHUB_USER}" "${PR_TITLE}" "${PR_NUMBER}"
+
+    - name: 推送結果
+      run: |
+        git config user.name "PR AutoBot"
+        git config user.email "pr-autobot@erdashboard"
+
+        # 檢查是否有變更
+        if git diff --quiet && git diff --staged --quiet; then
+          echo "沒有變更需要推送"
+          exit 0
+        fi
+
+        git push
+        echo "✅ PR 備註已自動提交！"

@@ -1,0 +1,61 @@
+# 🤖 PR 自動備註到 ErDashboard
+#
+# 使用方法：
+# 1. 複製此檔案到你的專案 .github/workflows/ 資料夾
+# 2. 根據需要修改 PROJECT_NAME 的對應邏輯
+# 3. 設定 ERDASHBOARD_TOKEN secret (可選，用於認證)
+
+name: 自動提交 PR 備註到 ErDashboard
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  notify-erdashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 設定專案名稱
+      id: project
+      run: |
+        REPO_NAME="${{ github.event.repository.name }}"
+
+        # 自動對應專案名稱
+        case "${REPO_NAME}" in
+          *[Cc]ore*) PROJECT_NAME="ErCore" ;;
+          *[Nn]exus*) PROJECT_NAME="ErNexus" ;;
+          *[Ss]hield*) PROJECT_NAME="ErShield" ;;
+          *[Tt]idy*) PROJECT_NAME="ErTidy" ;;
+          *EZOOM*|*ezoom*) PROJECT_NAME="EZOOM" ;;
+          *[Ii][Ff][Mm][Ss]*) PROJECT_NAME="iFMS-Frontend" ;;
+          *[Ss]ync*) PROJECT_NAME="SyncBC-Monorepo" ;;
+          *) PROJECT_NAME="${REPO_NAME}" ;;  # 預設使用倉庫名稱
+        esac
+
+        echo "PROJECT_NAME=${PROJECT_NAME}" >> $GITHUB_OUTPUT
+        echo "✅ 檢測到專案: ${PROJECT_NAME}"
+
+    - name: 觸發 ErDashboard 自動備註
+      uses: peter-evans/repository-dispatch@v2
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        repository: mingxianliu/ErDashboard
+        event-type: pr-note
+        client-payload: |
+          {
+            "project_name": "${{ steps.project.outputs.PROJECT_NAME }}",
+            "github_user": "${{ github.event.pull_request.user.login }}",
+            "pr_title": "${{ github.event.pull_request.title }}",
+            "pr_number": "${{ github.event.pull_request.number }}",
+            "repo_name": "${{ github.event.repository.name }}",
+            "pr_url": "${{ github.event.pull_request.html_url }}"
+          }
+
+    - name: 完成通知
+      run: |
+        echo "🚀 已觸發 ErDashboard 自動備註："
+        echo "   專案: ${{ steps.project.outputs.PROJECT_NAME }}"
+        echo "   開發者: ${{ github.event.pull_request.user.login }}"
+        echo "   PR: #${{ github.event.pull_request.number }} ${{ github.event.pull_request.title }}"
+        echo "✅ ErDashboard 將自動建立角色備註！"
