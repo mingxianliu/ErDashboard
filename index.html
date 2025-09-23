@@ -2688,14 +2688,15 @@
                         document.getElementById('keyAuthentication').style.display = 'none';
                         showMainDashboard();
 
-                        // 直接載入資料
-                        loadDataDirectly();
-
-                        // 啟動新的 Markdown Dashboard
+                        // 啟動新的 Markdown Dashboard（這會自動載入資料）
                         if (typeof MarkdownProjectDashboard !== 'undefined') {
+                            console.log('🚀 登入成功，啟動 Dashboard...');
                             window.markdownDashboard = new MarkdownProjectDashboard();
                         } else {
-                            console.error('MarkdownProjectDashboard 類別未定義');
+                            // 備用載入方式
+                            console.log('🚀 登入成功，使用備用載入方式...');
+                            console.error('MarkdownProjectDashboard 類別未定義，使用備用載入');
+                            loadDataDirectly();
                         }
                     }, 1000);
                 } else {
@@ -2741,8 +2742,7 @@
             document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
             document.getElementById('fixRolesBtn').style.display = 'inline-block';
 
-            // 直接載入資料
-            setTimeout(loadDataDirectly, 500);
+            // 注意：資料載入由登入成功回調處理，這裡不重複載入
         }
         
         // 登出功能
