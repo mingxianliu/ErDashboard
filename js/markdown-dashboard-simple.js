@@ -45,9 +45,13 @@ class MarkdownProjectDashboard {
                 }
             }, 500); // 延遲 500ms 確保 DOM 準備好
 
+            // 更新最後更新時間
+            this.updateLastUpdateTime();
+
             console.log('[OK] 初始化完成');
         } catch (error) {
             console.error('[ERROR] Dashboard 初始化失敗:', error);
+            console.error('[ERROR] 錯誤詳細資訊:', error.stack);
             this.showBasicContent();
 
             // 顯示錯誤訊息
@@ -595,6 +599,17 @@ ${templateContent}`,
             }
         } catch (error) {
             console.error('❌ 記錄成員變更失敗:', error);
+        }
+    }
+
+    updateLastUpdateTime() {
+        const lastUpdateElement = document.getElementById('lastUpdate');
+        if (lastUpdateElement) {
+            const now = new Date();
+            lastUpdateElement.textContent = `最後更新：${now.toLocaleDateString('zh-TW')} ${now.toLocaleTimeString('zh-TW', {hour: '2-digit', minute: '2-digit'})}`;
+            console.log('[DEBUG] 更新時間已設定:', lastUpdateElement.textContent);
+        } else {
+            console.error('[ERROR] 找不到 lastUpdate 元素');
         }
     }
 }
