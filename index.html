@@ -2672,7 +2672,8 @@
             document.getElementById('teamManagementBtn').style.display = 'inline-block';
             document.getElementById('syncBtn').style.display = 'inline-block';
             document.getElementById('pullBtn').style.display = 'inline-block';
-            document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
+            // 同步備註功能已整合到重新載入按鈕
+            // document.getElementById('syncRoleNotesBtn').style.display = 'inline-block';
 
             // 直接載入資料
             setTimeout(loadDataDirectly, 500);
@@ -2728,9 +2729,50 @@
         // 每分鐘檢查一次 session
         setInterval(checkSessionTimeout, 60000);
 
-        // 重新載入功能
-        document.getElementById('refreshBtn').addEventListener('click', function() {
-            location.reload();
+        // 重新載入功能（整合同步）
+        document.getElementById('refreshBtn').addEventListener('click', async function() {
+            const refreshBtn = this;
+            const originalText = refreshBtn.innerHTML;
+
+            try {
+                // 更新按鈕狀態
+                refreshBtn.disabled = true;
+                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 同步中...';
+
+                // 執行同步任務
+                if (window.googleDriveAPI) {
+                    // 1. 同步角色備註
+                    try {
+                        await window.googleDriveAPI.syncRoleNotesFromGitHub();
+                        console.log('✅ 角色備註同步完成');
+                    } catch (error) {
+                        console.error('角色備註同步失敗:', error);
+                    }
+
+                    // 2. 從 Google Drive 拉取資料
+                    if (window.googleDriveAPI.isSignedIn && window.googleDriveAPI.isSignedIn()) {
+                        try {
+                            await pullFilesFromGoogleDrive();
+                            console.log('✅ Google Drive 資料同步完成');
+                        } catch (error) {
+                            console.error('Google Drive 同步失敗:', error);
+                        }
+                    }
+                }
+
+                // 稍等一下讓同步完成
+                setTimeout(() => {
+                    location.reload();
+                }, 500);
+
+            } catch (error) {
+                console.error('同步過程發生錯誤:', error);
+                // 即使失敗也重新載入
+                location.reload();
+            } finally {
+                refreshBtn.disabled = false;
+                refreshBtn.innerHTML = originalText;
+            }
         });
 
         // Google Drive 設定按鈕
