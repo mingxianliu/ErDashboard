@@ -67,5 +67,8 @@ jobs:
         fi
 
         git commit -m "自動備註: ${{ steps.event_info.outputs.PROJECT_NAME }} - ${{ steps.event_info.outputs.TITLE }}"
+
+        # 處理並發推送衝突
+        git pull --rebase || echo "⚠️ pull 失敗，嘗試直接推送"
         git push
         echo "✅ PR 備註已自動提交！"
