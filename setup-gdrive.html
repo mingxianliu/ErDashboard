@@ -171,12 +171,12 @@
                     // 只載入非預設的安全設定
                     if (config.CLIENT_ID &&
                         config.CLIENT_ID !== 'YOUR_CLIENT_ID_HERE.apps.googleusercontent.com' &&
-                        !config.CLIENT_ID.includes('756154426515')) {
+                        !config.CLIENT_ID.includes('EXAMPLE_CLIENT_ID')) {
                         document.getElementById('clientId').value = config.CLIENT_ID;
                     }
                     if (config.FOLDER_ID &&
                         config.FOLDER_ID !== 'YOUR_FOLDER_ID_HERE' &&
-                        config.FOLDER_ID !== '1u_sNMXzNVxqZJHNZOpIQFxGXaIktyjS4') {
+                        config.FOLDER_ID !== 'EXAMPLE_FOLDER_ID') {
                         document.getElementById('folderId').value = config.FOLDER_ID;
                     }
                 } catch (error) {
