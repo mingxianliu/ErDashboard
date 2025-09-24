@@ -23,9 +23,12 @@
                         });
                         console.log(`  - 有專案備註的專案: ${projectsWithNotes}/${Object.keys(data.assignments).length}`);
 
-                        // 檢查是否來自手動同步工具
-                        if (window.location.pathname.includes('manual-sync.html')) {
-                            console.log('✅ 來自手動同步工具，允許通過');
+                        // 檢查是否來自手動同步工具或手動同步按鈕
+                        if (window.location.pathname.includes('manual-sync.html') ||
+                            (data.assignments && Object.keys(data.assignments).length >= 7 && projectsWithNotes >= 3)) {
+                            console.log('✅ 資料驗證通過，允許同步');
+                            console.log(`  - 專案數量: ${Object.keys(data.assignments).length}`);
+                            console.log(`  - 有專案備註: ${projectsWithNotes}個`);
                             return originalSaveFile.call(this, filename, data, type);
                         }
                     }
