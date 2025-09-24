@@ -2177,13 +2177,24 @@
                 let personalNotesText = '';
                 try {
                     const currentMember = currentProject?.members?.[window.currentTaskCardTemplate?.memberId];
+                    console.log('複製角色備註調試:', {
+                        projectId: window.currentTaskCardTemplate?.projectId,
+                        memberId: window.currentTaskCardTemplate?.memberId,
+                        currentMember: currentMember,
+                        personalNotes: currentMember?.personalNotes
+                    });
+
                     if (currentMember && currentMember.personalNotes && currentMember.personalNotes.length > 0) {
                         personalNotesText = '\n\n=== 角色備註 ===\n' +
                             currentMember.personalNotes.map(note =>
                                 `${note.timestamp} [${note.author || 'System'}]: ${note.content}`
                             ).join('\n') + '\n';
+                        console.log('角色備註複製內容:', personalNotesText);
+                    } else {
+                        console.log('沒有找到角色備註');
                     }
                 } catch (e) {
+                    console.error('獲取角色備註時發生錯誤:', e);
                 }
 
                 const textToCopy = taskContent + projectNotesText + personalNotesText;
