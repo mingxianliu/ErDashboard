@@ -2153,14 +2153,16 @@
             try {
                 const taskContent = document.getElementById('taskContent').value;
 
-                // 獲取專案備註歷程
+                // 獲取專案備註歷程和角色備註
                 let projectNotesText = '';
+                let personalNotesText = '';
                 try {
                     const teamDataManager = new window.TeamDataManager();
                     await teamDataManager.init();
                     const assignments = teamDataManager.getAllAssignments();
                     const currentProject = assignments[window.currentTaskCardTemplate?.projectId];
 
+                    // 處理專案備註
                     if (currentProject && currentProject.notes) {
                         const projectNotes = JSON.parse(currentProject.notes);
                         if (Array.isArray(projectNotes) && projectNotes.length > 0) {
@@ -2170,12 +2172,8 @@
                                 ).join('\n') + '\n';
                         }
                     }
-                } catch (e) {
-                }
 
-                // 獲取角色備註
-                let personalNotesText = '';
-                try {
+                    // 處理角色備註
                     const currentMember = currentProject?.members?.[window.currentTaskCardTemplate?.memberId];
                     console.log('複製角色備註調試:', {
                         projectId: window.currentTaskCardTemplate?.projectId,
@@ -2194,7 +2192,7 @@
                         console.log('沒有找到角色備註');
                     }
                 } catch (e) {
-                    console.error('獲取角色備註時發生錯誤:', e);
+                    console.error('獲取備註時發生錯誤:', e);
                 }
 
                 const textToCopy = taskContent + projectNotesText + personalNotesText;
