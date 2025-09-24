@@ -2173,7 +2173,20 @@
                 } catch (e) {
                 }
 
-                const textToCopy = taskContent + projectNotesText;
+                // 獲取角色備註
+                let personalNotesText = '';
+                try {
+                    const currentMember = currentProject?.members?.[window.currentTaskCardTemplate?.memberId];
+                    if (currentMember && currentMember.personalNotes && currentMember.personalNotes.length > 0) {
+                        personalNotesText = '\n\n=== 角色備註 ===\n' +
+                            currentMember.personalNotes.map(note =>
+                                `${note.timestamp} [${note.author || 'System'}]: ${note.content}`
+                            ).join('\n') + '\n';
+                    }
+                } catch (e) {
+                }
+
+                const textToCopy = taskContent + projectNotesText + personalNotesText;
 
                 navigator.clipboard.writeText(textToCopy).then(() => {
                     // 視覺回饋
