@@ -3826,10 +3826,12 @@
                     window.teamDataManager = window.globalTeamDataManager;
                 }
 
-                // 自動執行 Pull 操作（登入後自動同步最新資料）
+                // 註釋掉自動 Pull 操作，避免覆蓋本地專案備註
+                // 用戶可手動 Pull 或 Push 來同步資料
                 if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
                     try {
-                        await pullFilesFromGoogleDrive();
+                        console.log('✅ Google Drive 已登入，用戶可手動同步資料');
+                        // await pullFilesFromGoogleDrive(); // 取消自動 Pull，保護本地資料
 
                         // 設定定時自動 Push（每5分鐘）
                         if (!window.autoPushInterval) {
