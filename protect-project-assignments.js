@@ -37,8 +37,12 @@
                     return Promise.reject('被緊急保護機制阻止');
                 }
 
-                // 允許其他檔案正常上傳（如 dev-logs.json）
-                console.log(`✅ 允許上傳: ${filename}`);
+                // 允許其他檔案正常上傳（如 dev-logs.json、role-notes 等）
+                if (filename !== 'project-assignments.json') {
+                    console.log(`✅ 允許上傳: ${filename}`);
+                } else {
+                    console.log(`🔄 其他操作: ${filename}`);
+                }
                 return originalSaveFile.call(this, filename, data, type);
             };
 
