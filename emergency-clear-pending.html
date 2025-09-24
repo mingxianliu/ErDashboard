@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>緊急清除待同步資料</title>
+</head>
+<body>
+    <h1>緊急清除待同步資料工具</h1>
+    <button id="clearBtn">立即清除 pendingPush</button>
+    <div id="result"></div>
+
+    <script>
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        const resultDiv = document.getElementById('result');
+        let results = [];
+
+        // 檢查是否有 pendingPush
+        const pendingPush = localStorage.getItem('pendingPush');
+        if (pendingPush) {
+            try {
+                const data = JSON.parse(pendingPush);
+                results.push('🔍 發現 pendingPush 資料:');
+                results.push(`  - assignments 數量: ${data.assignments ? Object.keys(data.assignments).length : 0}`);
+
+                // 檢查是否包含專案備註
+                if (data.assignments) {
+                    Object.keys(data.assignments).forEach(projectId => {
+                        const project = data.assignments[projectId];
+                        if (project.notes) {
+                            results.push(`  - ${projectId}: 有專案備註`);
+                        } else {
+                            results.push(`  - ${projectId}: 無專案備註 ❌`);
+                        }
+                    });
+                }
+
+                // 清除 pendingPush
+                localStorage.removeItem('pendingPush');
+                results.push('✅ 已清除 pendingPush');
+
+            } catch (e) {
+                results.push('⚠️ pendingPush 資料解析失敗: ' + e.message);
+                localStorage.removeItem('pendingPush');
+                results.push('✅ 已強制清除損壞的 pendingPush');
+            }
+        } else {
+            results.push('ℹ️ 沒有發現 pendingPush 資料');
+        }
+
+        // 也清除其他可能的問題資料
+        const keysToCheck = [
+            'teamAssignments',
+            'cachedProjectAssignments',
+            'teamAssignments_backup'
+        ];
+
+        keysToCheck.forEach(key => {
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    if (parsed && typeof parsed === 'object') {
+                        if (key === 'teamAssignments' || key === 'cachedProjectAssignments') {
+                            // 檢查專案備註
+                            let hasNotes = false;
+                            Object.keys(parsed).forEach(projectId => {
+                                if (parsed[projectId] && parsed[projectId].notes) {
+                                    hasNotes = true;
+                                }
+                            });
+                            results.push(`📋 ${key}: ${Object.keys(parsed).length} 個專案, 專案備註: ${hasNotes ? '有' : '無 ❌'}`);
+                        } else if (parsed.assignments) {
+                            let hasNotes = false;
+                            Object.keys(parsed.assignments).forEach(projectId => {
+                                if (parsed.assignments[projectId] && parsed.assignments[projectId].notes) {
+                                    hasNotes = true;
+                                }
+                            });
+                            results.push(`📋 ${key}: ${Object.keys(parsed.assignments).length} 個專案, 專案備註: ${hasNotes ? '有' : '無 ❌'}`);
+                        }
+                    }
+                } catch (e) {
+                    results.push(`⚠️ ${key} 解析失敗: ${e.message}`);
+                }
+            }
+        });
+
+        results.push('<br><strong>建議：重新載入首頁並檢查專案備註是否正常</strong>');
+
+        resultDiv.innerHTML = results.join('<br>');
+    });
+    </script>
+</body>
+</html>

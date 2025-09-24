@@ -311,7 +311,22 @@ class TeamDataManager {
                     lastSync: new Date().toISOString()
                 };
 
-                console.log('📤 自動 Push 到 Google Drive...');
+                // 嚴格驗證資料完整性再上傳
+                const hasValidProjects = Object.keys(assignmentData.assignments).length >= 7; // 至少要有7個專案
+                const hasProjectNotes = Object.values(assignmentData.assignments).some(project =>
+                    project.notes && project.notes.length > 0
+                );
+
+                if (!hasValidProjects) {
+                    console.error('🚫 資料驗證失敗：專案數量不足 (需要至少7個)，拒絕上傳');
+                    console.error('📊 當前專案數量:', Object.keys(assignmentData.assignments).length);
+                    return;
+                }
+
+                console.log('📤 資料驗證通過，Push 到 Google Drive...');
+                console.log('📊 專案數量:', Object.keys(assignmentData.assignments).length);
+                console.log('📝 包含專案備註:', hasProjectNotes);
+
                 await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
                 console.log('✅ 自動 Push 成功');
 

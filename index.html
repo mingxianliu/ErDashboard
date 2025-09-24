@@ -153,6 +153,28 @@
     <script src="js/dev-log.js?v=20250923a" onerror="console.error('❌ 載入 dev-log.js 失敗')"></script>
     <script src="js/markdown-dashboard-simple.js?v=20250923"></script>
     <script>
+        // 安全取得 TeamDataManager 實例的輔助函數
+        async function getTeamDataManager() {
+            // 優先使用現有的全域實例
+            if (window.globalTeamDataManager && window.globalTeamDataManager.isReady()) {
+                return window.globalTeamDataManager;
+            }
+            if (window.teamDataManager && window.teamDataManager.isReady()) {
+                return window.teamDataManager;
+            }
+
+            // 如果沒有可用實例，創建新的
+            console.log('⚠️ 創建新的 TeamDataManager 實例');
+            const teamDataManager = new window.TeamDataManager();
+            await teamDataManager.init();
+
+            // 設為全域實例
+            window.globalTeamDataManager = teamDataManager;
+            window.teamDataManager = teamDataManager;
+
+            return teamDataManager;
+        }
+
         // 使用 TeamDataManager 載入資料
         // 設為全域函數以便其他視窗可以呼叫
         window.loadDataDirectly = async function loadDataDirectly() {
@@ -543,8 +565,7 @@
                     throw new Error('TeamDataManager 未載入');
                 }
 
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
 
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
@@ -981,8 +1002,7 @@
             try {
 
                 // 載入專案資料
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
 
@@ -1176,8 +1196,7 @@
 
             // 立即儲存到 TeamDataManager
             try {
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
                 const assignments = teamDataManager.getAllAssignments();
 
                 if (assignments[window.currentProjectId]) {
@@ -1208,8 +1227,7 @@
             if (confirm('確定要清除所有備註嗎？此操作無法復原。')) {
                 try {
                     // 立即儲存到 TeamDataManager
-                    const teamDataManager = new window.TeamDataManager();
-                    await teamDataManager.init();
+                    const teamDataManager = await getTeamDataManager();
                     const assignments = teamDataManager.getAllAssignments();
 
                     if (assignments[window.currentProjectId]) {
@@ -1307,8 +1325,7 @@
                 if (window.teamManagement && window.teamManagement.dataManager) {
                     teamDataManager = window.teamManagement.dataManager;
                 } else {
-                    teamDataManager = new window.TeamDataManager();
-                    await teamDataManager.init();
+                    teamDataManager = await getTeamDataManager();
                 }
                 const assignments = teamDataManager.getAllAssignments();
 
@@ -1967,8 +1984,7 @@
                 if (window.teamManagement && window.teamManagement.dataManager) {
                     teamDataManager = window.teamManagement.dataManager;
                 } else {
-                    teamDataManager = new window.TeamDataManager();
-                    await teamDataManager.init();
+                    teamDataManager = await getTeamDataManager();
                 }
                 const assignments = teamDataManager.getAllAssignments();
 
@@ -2157,8 +2173,7 @@
                 let projectNotesText = '';
                 let personalNotesText = '';
                 try {
-                    const teamDataManager = new window.TeamDataManager();
-                    await teamDataManager.init();
+                    const teamDataManager = await getTeamDataManager();
                     const assignments = teamDataManager.getAllAssignments();
                     const currentProject = assignments[window.currentTaskCardTemplate?.projectId];
 
@@ -2243,8 +2258,7 @@
         async function updateTaskCardModal(projectId, memberId) {
             try {
                 // 重新載入專案資料
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
                 const assignments = teamDataManager.getAllAssignments();
                 const project = assignments[projectId];
                 const member = project.members[memberId];
@@ -2488,8 +2502,7 @@
                 }
 
                 // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
                 const assignments = teamDataManager.getAllAssignments();
 
                 if (assignments[projectId] && assignments[projectId].members[memberId]) {
@@ -2526,8 +2539,7 @@
                 }
 
                 // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
                 const assignments = teamDataManager.getAllAssignments();
 
                 if (assignments[projectId] && assignments[projectId].members[memberId]) {
@@ -2558,8 +2570,7 @@
                     return;
                 }
                 // 載入團隊資料管理器
-                const teamDataManager = new window.TeamDataManager();
-                await teamDataManager.init();
+                const teamDataManager = await getTeamDataManager();
 
                 if (teamDataManager.assignments[projectId]) {
                     // 直接修改 assignments 內部資料
@@ -3151,8 +3162,7 @@
                     window.teamDataManager = null;
 
                     // 重新創建並初始化
-                    const teamDataManager = new window.TeamDataManager();
-                    await teamDataManager.init();
+                    const teamDataManager = await getTeamDataManager();
                     window.globalTeamDataManager = teamDataManager;
                     window.teamDataManager = teamDataManager;
 
@@ -3830,8 +3840,9 @@
                         console.log('🔄 自動從 Google Drive 拉取最新資料...');
                         await pullFilesFromGoogleDrive();
 
-                        // 設定定時自動 Push（每5分鐘）
-                        if (!window.autoPushInterval) {
+                        // 暫時禁用定時自動 Push 以防止資料遺失
+                        console.log('🚫 定時自動 Push 已禁用以防止資料遺失');
+                        if (false && !window.autoPushInterval) {
                             window.autoPushInterval = setInterval(async () => {
                                 try {
                                     if (window.teamDataManager) {
@@ -3843,19 +3854,40 @@
                             }, 5 * 60 * 1000); // 每5分鐘
                         }
 
-                        // 當頁面即將關閉時，自動 Push
-                        if (!window.beforeUnloadListener) {
+                        // 暫時禁用頁面關閉時的自動 Push 以防止資料遺失
+                        console.log('🚫 beforeunload 自動同步已禁用以防止資料遺失');
+                        if (false && !window.beforeUnloadListener) {
                             window.beforeUnloadListener = true;
                             window.addEventListener('beforeunload', (event) => {
                                 if (window.teamDataManager) {
                                     // 同步儲存（注意：beforeunload 中 async 可能不可靠）
                                     try {
-                                        const data = JSON.stringify({
-                                            assignments: window.teamDataManager.getAllAssignments(),
-                                            constraints: {}
-                                        });
-                                        localStorage.setItem('pendingPush', data);
-                                        console.log('💾 頁面關閉前已儲存待同步資料');
+                                        // 只在 TeamDataManager 有效且資料完整時才儲存
+                                        if (window.teamDataManager && window.teamDataManager.isReady()) {
+                                            const assignments = window.teamDataManager.getAllAssignments();
+                                            // 檢查資料完整性 - 確保有專案且不是空的
+                                            if (assignments && Object.keys(assignments).length > 0) {
+                                                // 進一步檢查是否有重要專案的專案備註
+                                                const hasImportantData = Object.values(assignments).some(project =>
+                                                    project.members && Object.keys(project.members).length > 0
+                                                );
+
+                                                if (hasImportantData) {
+                                                    const data = JSON.stringify({
+                                                        assignments: assignments,
+                                                        constraints: {}
+                                                    });
+                                                    localStorage.setItem('pendingPush', data);
+                                                    console.log('💾 頁面關閉前已儲存待同步資料');
+                                                } else {
+                                                    console.log('⚠️ 資料似乎不完整，跳過 pendingPush');
+                                                }
+                                            } else {
+                                                console.log('⚠️ assignments 為空，跳過 pendingPush');
+                                            }
+                                        } else {
+                                            console.log('⚠️ TeamDataManager 無效，跳過 pendingPush');
+                                        }
                                     } catch (e) {
                                         console.error('儲存失敗:', e);
                                     }
@@ -3863,15 +3895,38 @@
                             });
                         }
 
-                        // 頁面載入時檢查是否有待同步的資料
-                        const pendingPush = localStorage.getItem('pendingPush');
+                        // 暫時禁用 pendingPush 機制以防止資料遺失
+                        console.log('🚫 pendingPush 自動上傳已禁用以防止資料遺失');
+                        localStorage.removeItem('pendingPush'); // 清除現有的 pendingPush
+                        const pendingPush = null; // localStorage.getItem('pendingPush');
                         if (pendingPush) {
                             try {
                                 const data = JSON.parse(pendingPush);
-                                await window.googleDriveAPI.saveFile('project-assignments.json', data);
+
+                                // 驗證資料完整性，防止上傳不完整的資料
+                                if (data && data.assignments && Object.keys(data.assignments).length > 0) {
+                                    // 檢查是否包含重要的專案資料
+                                    const hasValidData = Object.values(data.assignments).some(project =>
+                                        project.members && Object.keys(project.members).length > 0
+                                    );
+
+                                    if (hasValidData) {
+                                        console.log('📤 上傳待同步資料到 Google Drive...');
+                                        await window.googleDriveAPI.saveFile('project-assignments.json', data);
+                                        console.log('✅ 待同步資料已上傳');
+                                    } else {
+                                        console.log('⚠️ 待同步資料不完整，跳過上傳');
+                                    }
+                                } else {
+                                    console.log('⚠️ 待同步資料格式錯誤，跳過上傳');
+                                }
+
+                                // 無論如何都清除 pendingPush
                                 localStorage.removeItem('pendingPush');
                             } catch (e) {
                                 console.error('同步待處理資料失敗:', e);
+                                // 發生錯誤時也要清除 pendingPush 避免重複錯誤
+                                localStorage.removeItem('pendingPush');
                             }
                         }
 

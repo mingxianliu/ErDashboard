@@ -90,28 +90,14 @@ class DevLogUI {
                 return;
             }
 
-            // 初始化 TeamDataManager
-            console.log('🔄 初始化 TeamDataManager...');
-            if (!window.teamDataManager) {
-                window.teamDataManager = new TeamDataManager();
-            }
+            // 研發記錄簿以獨立模式運行，不初始化 TeamDataManager
+            // 避免意外創建可能破壞專案分配資料的實例
+            console.log('ℹ️ 研發記錄簿採用獨立模式，不影響專案分配資料');
 
-            try {
-                await window.teamDataManager.init();
-                console.log('✅ TeamDataManager 初始化完成');
-            } catch (error) {
-                console.error('❌ TeamDataManager 初始化失敗:', error);
-                // 不要拋出錯誤，而是創建一個最小化的實例
-                console.log('⚠️ 使用最小化模式啟動');
-                window.teamDataManager.isLoaded = true;
-                window.teamDataManager.assignments = {};
-            }
-
-            // 簡單檢查是否準備好
-            if (!window.teamDataManager.isLoaded) {
-                console.log('⚠️ TeamDataManager 未完全載入，但繼續進行');
-                window.teamDataManager.isLoaded = true;
-                window.teamDataManager.assignments = {};
+            // 確保不會意外使用 TeamDataManager
+            if (window.teamDataManager && !window.teamDataManager.isReady()) {
+                console.log('⚠️ 發現未完全初始化的 TeamDataManager，設為 null 以避免資料損壞');
+                window.teamDataManager = null;
             }
         } catch (error) {
             console.error('❌ 認證初始化失敗:', error);
@@ -560,10 +546,8 @@ class DevLogUI {
                 await this.loadProjectLogs(projectId);
             }
 
-            // 自動同步
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
-            }
+            // 🚫 已完全禁用自動同步以防止資料遺失
+            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
 
             this.deleteModal.hide();
             this.pendingDelete = null;
@@ -586,10 +570,8 @@ class DevLogUI {
             await window.devLogManager.clearLogs('global');
             await this.loadGlobalLogs();
 
-            // 自動同步
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
-            }
+            // 🚫 已完全禁用自動同步以防止資料遺失
+            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
 
         } catch (error) {
             console.error('❌ 清空總體記錄失敗:', error);
@@ -616,10 +598,8 @@ class DevLogUI {
             await window.devLogManager.clearLogs('project', this.currentProjectId);
             await this.loadProjectLogs(this.currentProjectId);
 
-            // 自動同步
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
-            }
+            // 🚫 已完全禁用自動同步以防止資料遺失
+            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
 
         } catch (error) {
             console.error('❌ 清空專案記錄失敗:', error);
@@ -669,6 +649,8 @@ class DevLogUI {
         try {
             // 只推送研發記錄簿資料，不影響專案分配
             if (window.devLogManager) {
+                console.log('📤 推送研發記錄到 Google Drive...');
+                console.log('📋 檔案名稱:', window.devLogManager.filename);
                 await window.devLogManager.saveDevLogs();
                 alert('✅ 研發記錄已成功推送到 Google Drive');
                 this.updateLastUpdateTime();
