@@ -230,7 +230,7 @@ class DevLogUI {
                 'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
                 'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
                 'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
-                '智慧監視系統': { projectName: '智慧監視系統', projectId: '智慧監視系統' }
+                'iMonitoring': { projectName: 'iMonitoring', projectId: 'iMonitoring' }
             };
 
             // 嘗試載入實際專案資料
@@ -315,7 +315,7 @@ class DevLogUI {
                 'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
                 'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
                 'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
-                '智慧監視系統': { projectName: '智慧監視系統', projectId: '智慧監視系統' }
+                'iMonitoring': { projectName: 'iMonitoring', projectId: 'iMonitoring' }
             };
             this.projects = defaultProjects;
             this.updateProjectSelector();
@@ -667,30 +667,36 @@ class DevLogUI {
      */
     async push() {
         try {
-            if (window.teamDataManager) {
-                await window.teamDataManager.saveToCloud();
-                alert('✅ 已成功推送到 Google Drive');
+            // 只推送研發記錄簿資料，不影響專案分配
+            if (window.devLogManager) {
+                await window.devLogManager.saveDevLogs();
+                alert('✅ 研發記錄已成功推送到 Google Drive');
                 this.updateLastUpdateTime();
+            } else {
+                alert('⚠️ 研發記錄管理器未初始化');
             }
         } catch (error) {
-            console.error('❌ 推送失敗:', error);
-            alert('❌ 推送失敗');
+            console.error('❌ 推送研發記錄失敗:', error);
+            alert('❌ 推送研發記錄失敗: ' + error.message);
         }
     }
 
     /**
-     * 從雲端拉取
+     * 從雲端拉取研發記錄
      */
     async pull() {
         try {
-            if (window.teamDataManager) {
-                await window.teamDataManager.loadFromCloud();
+            // 只拉取研發記錄簿資料，不影響專案分配
+            if (window.devLogManager) {
+                await window.devLogManager.loadDevLogs();
                 await this.refresh();
-                alert('✅ 已從 Google Drive 拉取最新資料');
+                alert('✅ 已從 Google Drive 拉取最新研發記錄');
+            } else {
+                alert('⚠️ 研發記錄管理器未初始化');
             }
         } catch (error) {
-            console.error('❌ 拉取失敗:', error);
-            alert('❌ 拉取失敗');
+            console.error('❌ 拉取研發記錄失敗:', error);
+            alert('❌ 拉取研發記錄失敗: ' + error.message);
         }
     }
 }

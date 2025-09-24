@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>清除舊資料工具</title>
+</head>
+<body>
+    <h1>清除「智慧監視系統」舊資料</h1>
+    <button id="clearBtn">清除所有 localStorage 中的舊專案資料</button>
+    <div id="result"></div>
+
+    <script>
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        const resultDiv = document.getElementById('result');
+        let results = [];
+
+        // 清除所有可能包含舊專案資料的 localStorage 項目
+        const keysToCheck = [
+            'cachedProjectAssignments',
+            'teamAssignments',
+            'cachedTeamMembers',
+            'project-assignments',
+            'assignments',
+            'devLogs',
+            'globalDevLogs'
+        ];
+
+        keysToCheck.forEach(key => {
+            const data = localStorage.getItem(key);
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    let modified = false;
+
+                    // 檢查並替換智慧監視系統
+                    if (parsed['智慧監視系統']) {
+                        delete parsed['智慧監視系統'];
+                        modified = true;
+                        results.push(`✅ 從 ${key} 中刪除「智慧監視系統」`);
+                    }
+
+                    if (parsed.assignments && parsed.assignments['智慧監視系統']) {
+                        delete parsed.assignments['智慧監視系統'];
+                        modified = true;
+                        results.push(`✅ 從 ${key}.assignments 中刪除「智慧監視系統」`);
+                    }
+
+                    // 如果有修改，重新保存
+                    if (modified) {
+                        localStorage.setItem(key, JSON.stringify(parsed));
+                    }
+                } catch (e) {
+                    results.push(`⚠️ 無法解析 ${key}: ${e.message}`);
+                }
+            }
+        });
+
+        // 也直接刪除一些可能的快取項目
+        const directKeysToRemove = [
+            'smartMonitoringSystem',
+            '智慧監視系統',
+            'devLog_智慧監視系統'
+        ];
+
+        directKeysToRemove.forEach(key => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                results.push(`✅ 刪除 localStorage 項目: ${key}`);
+            }
+        });
+
+        if (results.length === 0) {
+            results.push('ℹ️ 沒有找到需要清理的舊資料');
+        }
+
+        results.push('<br><strong>建議：請重新整理 dev-log.html 頁面查看效果</strong>');
+
+        resultDiv.innerHTML = results.join('<br>');
+    });
+    </script>
+</body>
+</html>

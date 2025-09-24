@@ -79,6 +79,18 @@
       },
       "lastUpdated": "2025-09-22",
       "status": "active"
+    },
+    "iMonitoring": {
+      "projectId": "iMonitoring",
+      "projectName": "iMonitoring",
+      "progress": 40,
+      "members": {
+        "A-GI": { "memberId": "A-GI", "memberName": "JaymenightA", "role": "backend", "assignedDate": "2025-08-01", "tasks": ["後端開發"] },
+        "C-CA": { "memberId": "C-CA", "memberName": "KersirAjenC", "role": "frontend", "assignedDate": "2025-08-01", "tasks": ["前端開發"] },
+        "B-VC": { "memberId": "B-VC", "memberName": "KopylotB", "role": "testing", "assignedDate": "2025-08-10", "tasks": ["測試"] }
+      },
+      "lastUpdated": "2025-09-24",
+      "status": "active"
     }
   },
   "constraints": {
@@ -88,10 +100,10 @@
     "maxMembersPerRole": 3
   },
   "statistics": {
-    "totalAssignments": 12,
-    "activeProjects": 3,
-    "completedProjects": 1,
-    "membersInUse": 12,
-    "availableMembers": 6
+    "totalAssignments": 15,
+    "activeProjects": 8,
+    "completedProjects": 0,
+    "membersInUse": 15,
+    "availableMembers": 3
   }
 }
