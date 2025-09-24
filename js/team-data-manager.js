@@ -279,6 +279,25 @@ class TeamDataManager {
 
             // 同時儲存到 Google Drive
             if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                // 詳細記錄專案備註狀態
+                console.log('📝 檢查專案備註狀態:');
+                Object.keys(this.assignments).forEach(projectId => {
+                    const project = this.assignments[projectId];
+                    if (project.notes) {
+                        console.log(`  ✅ ${projectId}: 有專案備註 (${project.notes.length} 字元)`);
+                        try {
+                            const parsedNotes = JSON.parse(project.notes);
+                            if (Array.isArray(parsedNotes)) {
+                                console.log(`     - 包含 ${parsedNotes.length} 個歷程記錄`);
+                            }
+                        } catch (e) {
+                            console.log(`     - 備註格式: 純文字`);
+                        }
+                    } else {
+                        console.log(`  ⚪ ${projectId}: 無專案備註`);
+                    }
+                });
+
                 const assignmentData = {
                     assignments: this.assignments,
                     constraints: this.constraints,
@@ -295,6 +314,15 @@ class TeamDataManager {
                 console.log('📤 自動 Push 到 Google Drive...');
                 await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
                 console.log('✅ 自動 Push 成功');
+
+                // 驗證上傳的資料是否包含專案備註
+                console.log('🔍 驗證上傳的專案備註:');
+                Object.keys(assignmentData.assignments).forEach(projectId => {
+                    const project = assignmentData.assignments[projectId];
+                    if (project.notes) {
+                        console.log(`  ✅ ${projectId}: 專案備註已包含在上傳資料中`);
+                    }
+                });
 
                 // 更新同步狀態顯示
                 const syncBtn = document.getElementById('syncBtn');
