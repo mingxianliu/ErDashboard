@@ -3422,15 +3422,13 @@
                                     Object.keys(mergedAssignments).forEach(projectId => {
                                         const localProject = localAssignments[projectId];
 
-                                        // 智能合併專案備註：本地備註優先
-                                        if (localProject && localProject.notes) {
-                                            console.log(`📝 保留本地專案備註 (本地優先): ${projectId}`);
+                                        // Pull 操作：優先使用雲端專案備註（雲端已經是最新的）
+                                        if (mergedAssignments[projectId].notes) {
+                                            console.log(`📝 使用雲端專案備註 (Pull 優先): ${projectId}`);
+                                            // 雲端備註已經在 mergedAssignments 中，不需要額外處理
+                                        } else if (localProject && localProject.notes) {
+                                            console.log(`📝 雲端無備註，保留本地備註: ${projectId}`);
                                             mergedAssignments[projectId].notes = localProject.notes;
-                                        } else if (!localProject || !localProject.notes) {
-                                            // 只有在本地沒有備註時，才使用雲端備註（已經在 mergedAssignments 中了）
-                                            if (mergedAssignments[projectId].notes) {
-                                                console.log(`📝 使用雲端專案備註: ${projectId}`);
-                                            }
                                         }
 
                                         // Pull 操作以雲端資料為準，不恢復本地 memberHistory
