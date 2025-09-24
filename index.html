@@ -3395,9 +3395,15 @@
                                 try {
                                     const localAssignments = JSON.parse(currentLocalState);
 
-                                    // 深度合併：雲端資料優先，Pull 後以雲端為準
+                                    // 深度合併：雲端資料優先，但保留本地的備註資料
                                     Object.keys(mergedAssignments).forEach(projectId => {
                                         const localProject = localAssignments[projectId];
+
+                                        // 保留本地的專案備註（如果雲端沒有）
+                                        if (localProject && localProject.notes && !mergedAssignments[projectId].notes) {
+                                            console.log(`📝 保留本地專案備註: ${projectId}`);
+                                            mergedAssignments[projectId].notes = localProject.notes;
+                                        }
 
                                         // Pull 操作以雲端資料為準，不恢復本地 memberHistory
                                         // (memberHistory 已經從雲端正確載入)
