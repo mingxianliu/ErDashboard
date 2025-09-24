@@ -546,8 +546,8 @@ class DevLogUI {
                 await this.loadProjectLogs(projectId);
             }
 
-            // 🚫 已完全禁用自動同步以防止資料遺失
-            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
+            // ✅ 研發記錄簿操作完成
+            console.log('✅ 研發記錄簿操作完成，與專案分配資料完全隔離');
 
             this.deleteModal.hide();
             this.pendingDelete = null;
@@ -570,8 +570,8 @@ class DevLogUI {
             await window.devLogManager.clearLogs('global');
             await this.loadGlobalLogs();
 
-            // 🚫 已完全禁用自動同步以防止資料遺失
-            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
+            // ✅ 研發記錄簿操作完成
+            console.log('✅ 研發記錄簿操作完成，與專案分配資料完全隔離');
 
         } catch (error) {
             console.error('❌ 清空總體記錄失敗:', error);
@@ -598,8 +598,8 @@ class DevLogUI {
             await window.devLogManager.clearLogs('project', this.currentProjectId);
             await this.loadProjectLogs(this.currentProjectId);
 
-            // 🚫 已完全禁用自動同步以防止資料遺失
-            console.log('🚫 研發記錄簿自動同步已禁用以防止資料遺失');
+            // ✅ 研發記錄簿操作完成
+            console.log('✅ 研發記錄簿操作完成，與專案分配資料完全隔離');
 
         } catch (error) {
             console.error('❌ 清空專案記錄失敗:', error);

@@ -22,12 +22,20 @@
                             }
                         });
                         console.log(`  - 有專案備註的專案: ${projectsWithNotes}/${Object.keys(data.assignments).length}`);
+
+                        // 檢查是否來自手動同步工具
+                        if (window.location.pathname.includes('manual-sync.html')) {
+                            console.log('✅ 來自手動同步工具，允許通過');
+                            return originalSaveFile.call(this, filename, data, type);
+                        }
                     }
 
-                    alert('🚫 寫入 project-assignments.json 已被緊急阻止！\n\n檢查控制台以查看詳細資訊。');
+                    alert('🚫 寫入 project-assignments.json 已被緊急阻止！\n\n請使用 manual-sync.html 進行安全的手動同步。');
                     return Promise.reject('被緊急保護機制阻止');
                 }
 
+                // 允許其他檔案正常上傳（如 dev-logs.json）
+                console.log(`✅ 允許上傳: ${filename}`);
                 return originalSaveFile.call(this, filename, data, type);
             };
 
