@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>Google Drive 調用監控</title>
+</head>
+<body>
+    <h1>Google Drive API 調用監控</h1>
+    <div id="logs"></div>
+
+    <script src="js/google-drive-api.js"></script>
+    <script>
+        const logsDiv = document.getElementById('logs');
+        const originalCalls = [];
+
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            console.log(logEntry);
+
+            const logElement = document.createElement('div');
+            logElement.style.margin = '5px 0';
+            logElement.style.padding = '5px';
+            logElement.style.borderLeft = '3px solid #007bff';
+            logElement.style.backgroundColor = '#f8f9fa';
+            logElement.textContent = logEntry;
+
+            logsDiv.insertBefore(logElement, logsDiv.firstChild);
+        }
+
+        // 攔截所有 Google Drive API 調用
+        function interceptGoogleDriveAPI() {
+            if (window.googleDriveAPI) {
+                // 攔截 saveFile
+                if (window.googleDriveAPI.saveFile) {
+                    const originalSaveFile = window.googleDriveAPI.saveFile;
+                    window.googleDriveAPI.saveFile = function(filename, data, type) {
+                        log(`🚨 INTERCEPTED saveFile: ${filename}`);
+
+                        // 檢查是否是 project-assignments.json
+                        if (filename === 'project-assignments.json') {
+                            log(`📋 保存 project-assignments.json - 檢查資料：`);
+
+                            if (data && data.assignments) {
+                                const projectCount = Object.keys(data.assignments).length;
+                                log(`  - 專案數量: ${projectCount}`);
+
+                                // 檢查專案備註
+                                let hasNotes = false;
+                                Object.keys(data.assignments).forEach(projectId => {
+                                    if (data.assignments[projectId].notes) {
+                                        hasNotes = true;
+                                        log(`  - ${projectId}: 有專案備註`);
+                                    } else {
+                                        log(`  - ${projectId}: 無專案備註 ❌`);
+                                    }
+                                });
+
+                                if (!hasNotes) {
+                                    log(`🚫 警告：沒有任何專案備註！阻止上傳！`);
+                                    const stack = new Error().stack;
+                                    log(`📍 調用堆疊: ${stack}`);
+                                    return Promise.reject('被阻止：資料不包含專案備註');
+                                }
+                            }
+                        }
+
+                        return originalSaveFile.call(this, filename, data, type);
+                    };
+                }
+
+                // 攔截 loadFile
+                if (window.googleDriveAPI.loadFile) {
+                    const originalLoadFile = window.googleDriveAPI.loadFile;
+                    window.googleDriveAPI.loadFile = function(filename) {
+                        log(`📥 INTERCEPTED loadFile: ${filename}`);
+                        return originalLoadFile.call(this, filename);
+                    };
+                }
+
+                log('✅ Google Drive API 攔截器已安裝');
+            } else {
+                log('⚠️ Google Drive API 尚未載入，3秒後重試...');
+                setTimeout(interceptGoogleDriveAPI, 3000);
+            }
+        }
+
+        // 開始監控
+        log('🔍 開始監控 Google Drive API 調用');
+        interceptGoogleDriveAPI();
+
+        // 每10秒檢查一次
+        setInterval(() => {
+            if (window.googleDriveAPI && !window.googleDriveAPI._intercepted) {
+                log('🔄 重新安裝攔截器');
+                interceptGoogleDriveAPI();
+                window.googleDriveAPI._intercepted = true;
+            }
+        }, 10000);
+    </script>
+</body>
+</html>

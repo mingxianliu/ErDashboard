@@ -146,6 +146,7 @@
         document.head.appendChild(configScript);
     </script>
     <script src="js/google-drive-api.js?v=20250923b-1758618068"></script>
+    <script src="protect-project-assignments.js?v=20250924" onerror="console.error('❌ 載入保護腳本失敗')"></script>
     <script src="js/team-data-manager.js?v=20250923d-1758618068" onerror="console.error('❌ 載入 team-data-manager.js 失敗')"></script>
     <script src="js/team-statistics.js?v=20250918u" onerror="console.error('❌ 載入 team-statistics.js 失敗')"></script>
     <script src="js/team-ui-components.js?v=20250920k" onerror="console.error('❌ 載入 team-ui-components.js 失敗')"></script>
@@ -3033,9 +3034,10 @@
                     }
                 }
 
-                // 強制上傳到 Google Drive
-                console.log('☁️ 上傳到 Google Drive...');
-                await window.googleDriveAPI.saveFile('project-assignments.json', correctData, 'assignments');
+                // 🚫 強制上傳已禁用以防止專案備註遺失
+                console.error('🚫 自動修復上傳已禁用以防止專案備註遺失');
+                console.log('📋 請手動檢查資料後使用手動同步功能');
+                // await window.googleDriveAPI.saveFile('project-assignments.json', correctData, 'assignments');
 
                 // 清除瀏覽器快取
                 localStorage.removeItem('teamAssignments');
@@ -3910,13 +3912,15 @@
                                         project.members && Object.keys(project.members).length > 0
                                     );
 
-                                    if (hasValidData) {
-                                        console.log('📤 上傳待同步資料到 Google Drive...');
-                                        await window.googleDriveAPI.saveFile('project-assignments.json', data);
-                                        console.log('✅ 待同步資料已上傳');
-                                    } else {
-                                        console.log('⚠️ 待同步資料不完整，跳過上傳');
-                                    }
+                                    console.error('🚫 pendingPush 上傳已完全禁用以防止專案備註遺失');
+                                    console.log('📋 待同步資料已跳過上傳');
+                                    // if (hasValidData) {
+                                    //     console.log('📤 上傳待同步資料到 Google Drive...');
+                                    //     await window.googleDriveAPI.saveFile('project-assignments.json', data);
+                                    //     console.log('✅ 待同步資料已上傳');
+                                    // } else {
+                                    //     console.log('⚠️ 待同步資料不完整，跳過上傳');
+                                    // }
                                 } else {
                                     console.log('⚠️ 待同步資料格式錯誤，跳過上傳');
                                 }

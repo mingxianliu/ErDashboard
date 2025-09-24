@@ -311,24 +311,26 @@ class TeamDataManager {
                     lastSync: new Date().toISOString()
                 };
 
-                // 嚴格驗證資料完整性再上傳
-                const hasValidProjects = Object.keys(assignmentData.assignments).length >= 7; // 至少要有7個專案
-                const hasProjectNotes = Object.values(assignmentData.assignments).some(project =>
-                    project.notes && project.notes.length > 0
-                );
+                // 🚫 完全禁用自動上傳，防止資料遺失
+                console.error('🚫 自動 Push 已完全禁用以防止專案備註遺失');
+                console.log('📋 請手動檢查資料完整性後使用首頁的手動同步功能');
+                console.log('📊 當前資料統計:');
+                console.log('  - 專案數量:', Object.keys(assignmentData.assignments).length);
 
-                if (!hasValidProjects) {
-                    console.error('🚫 資料驗證失敗：專案數量不足 (需要至少7個)，拒絕上傳');
-                    console.error('📊 當前專案數量:', Object.keys(assignmentData.assignments).length);
-                    return;
-                }
+                // 檢查專案備註
+                let projectsWithNotes = 0;
+                Object.keys(assignmentData.assignments).forEach(projectId => {
+                    if (assignmentData.assignments[projectId].notes) {
+                        projectsWithNotes++;
+                        console.log(`  - ${projectId}: 有專案備註 ✅`);
+                    } else {
+                        console.log(`  - ${projectId}: 無專案備註 ❌`);
+                    }
+                });
+                console.log(`📝 有專案備註的專案: ${projectsWithNotes}/${Object.keys(assignmentData.assignments).length}`);
 
-                console.log('📤 資料驗證通過，Push 到 Google Drive...');
-                console.log('📊 專案數量:', Object.keys(assignmentData.assignments).length);
-                console.log('📝 包含專案備註:', hasProjectNotes);
-
-                await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
-                console.log('✅ 自動 Push 成功');
+                // 不執行實際上傳
+                return;
 
                 // 驗證上傳的資料是否包含專案備註
                 console.log('🔍 驗證上傳的專案備註:');
