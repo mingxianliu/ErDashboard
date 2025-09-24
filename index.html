@@ -516,12 +516,12 @@
                                                         if (Array.isArray(projectNotes) && projectNotes.length > 0) {
                                                             const latestNote = projectNotes[projectNotes.length - 1];
                                                             return `
-                                                                <div class="mt-2 pt-2 border-top">
+                                                                <div class="mt-2 pt-2 border-top" style="max-height: 80px; overflow: hidden;">
                                                                     <small class="text-muted d-block">
                                                                         <i class="fas fa-sticky-note me-1"></i>
                                                                         專案備註 (${projectNotes.length})
                                                                     </small>
-                                                                    <small class="text-truncate d-block" title="${latestNote.content}">
+                                                                    <small class="d-block" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.2;" title="${latestNote.content}">
                                                                         ${latestNote.content}
                                                                     </small>
                                                                     <small class="text-muted" style="font-size: 0.7rem;">
