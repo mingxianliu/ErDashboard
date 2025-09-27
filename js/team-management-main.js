@@ -93,6 +93,361 @@ class TeamManagement {
         }, 500);
     }
 
+    // 顯示新增成員 Modal
+    showAddMemberModal() {
+        const modalHtml = `
+            <div class="modal fade" id="addMemberModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-user-plus me-2"></i>新增成員
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="addMemberForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">成員ID <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="newMemberId" required>
+                                        <small class="text-muted">例如: KlauderA, KopylotA</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">姓名 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="newMemberName" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">組織</label>
+                                        <select class="form-select" id="newMemberGroup">
+                                            <option value="">選擇組織...</option>
+                                            ${Object.entries(this.dataManager.teamConfig.groups || {}).map(([groupId, group]) =>
+                                                `<option value="${groupId}">${group.name}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">狀態</label>
+                                        <select class="form-select" id="newMemberStatus">
+                                            <option value="active">活躍</option>
+                                            <option value="inactive">非活躍</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">技能</label>
+                                        <div class="row g-2">
+                                            ${Object.entries(this.getSkillsMap()).map(([skillId, skill]) => `
+                                                <div class="col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input skill-checkbox" type="checkbox" value="${skillId}" id="skill_${skillId}">
+                                                        <label class="form-check-label" for="skill_${skillId}">
+                                                            <span class="badge" style="background-color: ${skill.color}">${skill.name}</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.addMember()">
+                                <i class="fas fa-plus me-2"></i>新增成員
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 Modal
+        const existingModal = document.getElementById('addMemberModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加新的 Modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 顯示 Modal
+        const modal = new bootstrap.Modal(document.getElementById('addMemberModal'));
+        modal.show();
+    }
+
+    // 新增成員
+    addMember() {
+        const memberId = document.getElementById('newMemberId').value.trim();
+        const memberName = document.getElementById('newMemberName').value.trim();
+        const memberGroup = document.getElementById('newMemberGroup').value;
+        const memberStatus = document.getElementById('newMemberStatus').value;
+
+        if (!memberId || !memberName) {
+            alert('請填寫必要欄位：成員ID和姓名');
+            return;
+        }
+
+        // 檢查成員是否已存在
+        if (this.dataManager.members[memberId]) {
+            alert('成員ID已存在！');
+            return;
+        }
+
+        // 收集選中的技能
+        const selectedSkills = [];
+        document.querySelectorAll('.skill-checkbox:checked').forEach(checkbox => {
+            selectedSkills.push(checkbox.value);
+        });
+
+        // 建立新成員資料
+        const newMember = {
+            id: memberId,
+            name: memberName,
+            status: memberStatus,
+            skills: selectedSkills
+        };
+
+        // 添加到資料管理器
+        this.dataManager.members[memberId] = newMember;
+
+        // 如果有選擇組織，添加到組織
+        if (memberGroup && this.dataManager.teamConfig.groups[memberGroup]) {
+            if (!this.dataManager.teamConfig.groups[memberGroup].members) {
+                this.dataManager.teamConfig.groups[memberGroup].members = [];
+            }
+            this.dataManager.teamConfig.groups[memberGroup].members.push(memberId);
+        }
+
+        // 儲存資料
+        this.dataManager.saveAllData();
+
+        // 關閉 Modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addMemberModal'));
+        modal.hide();
+
+        // 重新載入成員管理頁面
+        this.loadMemberManagement();
+
+        // 顯示成功訊息
+        alert(`成功新增成員：${memberName} (${memberId})`);
+    }
+
+    // 新增成員 (別名)
+    addNewMember() {
+        this.showAddMemberModal();
+    }
+
+    // 獲取技能對照表
+    getSkillsMap() {
+        return this.dataManager.teamConfig.skills || {
+            'frontend': { name: '前端', color: '#007bff' },
+            'backend': { name: '後端', color: '#28a745' },
+            'fullstack': { name: '全端', color: '#ffc107' },
+            'design': { name: '設計', color: '#e83e8c' },
+            'pm': { name: '專案管理', color: '#6610f2' },
+            'qa': { name: '測試', color: '#fd7e14' },
+            'devops': { name: 'DevOps', color: '#20c997' },
+            'data': { name: '資料分析', color: '#17a2b8' }
+        };
+    }
+
+    // 編輯成員
+    editMember(memberId) {
+        const member = this.dataManager.members[memberId];
+        if (!member) {
+            alert('找不到指定的成員！');
+            return;
+        }
+
+        // 找到成員所屬的組織
+        let memberGroup = '';
+        Object.entries(this.dataManager.teamConfig.groups || {}).forEach(([groupId, group]) => {
+            if (group.members && group.members.includes(memberId)) {
+                memberGroup = groupId;
+            }
+        });
+
+        const modalHtml = `
+            <div class="modal fade" id="editMemberModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-edit me-2"></i>編輯成員：${member.name}
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <form id="editMemberForm">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">成員ID</label>
+                                        <input type="text" class="form-control" id="editMemberId" value="${member.id}" readonly>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">姓名 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="editMemberName" value="${member.name}" required>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">組織</label>
+                                        <select class="form-select" id="editMemberGroup">
+                                            <option value="">選擇組織...</option>
+                                            ${Object.entries(this.dataManager.teamConfig.groups || {}).map(([groupId, group]) =>
+                                                `<option value="${groupId}" ${groupId === memberGroup ? 'selected' : ''}>${group.name}</option>`
+                                            ).join('')}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">狀態</label>
+                                        <select class="form-select" id="editMemberStatus">
+                                            <option value="active" ${member.status === 'active' ? 'selected' : ''}>活躍</option>
+                                            <option value="inactive" ${member.status === 'inactive' ? 'selected' : ''}>非活躍</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">技能</label>
+                                        <div class="row g-2">
+                                            ${Object.entries(this.getSkillsMap()).map(([skillId, skill]) => `
+                                                <div class="col-md-3">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input edit-skill-checkbox" type="checkbox" value="${skillId}" id="edit_skill_${skillId}" ${(member.skills || []).includes(skillId) ? 'checked' : ''}>
+                                                        <label class="form-check-label" for="edit_skill_${skillId}">
+                                                            <span class="badge" style="background-color: ${skill.color}">${skill.name}</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                            <button type="button" class="btn btn-primary" onclick="teamManagement.updateMember('${memberId}', '${memberGroup}')">
+                                <i class="fas fa-save me-2"></i>儲存變更
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 移除舊的 Modal
+        const existingModal = document.getElementById('editMemberModal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+
+        // 添加新的 Modal
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 顯示 Modal
+        const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
+        modal.show();
+    }
+
+    // 更新成員
+    updateMember(memberId, originalGroup) {
+        const memberName = document.getElementById('editMemberName').value.trim();
+        const memberGroup = document.getElementById('editMemberGroup').value;
+        const memberStatus = document.getElementById('editMemberStatus').value;
+
+        if (!memberName) {
+            alert('請填寫成員姓名');
+            return;
+        }
+
+        // 收集選中的技能
+        const selectedSkills = [];
+        document.querySelectorAll('.edit-skill-checkbox:checked').forEach(checkbox => {
+            selectedSkills.push(checkbox.value);
+        });
+
+        // 更新成員資料
+        this.dataManager.members[memberId].name = memberName;
+        this.dataManager.members[memberId].status = memberStatus;
+        this.dataManager.members[memberId].skills = selectedSkills;
+
+        // 處理組織變更
+        if (originalGroup !== memberGroup) {
+            // 從原組織移除
+            if (originalGroup && this.dataManager.teamConfig.groups[originalGroup]) {
+                const members = this.dataManager.teamConfig.groups[originalGroup].members || [];
+                const index = members.indexOf(memberId);
+                if (index > -1) {
+                    members.splice(index, 1);
+                }
+            }
+
+            // 添加到新組織
+            if (memberGroup && this.dataManager.teamConfig.groups[memberGroup]) {
+                if (!this.dataManager.teamConfig.groups[memberGroup].members) {
+                    this.dataManager.teamConfig.groups[memberGroup].members = [];
+                }
+                if (!this.dataManager.teamConfig.groups[memberGroup].members.includes(memberId)) {
+                    this.dataManager.teamConfig.groups[memberGroup].members.push(memberId);
+                }
+            }
+        }
+
+        // 儲存資料
+        this.dataManager.saveAllData();
+
+        // 關閉 Modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editMemberModal'));
+        modal.hide();
+
+        // 重新載入成員管理頁面
+        this.loadMemberManagement();
+
+        // 顯示成功訊息
+        alert(`成功更新成員：${memberName}`);
+    }
+
+    // 移除成員
+    removeMember(memberId) {
+        const member = this.dataManager.members[memberId];
+        if (!member) {
+            alert('找不到指定的成員！');
+            return;
+        }
+
+        if (!confirm(`確定要移除成員「${member.name}」嗎？此操作無法復原！`)) {
+            return;
+        }
+
+        // 從組織中移除
+        Object.values(this.dataManager.teamConfig.groups || {}).forEach(group => {
+            if (group.members) {
+                const index = group.members.indexOf(memberId);
+                if (index > -1) {
+                    group.members.splice(index, 1);
+                }
+            }
+        });
+
+        // 從專案指派中移除
+        Object.values(this.dataManager.assignments || {}).forEach(project => {
+            if (project.members && project.members[memberId]) {
+                delete project.members[memberId];
+            }
+        });
+
+        // 刪除成員
+        delete this.dataManager.members[memberId];
+
+        // 儲存資料
+        this.dataManager.saveAllData();
+
+        // 重新載入成員管理頁面
+        this.loadMemberManagement();
+
+        // 顯示成功訊息
+        alert(`成功移除成員：${member.name}`);
+    }
+
     // 載入成員管理
     loadMemberManagement() {
         const content = this.uiComponents.generateMemberManagementContent();
@@ -643,30 +998,7 @@ class TeamManagement {
 
     // ==================== 成員管理功能 ====================
 
-    // 新增成員
-    addNewMember() {
-        this.showToast('功能提示', '新增成員功能開發中...', 'info');
-    }
 
-    // 編輯成員
-    editMember(memberId) {
-        console.log('🔵 editMember 被呼叫，memberId:', memberId);
-        const modalContent = this.uiComponents.generateMemberEditModal(memberId);
-        console.log('🔵 生成的 modal 內容長度:', modalContent.length);
-
-        // 移除舊的模態框
-        const existingModal = document.getElementById('editMemberModal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-
-        // 添加新的模態框
-        document.body.insertAdjacentHTML('beforeend', modalContent);
-
-        // 顯示模態框
-        const modal = new bootstrap.Modal(document.getElementById('editMemberModal'));
-        modal.show();
-    }
 
     // 查看成員專案
     viewMemberProjects(memberId) {
@@ -686,12 +1018,6 @@ class TeamManagement {
         modal.show();
     }
 
-    // 移除成員
-    removeMember(memberId) {
-        if (confirm(`確定要移除成員 ${memberId} 嗎？`)) {
-            this.showToast('功能提示', `移除成員 ${memberId} 功能開發中...`, 'warning');
-        }
-    }
 
     // ==================== 系統設定功能 ====================
 

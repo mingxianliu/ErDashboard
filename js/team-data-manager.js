@@ -41,19 +41,36 @@ class TeamDataManager {
         try {
             let data = null;
 
-            // 1. 優先從本地快取載入（最新的儲存資料）
-            const cachedData = localStorage.getItem('cachedTeamMembers');
-            if (cachedData) {
-                try {
-                    data = JSON.parse(cachedData);
-                } catch (e) {
-                    console.error('本地快取資料解析失敗:', e);
-                    data = null; // 確保重置 data
+            // 1. 首先嘗試載入本地 temp-team-members.json (優先使用最新資料)
+            try {
+                const response = await fetch('./temp-team-members.json?v=' + Date.now());
+                if (response.ok) {
+                    data = await response.json();
+                    console.log('📂 載入本地 temp-team-members.json 成功 (28成員)');
+                    // 清除舊快取並儲存新資料
+                    localStorage.removeItem('cachedTeamMembers');
+                    localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
+                    console.log('🔄 清除舊快取並載入新團隊資料');
                 }
-            } else {
+            } catch (tempError) {
+                console.log('📂 載入本地 temp-team-members.json 失敗:', tempError.message);
             }
 
-            // 2. 如果沒有快取，必須從 Google Drive 載入
+            // 2. 如果沒有載入成功，從本地快取載入
+            if (!data) {
+                const cachedData = localStorage.getItem('cachedTeamMembers');
+                if (cachedData) {
+                    try {
+                        data = JSON.parse(cachedData);
+                        console.log('📋 載入本地快取資料');
+                    } catch (e) {
+                        console.error('本地快取資料解析失敗:', e);
+                        data = null;
+                    }
+                }
+            }
+
+            // 3. 如果還是沒有資料，從 Google Drive 載入
             if (!data && window.googleDriveAPI) {
                 // 確保已登入 Google Drive
                 if (!window.googleDriveAPI.isAuthenticated) {
@@ -81,7 +98,8 @@ class TeamDataManager {
                 }
             }
 
-            // 3. 如果還是沒有資料，必須有 Google Drive 資料
+
+            // 4. 如果還是沒有資料，必須有 Google Drive 資料
             if (!data) {
                 throw new Error('無法載入團隊資料，請確認已登入 Google Drive 且資料存在');
             }
