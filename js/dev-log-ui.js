@@ -515,8 +515,37 @@ class DevLogUI {
             }
 
             // 3. 新增到所有專案的專案備註
-            if (window.teamDataManager && window.teamDataManager.isReady()) {
-                const assignments = window.teamDataManager.getAllAssignments();
+            console.log('🔍 檢查 TeamDataManager 狀態:', {
+                teamDataManager: !!window.teamDataManager,
+                globalTeamDataManager: !!window.globalTeamDataManager,
+                isReady: window.teamDataManager ? window.teamDataManager.isReady() : 'N/A'
+            });
+
+            // 嘗試多種方式取得 TeamDataManager
+            let teamDataManager = window.teamDataManager || window.globalTeamDataManager;
+            let assignments = null;
+
+            if (teamDataManager && teamDataManager.isReady()) {
+                assignments = teamDataManager.getAllAssignments();
+            } else {
+                // 如果 TeamDataManager 不可用，直接從 localStorage 讀取
+                console.log('⚠️ TeamDataManager 不可用，從 localStorage 讀取資料');
+                const storedData = localStorage.getItem('teamAssignments');
+                if (storedData) {
+                    try {
+                        assignments = JSON.parse(storedData);
+                        console.log('✅ 從 localStorage 成功讀取專案分配資料');
+                    } catch (e) {
+                        console.error('❌ localStorage 資料解析失敗:', e);
+                        assignments = {};
+                    }
+                } else {
+                    console.warn('⚠️ localStorage 中沒有專案分配資料');
+                    assignments = {};
+                }
+            }
+
+            if (assignments) {
                 console.log(`📋 準備新增總體指標到 ${projects.length} 個專案備註:`, projects);
                 for (const projectId of projects) {
                     if (assignments[projectId]) {
@@ -552,6 +581,8 @@ class DevLogUI {
                         } catch (error) {
                             console.error(`❌ 新增總體指標到專案備註 ${projectId} 失敗:`, error);
                         }
+                    } else {
+                        console.warn(`⚠️ 專案 ${projectId} 不存在於分配資料中，跳過備註新增`);
                     }
                 }
 
@@ -583,6 +614,8 @@ class DevLogUI {
                     // 清除標記
                     window._globalMetricUpdate = false;
                 }
+            } else {
+                console.error('❌ 無法取得專案分配資料，跳過專案備註更新');
             }
 
             // 4. 重新載入所有資料
