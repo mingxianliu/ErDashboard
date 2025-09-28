@@ -512,15 +512,31 @@ class DevLogUI {
                 for (const projectId of projects) {
                     if (assignments[projectId]) {
                         try {
-                            // 取得現有備註
-                            const currentNotes = assignments[projectId].notes || '';
+                            // 取得現有備註（JSON 陣列格式）
+                            let currentNotes = [];
+                            if (assignments[projectId].notes) {
+                                try {
+                                    currentNotes = JSON.parse(assignments[projectId].notes);
+                                    if (!Array.isArray(currentNotes)) {
+                                        currentNotes = [];
+                                    }
+                                } catch (e) {
+                                    console.warn(`專案 ${projectId} 的備註格式需要轉換`);
+                                    currentNotes = [];
+                                }
+                            }
 
-                            // 新增總體指標到備註
-                            const noteEntry = `[${new Date().toLocaleDateString('zh-TW')}] [總體指標] ${metricContent}`;
-                            const newNotes = currentNotes ? `${currentNotes}\n${noteEntry}` : noteEntry;
+                            // 新增總體指標到備註陣列
+                            const newNote = {
+                                timestamp: new Date().toLocaleString('zh-TW'),
+                                author: '系統管理員',
+                                content: `[總體指標] ${metricContent}`
+                            };
+
+                            currentNotes.push(newNote);
 
                             // 更新專案備註
-                            assignments[projectId].notes = newNotes;
+                            assignments[projectId].notes = JSON.stringify(currentNotes);
                             assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
 
                             console.log(`✅ 已新增總體指標到專案備註: ${projectId}`);
