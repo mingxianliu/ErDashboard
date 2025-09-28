@@ -147,6 +147,7 @@ class DevLogUI {
     setupEventListeners() {
         // 總體記錄
         document.getElementById('addGlobalLogBtn').addEventListener('click', () => this.addGlobalLog());
+        document.getElementById('addGlobalMetricBtn').addEventListener('click', () => this.addGlobalMetric());
         document.getElementById('clearGlobalBtn').addEventListener('click', () => this.clearGlobalLogs());
         document.getElementById('globalLogInput').addEventListener('keypress', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
@@ -472,6 +473,88 @@ class DevLogUI {
         } catch (error) {
             console.error('❌ 新增總體記錄失敗:', error);
             alert('新增記錄失敗');
+        }
+    }
+
+    /**
+     * 新增總體指標（同時新增到所有專案）
+     */
+    async addGlobalMetric() {
+        // 顯示輸入對話框
+        const content = prompt('請輸入總體指標內容（將同時新增到所有專案）：');
+        if (!content || !content.trim()) {
+            return;
+        }
+
+        try {
+            const metricContent = content.trim();
+            const timestamp = new Date().toISOString();
+            const defaultMember = '系統管理員';
+
+            // 1. 新增到總體研發記錄
+            await window.devLogManager.addGlobalLog(`[總體指標] ${metricContent}`, defaultMember);
+            console.log('✅ 已新增總體指標到總體研發記錄');
+
+            // 2. 新增到所有專案記錄
+            const projects = Object.keys(this.projects);
+            for (const projectId of projects) {
+                try {
+                    await window.devLogManager.addProjectLog(projectId, `[總體指標] ${metricContent}`, defaultMember);
+                    console.log(`✅ 已新增總體指標到專案: ${projectId}`);
+                } catch (error) {
+                    console.error(`❌ 新增總體指標到專案 ${projectId} 失敗:`, error);
+                }
+            }
+
+            // 3. 新增到所有專案的專案備註
+            if (window.teamDataManager && window.teamDataManager.isReady()) {
+                const assignments = window.teamDataManager.getAllAssignments();
+                for (const projectId of projects) {
+                    if (assignments[projectId]) {
+                        try {
+                            // 取得現有備註
+                            const currentNotes = assignments[projectId].notes || '';
+
+                            // 新增總體指標到備註
+                            const noteEntry = `[${new Date().toLocaleDateString('zh-TW')}] [總體指標] ${metricContent}`;
+                            const newNotes = currentNotes ? `${currentNotes}\n${noteEntry}` : noteEntry;
+
+                            // 更新專案備註
+                            assignments[projectId].notes = newNotes;
+                            assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0];
+
+                            console.log(`✅ 已新增總體指標到專案備註: ${projectId}`);
+                        } catch (error) {
+                            console.error(`❌ 新增總體指標到專案備註 ${projectId} 失敗:`, error);
+                        }
+                    }
+                }
+
+                // 儲存 TeamDataManager 的變更
+                try {
+                    await window.teamDataManager.saveLocalChanges();
+                    console.log('✅ 已儲存專案備註變更到 TeamDataManager');
+                } catch (error) {
+                    console.error('❌ 儲存專案備註變更失敗:', error);
+                }
+            }
+
+            // 4. 重新載入所有資料
+            await this.loadGlobalLogs();
+            if (this.currentProjectId) {
+                await this.loadProjectLogs(this.currentProjectId);
+            }
+
+            // 5. 自動同步
+            if (window.devLogManager) {
+                await window.devLogManager.saveDevLogs();
+            }
+
+            alert(`總體指標已成功新增到：\n- 總體研發記錄\n- ${projects.length} 個專案記錄\n- ${projects.length} 個專案備註`);
+
+        } catch (error) {
+            console.error('❌ 新增總體指標失敗:', error);
+            alert('新增總體指標失敗：' + error.message);
         }
     }
 
