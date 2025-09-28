@@ -101,7 +101,7 @@ async function verifyPrivateKey(privateKeyPEM) {
 
 // 導出驗證函數
 if (typeof window !== 'undefined') {
-    window.verifyPrivateKey = verifyPrivateKey;
+    window.verifyPrivateKey = verifyPrivateKeyWebCrypto; // 瀏覽器環境使用Web Crypto API版本
 } else if (typeof module !== 'undefined') {
-    module.exports = { verifyPrivateKey, PUBLIC_KEY };
+    module.exports = { verifyPrivateKey, PUBLIC_KEY }; // Node.js環境使用crypto版本
 }
