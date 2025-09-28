@@ -555,12 +555,16 @@ class DevLogUI {
                     }
                 }
 
-                // 儲存 TeamDataManager 的變更
+                // 儲存 TeamDataManager 的變更（設置全域標記允許保護腳本通過）
                 try {
+                    window._globalMetricUpdate = true; // 設置標記，告知保護腳本這是總體指標更新
                     await window.teamDataManager.saveLocalChanges();
                     console.log('✅ 已儲存專案備註變更到 TeamDataManager');
                 } catch (error) {
                     console.error('❌ 儲存專案備註變更失敗:', error);
+                } finally {
+                    // 清除標記
+                    window._globalMetricUpdate = false;
                 }
             }
 
