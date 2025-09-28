@@ -1336,10 +1336,37 @@
                     assignments[projectId].notes = JSON.stringify(notesList);
                     assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
-                    // 儲存變更
-                    await teamDataManager.saveLocalChanges();
+                    // 儲存變更到 localStorage
+                    localStorage.setItem('teamAssignments', JSON.stringify(assignments));
+                    console.log('✅ 專案進度已儲存到 localStorage');
 
-                    alert(`專案進度已更新為 ${progress}%\n備註已儲存 (共 ${notesList.length} 筆)`);
+                    // 直接同步到 Google Drive（繞過 TeamDataManager 的禁用限制）
+                    let syncStatus = '';
+                    if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
+                        try {
+                            window._progressUpdate = true; // 設置標記，告知保護腳本這是進度更新
+
+                            const assignmentData = {
+                                assignments: assignments,
+                                constraints: {},
+                                lastSync: new Date().toISOString()
+                            };
+
+                            console.log('📊 專案進度更新：開始同步到 Google Drive...');
+                            await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
+                            console.log('✅ 專案進度已成功同步到 Google Drive');
+                            syncStatus = '\n✅ 已同步到 Google Drive';
+                        } catch (error) {
+                            console.error('❌ 同步專案進度失敗:', error);
+                            syncStatus = `\n❌ 同步失敗: ${error.message}`;
+                        } finally {
+                            window._progressUpdate = false;
+                        }
+                    } else {
+                        syncStatus = '\n⚠️ Google Drive 未登入，僅儲存到本地';
+                    }
+
+                    alert(`專案進度已更新為 ${progress}%\n備註已儲存 (共 ${notesList.length} 筆)${syncStatus}`);
                 } else {
                     throw new Error('找不到指定的專案');
                 }
