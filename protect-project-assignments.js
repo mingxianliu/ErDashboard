@@ -27,15 +27,17 @@
                         const isFromGlobalMetric = window._globalMetricUpdate === true;
                         const isFromProgressUpdate = window._progressUpdate === true;
                         const isManualSync = window.location.pathname.includes('manual-sync.html');
+                        const isMainPageSync = window.location.pathname.includes('index.html') || window.location.pathname === '/';
                         const hasValidData = data.assignments && Object.keys(data.assignments).length >= 7 && projectsWithNotes >= 3;
 
                         console.log('🔍 檢查寫入權限:');
                         console.log(`  - 來自手動同步頁面: ${isManualSync}`);
+                        console.log(`  - 來自主頁面同步: ${isMainPageSync}`);
                         console.log(`  - 來自總體指標更新: ${isFromGlobalMetric}`);
                         console.log(`  - 來自專案進度更新: ${isFromProgressUpdate}`);
                         console.log(`  - 資料完整性檢查: ${hasValidData}`);
 
-                        if (isManualSync || isFromGlobalMetric || isFromProgressUpdate || hasValidData) {
+                        if (isManualSync || isMainPageSync || isFromGlobalMetric || isFromProgressUpdate || hasValidData) {
                             console.log('✅ 資料驗證通過，允許同步');
                             console.log(`  - 專案數量: ${Object.keys(data.assignments).length}`);
                             console.log(`  - 有專案備註: ${projectsWithNotes}個`);
@@ -44,6 +46,9 @@
                             }
                             if (isFromProgressUpdate) {
                                 console.log('📊 專案進度更新：允許專案資料同步');
+                            }
+                            if (isMainPageSync) {
+                                console.log('🔄 主頁面同步：允許專案資料同步');
                             }
                             return originalSaveFile.call(this, filename, data, type);
                         }
