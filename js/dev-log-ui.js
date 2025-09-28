@@ -496,19 +496,28 @@ class DevLogUI {
             console.log('✅ 已新增總體指標到總體研發記錄');
 
             // 2. 新增到所有專案記錄
+            // 確保專案資料已載入
+            if (Object.keys(this.projects).length === 0) {
+                console.log('⚠️ 專案列表為空，重新載入專案資料...');
+                await this.loadProjects();
+            }
+
             const projects = Object.keys(this.projects);
+            console.log(`📋 準備新增總體指標到 ${projects.length} 個專案:`, projects);
+
             for (const projectId of projects) {
                 try {
                     await window.devLogManager.addProjectLog(projectId, `[總體指標] ${metricContent}`, defaultMember);
-                    console.log(`✅ 已新增總體指標到專案: ${projectId}`);
+                    console.log(`✅ 已新增總體指標到專案記錄: ${projectId}`);
                 } catch (error) {
-                    console.error(`❌ 新增總體指標到專案 ${projectId} 失敗:`, error);
+                    console.error(`❌ 新增總體指標到專案記錄 ${projectId} 失敗:`, error);
                 }
             }
 
             // 3. 新增到所有專案的專案備註
             if (window.teamDataManager && window.teamDataManager.isReady()) {
                 const assignments = window.teamDataManager.getAllAssignments();
+                console.log(`📋 準備新增總體指標到 ${projects.length} 個專案備註:`, projects);
                 for (const projectId of projects) {
                     if (assignments[projectId]) {
                         try {
