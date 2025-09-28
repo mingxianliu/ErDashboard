@@ -3336,7 +3336,20 @@
                         throw new Error(`${fileName} JSON 解析失敗: ${parseError.message}`);
                     }
 
-                    await window.googleDriveAPI.saveFile(fileName, dataToSave);
+                    // 如果是 project-assignments.json，設置進度更新標記以繞過保護
+                    if (fileName === 'project-assignments.json') {
+                        window._progressUpdate = true;
+                        console.log('📊 設置進度更新標記以同步專案分配資料');
+                    }
+
+                    try {
+                        await window.googleDriveAPI.saveFile(fileName, dataToSave);
+                    } finally {
+                        // 清除標記
+                        if (fileName === 'project-assignments.json') {
+                            window._progressUpdate = false;
+                        }
+                    }
 
                     syncResults.push({
                         file: fileName,
