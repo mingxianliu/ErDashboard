@@ -1,0 +1,9 @@
+{
+  "project": "ErTidy",
+  "member": "KersirB",
+  "note": "• 新功能: 完全移除 SQLite 配置，統一使用 PostgreSQL",
+  "submitter": "Unknown",
+  "timestamp": "2025-09-29T12:32:15.395Z",
+  "date": "2025-09-29",
+  "type": "role_note"
+}
