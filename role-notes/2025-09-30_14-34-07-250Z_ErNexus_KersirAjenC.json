@@ -1,0 +1,9 @@
+{
+  "project": "ErNexus",
+  "member": "KersirAjenC",
+  "note": "• fix(admin-portal-ui): 修正 API baseURL 添加 /api 前綴",
+  "submitter": "Unknown",
+  "timestamp": "2025-09-30T14:34:07.250Z",
+  "date": "2025-09-30",
+  "type": "role_note"
+}
