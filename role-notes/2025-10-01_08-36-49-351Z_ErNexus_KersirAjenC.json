@@ -1,0 +1,9 @@
+{
+  "project": "ErNexus",
+  "member": "KersirAjenC",
+  "note": "• refactor(admin-portal-ui): 移除 Service 層混淆性的 Mock fallback 機制",
+  "submitter": "Unknown",
+  "timestamp": "2025-10-01T08:36:49.351Z",
+  "date": "2025-10-01",
+  "type": "role_note"
+}
