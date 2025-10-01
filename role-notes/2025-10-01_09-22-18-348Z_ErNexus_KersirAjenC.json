@@ -1,0 +1,9 @@
+{
+  "project": "ErNexus",
+  "member": "KersirAjenC",
+  "note": "• refactor(admin-portal-ui): 移除 packageService 中殘留的 Mock fallback",
+  "submitter": "Unknown",
+  "timestamp": "2025-10-01T09:22:18.348Z",
+  "date": "2025-10-01",
+  "type": "role_note"
+}
