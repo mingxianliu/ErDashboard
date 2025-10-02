@@ -1,0 +1,9 @@
+{
+  "project": "ErNexus",
+  "member": "KersirAjenC",
+  "note": "• fix(api-gateway): reorder packages controller routes to prevent statistics endpoint conflict",
+  "submitter": "Unknown",
+  "timestamp": "2025-10-02T00:01:34.652Z",
+  "date": "2025-10-02",
+  "type": "role_note"
+}
