@@ -219,18 +219,23 @@ class TeamManagement {
             this.dataManager.teamConfig.groups[memberGroup].members.push(memberId);
         }
 
-        // 儲存資料
-        this.dataManager.saveAllData();
+        // 儲存資料到 localStorage 和 Google Drive
+        this.dataManager.saveMemberChanges().then(() => {
+            console.log('✅ 成員資料已同步到 Google Drive');
 
-        // 關閉 Modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('addMemberModal'));
-        modal.hide();
+            // 關閉 Modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addMemberModal'));
+            modal.hide();
 
-        // 重新載入成員管理頁面
-        this.loadMemberManagement();
+            // 重新載入成員管理頁面
+            this.loadMemberManagement();
 
-        // 顯示成功訊息
-        alert(`成功新增成員：${memberName} (${memberId})`);
+            // 顯示成功訊息
+            this.showToast('新增成功', `成功新增成員：${memberName} (${memberId})`, 'success');
+        }).catch(error => {
+            console.error('❌ 儲存成員資料失敗:', error);
+            this.showToast('儲存失敗', '成員已新增但同步失敗，請稍後重試', 'error');
+        });
     }
 
     // 新增成員 (別名)
@@ -392,18 +397,23 @@ class TeamManagement {
             }
         }
 
-        // 儲存資料
-        this.dataManager.saveAllData();
+        // 儲存資料到 localStorage 和 Google Drive
+        this.dataManager.saveMemberChanges().then(() => {
+            console.log('✅ 成員資料已同步到 Google Drive');
 
-        // 關閉 Modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('editMemberModal'));
-        modal.hide();
+            // 關閉 Modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('editMemberModal'));
+            modal.hide();
 
-        // 重新載入成員管理頁面
-        this.loadMemberManagement();
+            // 重新載入成員管理頁面
+            this.loadMemberManagement();
 
-        // 顯示成功訊息
-        alert(`成功更新成員：${memberName}`);
+            // 顯示成功訊息
+            this.showToast('更新成功', `成功更新成員：${memberName}`, 'success');
+        }).catch(error => {
+            console.error('❌ 儲存成員資料失敗:', error);
+            this.showToast('儲存失敗', '成員已更新但同步失敗，請稍後重試', 'error');
+        });
     }
 
     // 移除成員
@@ -438,14 +448,19 @@ class TeamManagement {
         // 刪除成員
         delete this.dataManager.members[memberId];
 
-        // 儲存資料
-        this.dataManager.saveAllData();
+        // 儲存資料到 localStorage 和 Google Drive
+        this.dataManager.saveMemberChanges().then(() => {
+            console.log('✅ 成員資料已同步到 Google Drive');
 
-        // 重新載入成員管理頁面
-        this.loadMemberManagement();
+            // 重新載入成員管理頁面
+            this.loadMemberManagement();
 
-        // 顯示成功訊息
-        alert(`成功移除成員：${member.name}`);
+            // 顯示成功訊息
+            this.showToast('刪除成功', `成功移除成員：${member.name}`, 'success');
+        }).catch(error => {
+            console.error('❌ 儲存成員資料失敗:', error);
+            this.showToast('儲存失敗', '成員已移除但同步失敗，請稍後重試', 'error');
+        });
     }
 
     // 載入成員管理
@@ -1802,6 +1817,22 @@ class TeamManagement {
             // 儲存到本地和 Google Drive
             this.dataManager.saveLocalChanges().then(async () => {
                 console.log('☁️ 專案資料已同步');
+
+                // 初始化研發記錄簿中的專案
+                if (window.devLogManager) {
+                    try {
+                        if (!window.devLogManager.isLoaded) {
+                            await window.devLogManager.loadDevLogs();
+                        }
+                        if (!window.devLogManager.devLogs.projects[projectData.projectId]) {
+                            window.devLogManager.devLogs.projects[projectData.projectId] = [];
+                            await window.devLogManager.saveDevLogs();
+                            console.log('📋 研發記錄簿已初始化新專案');
+                        }
+                    } catch (devLogError) {
+                        console.warn('⚠️ 研發記錄簿初始化失敗:', devLogError.message);
+                    }
+                }
 
                 // 創建對應的 markdown 檔案（可選）
                 try {
