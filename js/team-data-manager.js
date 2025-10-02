@@ -41,37 +41,8 @@ class TeamDataManager {
         try {
             let data = null;
 
-            // 1. 首先嘗試載入本地 temp-team-members.json (優先使用最新資料)
-            try {
-                const response = await fetch('./temp-team-members.json?v=' + Date.now());
-                if (response.ok) {
-                    data = await response.json();
-                    console.log('📂 載入本地 temp-team-members.json 成功 (28成員)');
-                    // 清除舊快取並儲存新資料
-                    localStorage.removeItem('cachedTeamMembers');
-                    localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
-                    console.log('🔄 清除舊快取並載入新團隊資料');
-                }
-            } catch (tempError) {
-                console.log('📂 載入本地 temp-team-members.json 失敗:', tempError.message);
-            }
-
-            // 2. 如果沒有載入成功，從本地快取載入
-            if (!data) {
-                const cachedData = localStorage.getItem('cachedTeamMembers');
-                if (cachedData) {
-                    try {
-                        data = JSON.parse(cachedData);
-                        console.log('📋 載入本地快取資料');
-                    } catch (e) {
-                        console.error('本地快取資料解析失敗:', e);
-                        data = null;
-                    }
-                }
-            }
-
-            // 3. 如果還是沒有資料，從 Google Drive 載入
-            if (!data && window.googleDriveAPI) {
+            // 1. 優先從 Google Drive 載入 (確保資料最新)
+            if (window.googleDriveAPI) {
                 // 確保已登入 Google Drive
                 if (!window.googleDriveAPI.isAuthenticated) {
                     console.log('🔐 需要登入 Google Drive 來載入團隊資料');
@@ -82,24 +53,50 @@ class TeamDataManager {
                 }
 
                 try {
+                    console.log('☁️ 優先從 Google Drive 載入團隊成員資料...');
                     const driveContent = await window.googleDriveAPI.retryWithReAuth(
                         () => window.googleDriveAPI.loadFile('team-members.json')
                     );
                     if (driveContent) {
                         // 處理包裝格式的資料 (從 saveFile 儲存的格式)
                         data = driveContent.data || driveContent;
-                        // 儲存到本地快取 (儲存原始格式)
+                        // 儲存到本地快取作為備份
                         localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
-                    } else {
-                        throw new Error('Google Drive 中找不到 team-members.json');
+                        console.log('✅ 從 Google Drive 載入團隊成員資料成功');
                     }
                 } catch (driveError) {
-                    throw new Error(`Google Drive 載入失敗: ${driveError.message}`);
+                    console.warn('⚠️ Google Drive 載入失敗，嘗試使用備份:', driveError.message);
                 }
             }
 
+            // 2. 如果 Google Drive 載入失敗，使用本地快取作為備份
+            if (!data) {
+                const cachedData = localStorage.getItem('cachedTeamMembers');
+                if (cachedData) {
+                    try {
+                        data = JSON.parse(cachedData);
+                        console.log('📋 使用本地快取資料 (備份)');
+                    } catch (e) {
+                        console.error('本地快取資料解析失敗:', e);
+                        data = null;
+                    }
+                }
+            }
 
-            // 4. 如果還是沒有資料，必須有 Google Drive 資料
+            // 3. 最後才嘗試本地檔案 (僅作為後備)
+            if (!data) {
+                try {
+                    const response = await fetch('./temp-team-members.json?v=' + Date.now());
+                    if (response.ok) {
+                        data = await response.json();
+                        console.log('📂 使用本地檔案資料 (後備)');
+                    }
+                } catch (tempError) {
+                    console.log('📂 本地檔案載入失敗:', tempError.message);
+                }
+            }
+
+            // 4. 如果還是沒有資料，必須有資料才能運作
             if (!data) {
                 throw new Error('無法載入團隊資料，請確認已登入 Google Drive 且資料存在');
             }
@@ -149,7 +146,7 @@ class TeamDataManager {
         try {
             let data = null;
 
-            // 必須從 Google Drive 載入
+            // 1. 優先從 Google Drive 載入 (確保資料最新)
             if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
                 // 如果未登入，嘗試自動登入
                 if (!window.googleDriveAPI.isAuthenticated) {
@@ -162,38 +159,51 @@ class TeamDataManager {
                 // 如果已登入，載入雲端資料
                 if (window.googleDriveAPI.isAuthenticated) {
                     try {
-                    const driveContent = await window.googleDriveAPI.retryWithReAuth(
-                        () => window.googleDriveAPI.loadFile('project-assignments.json')
-                    );
-                    if (driveContent) {
-                        // 處理包裝格式的資料 (從 saveFile 儲存的格式)
-                        data = driveContent.data || driveContent;
+                        console.log('☁️ 優先從 Google Drive 載入專案配置...');
+                        const driveContent = await window.googleDriveAPI.retryWithReAuth(
+                            () => window.googleDriveAPI.loadFile('project-assignments.json')
+                        );
+                        if (driveContent) {
+                            // 處理包裝格式的資料 (從 saveFile 儲存的格式)
+                            data = driveContent.data || driveContent;
 
-                        // 驗證資料結構
-                        if (data && data.assignments && typeof data.assignments === 'object') {
-                            const assignmentCount = Object.keys(data.assignments).length;
-                            if (assignmentCount > 0) {
+                            // 驗證資料結構
+                            if (data && data.assignments && typeof data.assignments === 'object') {
+                                const assignmentCount = Object.keys(data.assignments).length;
+                                console.log(`✅ 從 Google Drive 載入專案配置成功 (${assignmentCount} 個專案)`);
                             } else {
-                                data = null; // 強制使用本地檔案
+                                console.warn('⚠️ Google Drive 資料格式異常');
+                                data = null;
                             }
-                        } else {
-                            data = null; // 強制使用本地檔案
                         }
-                    }
                     } catch (driveError) {
-                        console.log('Google Drive 載入失敗，改用本地檔案:', driveError.message);
+                        console.warn('⚠️ Google Drive 載入失敗，嘗試使用備份:', driveError.message);
                     }
                 }
             }
 
-            // 如果 Google Drive 沒有資料，嘗試從本地載入
+            // 2. 如果 Google Drive 沒有資料，使用本地快取作為備份
             if (!data) {
-                console.log('⚠️ Google Drive 無資料，嘗試從本地 config 載入...');
+                const cachedData = localStorage.getItem('teamAssignments');
+                if (cachedData) {
+                    try {
+                        data = { assignments: JSON.parse(cachedData) };
+                        console.log('📋 使用本地快取資料 (備份)');
+                    } catch (e) {
+                        console.error('本地快取資料解析失敗:', e);
+                        data = null;
+                    }
+                }
+            }
+
+            // 3. 最後才嘗試本地檔案 (僅作為後備)
+            if (!data) {
+                console.log('📂 嘗試從本地檔案載入 (後備)...');
                 try {
                     const response = await fetch('config/project-assignments.json');
                     if (response.ok) {
                         data = await response.json();
-                        console.log('✅ 從本地 config 載入專案分配資料成功');
+                        console.log('✅ 從本地檔案載入專案配置成功');
                     } else {
                         throw new Error('本地檔案載入失敗');
                     }
@@ -329,35 +339,23 @@ class TeamDataManager {
                     lastSync: new Date().toISOString()
                 };
 
-                // 🚫 完全禁用自動上傳，防止資料遺失
-                console.error('🚫 自動 Push 已完全禁用以防止專案備註遺失');
-                console.log('📋 請手動檢查資料完整性後使用首頁的手動同步功能');
+                // 驗證專案備註完整性
                 console.log('📊 當前資料統計:');
                 console.log('  - 專案數量:', Object.keys(assignmentData.assignments).length);
 
-                // 檢查專案備註
                 let projectsWithNotes = 0;
                 Object.keys(assignmentData.assignments).forEach(projectId => {
                     if (assignmentData.assignments[projectId].notes) {
                         projectsWithNotes++;
                         console.log(`  - ${projectId}: 有專案備註 ✅`);
-                    } else {
-                        console.log(`  - ${projectId}: 無專案備註 ❌`);
                     }
                 });
                 console.log(`📝 有專案備註的專案: ${projectsWithNotes}/${Object.keys(assignmentData.assignments).length}`);
 
-                // 不執行實際上傳
-                return;
-
-                // 驗證上傳的資料是否包含專案備註
-                console.log('🔍 驗證上傳的專案備註:');
-                Object.keys(assignmentData.assignments).forEach(projectId => {
-                    const project = assignmentData.assignments[projectId];
-                    if (project.notes) {
-                        console.log(`  ✅ ${projectId}: 專案備註已包含在上傳資料中`);
-                    }
-                });
+                // 同步到 Google Drive
+                console.log('☁️ 開始同步專案配置到 Google Drive...');
+                await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
+                console.log('☁️ 專案配置已同步到 Google Drive');
 
                 // 更新同步狀態顯示
                 const syncBtn = document.getElementById('syncBtn');
