@@ -2849,7 +2849,7 @@
             }
         });
         
-        // 檢查 Session 超時（30分鐘）
+        // 檢查 Session 超時（2小時）
         function checkSessionTimeout() {
             const loginTime = sessionStorage.getItem('LOGIN_TIME');
             const isAuthenticated = sessionStorage.getItem('KEY_AUTHENTICATED') === 'true';
@@ -2857,7 +2857,7 @@
             if (isAuthenticated && loginTime) {
                 const now = Date.now();
                 const sessionAge = now - parseInt(loginTime);
-                const timeout = 30 * 60 * 1000; // 30分鐘
+                const timeout = 2 * 60 * 60 * 1000; // 2小時
 
                 if (sessionAge > timeout) {
                     alert('會話已過期，請重新登入');
