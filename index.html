@@ -1431,7 +1431,12 @@
 
                 const currentMember = project.members[memberId];
                 if (!currentMember) {
-                    throw new Error(`找不到成員: ${memberId}`);
+                    console.error('找不到成員:', {
+                        projectId,
+                        memberId,
+                        availableMembers: Object.keys(project.members)
+                    });
+                    throw new Error(`找不到成員: ${memberId}\n專案中現有成員: ${Object.keys(project.members).join(', ')}`);
                 }
 
                 // 生成可用成員選項
@@ -2068,8 +2073,9 @@
                     // 記錄角色變更歷程 - 成員移除
                     if (window.teamManagement && typeof window.teamManagement.addMemberChangeHistory === 'function') {
                         // 取得真實成員姓名
-                        const oldMemberName = window.teamDataManager.getAllMembers()[oldMemberId]?.name || oldMemberId;
-                        const newMemberName = window.teamDataManager.getAllMembers()[newMemberId]?.name || newMemberId;
+                        const allMembers = teamDataManager.getAllMembers();
+                        const oldMemberName = allMembers[oldMemberId]?.name || oldMemberId;
+                        const newMemberName = allMembers[newMemberId]?.name || newMemberId;
 
                         window.teamManagement.addMemberChangeHistory(projectId, {
                             action: 'member_removed',
@@ -2095,7 +2101,8 @@
                     // 記錄角色變更歷程
                     if (oldRole !== newRole && window.teamManagement && typeof window.teamManagement.addMemberChangeHistory === 'function') {
                         // 取得真實成員姓名
-                        const memberName = window.teamDataManager.getAllMembers()[oldMemberId]?.name || oldMemberId;
+                        const allMembers = teamDataManager.getAllMembers();
+                        const memberName = allMembers[oldMemberId]?.name || oldMemberId;
 
                         window.teamManagement.addMemberChangeHistory(projectId, {
                             action: 'role_changed',
