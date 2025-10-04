@@ -78,11 +78,21 @@
   "FOLDER_ID": "您的-google-drive-資料夾-id",
   "SCOPES": "https://www.googleapis.com/auth/drive.file"
 }'></textarea>
-                        <small class="text-muted">Google Drive API 設定，僅在瀏覽器中使用</small>
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            必須是有效的 JSON 格式：使用雙引號、無註解、最後一項無逗號
+                        </small>
                         <div class="mt-2">
                             <a href="setup-gdrive.html" target="_blank" class="btn btn-outline-primary btn-sm">
                                 <i class="fab fa-google-drive me-1"></i>使用圖形化設定界面
                             </a>
+                            <button type="button" class="btn btn-outline-secondary btn-sm ms-2" onclick="document.getElementById('googleConfigInput').value = `{
+  \"CLIENT_ID\": \"您的-client-id.apps.googleusercontent.com\",
+  \"FOLDER_ID\": \"您的-folder-id\",
+  \"SCOPES\": \"https://www.googleapis.com/auth/drive.file\"
+}`">
+                                <i class="fas fa-clipboard"></i> 填入範本
+                            </button>
                         </div>
                     </div>
 
@@ -2731,10 +2741,27 @@
             try {
                 googleConfig = JSON.parse(googleConfigJSON);
                 if (!googleConfig.CLIENT_ID || !googleConfig.FOLDER_ID || !googleConfig.SCOPES) {
-                    throw new Error('設定格式不完整');
+                    throw new Error('設定格式不完整，必須包含 CLIENT_ID、FOLDER_ID 和 SCOPES');
                 }
             } catch (error) {
-                document.getElementById('keyErrorText').textContent = `Google Drive 設定格式錯誤：${error.message}`;
+                let errorMessage = `Google Drive 設定格式錯誤：${error.message}`;
+                
+                // 提供更詳細的錯誤提示
+                if (error.message.includes('Unexpected')) {
+                    errorMessage += '\n\n常見問題：\n';
+                    errorMessage += '• 確保 JSON 格式正確（使用雙引號，不是單引號）\n';
+                    errorMessage += '• 移除所有註解（JSON 不支援 // 或 /* */ 註解）\n';
+                    errorMessage += '• 檢查最後一個屬性後不要有多餘的逗號\n';
+                    errorMessage += '• 確保所有的大括號和引號都正確配對\n\n';
+                    errorMessage += '正確格式範例：\n{\n';
+                    errorMessage += '  "CLIENT_ID": "您的-client-id.apps.googleusercontent.com",\n';
+                    errorMessage += '  "FOLDER_ID": "您的-folder-id",\n';
+                    errorMessage += '  "SCOPES": "https://www.googleapis.com/auth/drive.file"\n';
+                    errorMessage += '}';
+                }
+                
+                document.getElementById('keyErrorText').textContent = errorMessage;
+                document.getElementById('keyErrorText').style.whiteSpace = 'pre-wrap';
                 errorDiv.classList.remove('d-none');
                 successDiv.classList.add('d-none');
                 return;
