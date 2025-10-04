@@ -173,6 +173,53 @@ class DevLogUI {
         document.getElementById('refreshBtn').addEventListener('click', () => this.refresh());
         document.getElementById('syncBtn').addEventListener('click', () => this.push());
         document.getElementById('pullBtn').addEventListener('click', () => this.pull());
+
+        // 監聽 localStorage 變更（跨視窗通信）
+        window.addEventListener('storage', async (event) => {
+            if (event.key === 'teamUpdateSignal' && event.newValue) {
+                try {
+                    const signal = JSON.parse(event.newValue);
+                    console.log('🔄 研發記錄簿收到更新信號:', signal);
+
+                    if (signal.action === 'teamDataUpdate' && signal.source === 'teamManagement') {
+                        console.log('🔄 執行完整重新載入...');
+                        // 重新載入 teamDataManager 的資料
+                        if (window.teamDataManager) {
+                            await window.teamDataManager.init();
+                        }
+                        // 重新載入研發記錄簿資料
+                        await this.loadData();
+                        console.log('✅ 研發記錄簿已完整重新載入');
+                    }
+                } catch (error) {
+                    console.error('❌ 處理更新信號失敗:', error);
+                }
+            }
+        });
+
+        // 定期檢查 localStorage 更新（同視窗內的備用機制）
+        setInterval(async () => {
+            try {
+                const signal = localStorage.getItem('teamUpdateSignal');
+                if (signal) {
+                    const updateData = JSON.parse(signal);
+                    const now = Date.now();
+                    // 如果信號是最近 1 秒內的，執行更新
+                    if (now - updateData.timestamp < 1000 && updateData.source === 'teamManagement') {
+                        console.log('🔄 檢測到專案更新信號，執行完整重新載入...');
+                        // 重新載入 teamDataManager 的資料
+                        if (window.teamDataManager) {
+                            await window.teamDataManager.init();
+                        }
+                        // 重新載入研發記錄簿資料
+                        await this.loadData();
+                        console.log('✅ 研發記錄簿已完整重新載入');
+                    }
+                }
+            } catch (e) {
+                // 忽略解析錯誤
+            }
+        }, 500);
     }
 
     /**

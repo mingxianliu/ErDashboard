@@ -137,22 +137,13 @@
     <script src="js/crypto-auth.js?v=20250918p"></script>
     <script src="js/markdown-reader.js?v=20250919d"></script>
     <script>
-        // 嘗試靜默載入 config.js（避免 404 錯誤顯示在 Console）
-        fetch('js/config.js?v=20250923', { method: 'HEAD' })
-            .then(response => {
-                if (response.ok) {
-                    // 檔案存在，動態載入
-                    const configScript = document.createElement('script');
-                    configScript.src = 'js/config.js?v=20250923';
-                    document.head.appendChild(configScript);
-                    console.log('✅ 已載入本地 config.js');
-                } else {
-                    console.log('ℹ️ 本地 config.js 未找到，將使用手動設定模式');
-                }
-            })
-            .catch(() => {
-                console.log('ℹ️ 本地 config.js 未找到，將使用手動設定模式');
-            });
+        // 嘗試載入 config.js (本地版本)，如果失敗則忽略 (線上版本)
+        const configScript = document.createElement('script');
+        configScript.src = 'js/config.js?v=20250923';
+        configScript.onerror = () => {
+            console.log('⚠️ config.js 未找到，將使用手動設定模式');
+        };
+        document.head.appendChild(configScript);
     </script>
     <script src="js/google-drive-api.js?v=20250923b-1758618068"></script>
     <script src="protect-project-assignments.js?v=20250924" onerror="console.error('❌ 載入保護腳本失敗')"></script>
@@ -1345,37 +1336,10 @@
                     assignments[projectId].notes = JSON.stringify(notesList);
                     assignments[projectId].lastUpdated = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
-                    // 儲存變更到 localStorage
-                    localStorage.setItem('teamAssignments', JSON.stringify(assignments));
-                    console.log('✅ 專案進度已儲存到 localStorage');
+                    // 儲存變更
+                    await teamDataManager.saveLocalChanges();
 
-                    // 直接同步到 Google Drive（繞過 TeamDataManager 的禁用限制）
-                    let syncStatus = '';
-                    if (window.googleDriveAPI && window.googleDriveAPI.isAuthenticated) {
-                        try {
-                            window._progressUpdate = true; // 設置標記，告知保護腳本這是進度更新
-
-                            const assignmentData = {
-                                assignments: assignments,
-                                constraints: {},
-                                lastSync: new Date().toISOString()
-                            };
-
-                            console.log('📊 專案進度更新：開始同步到 Google Drive...');
-                            await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
-                            console.log('✅ 專案進度已成功同步到 Google Drive');
-                            syncStatus = '\n✅ 已同步到 Google Drive';
-                        } catch (error) {
-                            console.error('❌ 同步專案進度失敗:', error);
-                            syncStatus = `\n❌ 同步失敗: ${error.message}`;
-                        } finally {
-                            window._progressUpdate = false;
-                        }
-                    } else {
-                        syncStatus = '\n⚠️ Google Drive 未登入，僅儲存到本地';
-                    }
-
-                    alert(`專案進度已更新為 ${progress}%\n備註已儲存 (共 ${notesList.length} 筆)${syncStatus}`);
+                    alert(`專案進度已更新為 ${progress}%\n備註已儲存 (共 ${notesList.length} 筆)`);
                 } else {
                     throw new Error('找不到指定的專案');
                 }
@@ -3345,20 +3309,7 @@
                         throw new Error(`${fileName} JSON 解析失敗: ${parseError.message}`);
                     }
 
-                    // 如果是 project-assignments.json，設置進度更新標記以繞過保護
-                    if (fileName === 'project-assignments.json') {
-                        window._progressUpdate = true;
-                        console.log('📊 設置進度更新標記以同步專案分配資料');
-                    }
-
-                    try {
-                        await window.googleDriveAPI.saveFile(fileName, dataToSave);
-                    } finally {
-                        // 清除標記
-                        if (fileName === 'project-assignments.json') {
-                            window._progressUpdate = false;
-                        }
-                    }
+                    await window.googleDriveAPI.saveFile(fileName, dataToSave);
 
                     syncResults.push({
                         file: fileName,

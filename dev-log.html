@@ -214,18 +214,27 @@
     <script src="js/crypto-auth.js?v=20250918p"></script>
     <script src="js/markdown-reader.js?v=20250919d"></script>
     <script>
-        // 嘗試載入 config.js
-        const configScript = document.createElement('script');
-        configScript.src = 'js/config.js?v=20250918t';
-        configScript.onerror = () => {
-            console.log('⚠️ config.js 未找到，將使用手動設定模式');
-        };
-        document.head.appendChild(configScript);
+        // 嘗試靜默載入 config.js（避免 404 錯誤顯示在 Console）
+        fetch('js/config.js?v=20250918t', { method: 'HEAD' })
+            .then(response => {
+                if (response.ok) {
+                    // 檔案存在，動態載入
+                    const configScript = document.createElement('script');
+                    configScript.src = 'js/config.js?v=20250918t';
+                    document.head.appendChild(configScript);
+                    console.log('✅ 已載入本地 config.js');
+                } else {
+                    console.log('ℹ️ 本地 config.js 未找到，將使用手動設定模式');
+                }
+            })
+            .catch(() => {
+                console.log('ℹ️ 本地 config.js 未找到，將使用手動設定模式');
+            });
     </script>
     <script src="js/google-drive-api.js?v=20250923a"></script>
     <script src="js/team-data-manager.js?v=20250918u"></script>
     <script src="js/dev-log.js?v=20250923c"></script>
-    <script src="js/dev-log-ui.js?v=20250923g"></script>
+    <script src="js/dev-log-ui.js?v=20250103b"></script>
     <script>
         // 初始化研發記錄簿
         document.addEventListener('DOMContentLoaded', async () => {
