@@ -3347,8 +3347,17 @@
 
                 await pushLocalFilesToGoogleDrive();
 
+                // 檢查待測試狀態並顯示詳細訊息
+                const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
+                const pendingCount = Object.keys(pendingTests).filter(k => pendingTests[k].status).length;
+                
+                let successMessage = '本地檔案已推送到 Google Drive';
+                if (pendingCount > 0) {
+                    successMessage += `\n包含 ${pendingCount} 個專案的待測試狀態`;
+                }
+
                 // 成功訊息
-                showSyncToast('推送成功', '本地檔案已推送到 Google Drive', 'success');
+                showSyncToast('推送成功', successMessage, 'success');
 
             } catch (error) {
                 console.error('同步失敗:', error);
@@ -3489,7 +3498,8 @@
             const filesToSync = [
                 'config/team-members.json',
                 'config/project-assignments.json',
-                'config/task-templates.json'
+                'config/task-templates.json',
+                'config/pending-tests.json'  // 新增：待測試狀態
             ];
 
             const syncResults = [];
@@ -3508,6 +3518,14 @@
                         }
                         const teamConfig = teamDataManager.teamConfig;
                         fileContent = JSON.stringify(teamConfig, null, 2);
+                    } else if (fileName === 'pending-tests.json') {
+                        // 從 localStorage 讀取待測試狀態
+                        const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
+                        fileContent = JSON.stringify({
+                            tests: pendingTests,
+                            lastSync: new Date().toISOString()
+                        }, null, 2);
+                        console.log('📋 準備同步待測試狀態:', Object.keys(pendingTests).length, '個專案');
                     } else if (fileName === 'project-assignments.json') {
                         // 使用全域 TeamDataManager 中的分配資料
                         const teamDataManager = window.globalTeamDataManager || window.teamDataManager;
@@ -3622,7 +3640,8 @@
             const filesToPull = [
                 'team-members.json',
                 'project-assignments.json',
-                'task-templates.json'
+                'task-templates.json',
+                'pending-tests.json'  // 新增：待測試狀態
             ];
 
             const pullResults = [];
@@ -3634,6 +3653,16 @@
                     const wrappedContent = await window.googleDriveAPI.loadFile(fileName);
 
                     if (!wrappedContent) {
+                        // 待測試狀態檔案可能不存在，這是正常的
+                        if (fileName === 'pending-tests.json') {
+                            console.log(`ℹ️ ${fileName} 不存在於 Google Drive（正常）`);
+                            pullResults.push({
+                                fileName: fileName,
+                                success: true,
+                                error: '檔案不存在（正常）'
+                            });
+                            continue;
+                        }
                         console.log(`⚠️ ${fileName} 無法從 Google Drive 載入（可能是 API 未準備或檔案不存在）`);
                         pullResults.push({
                             fileName: fileName,
@@ -3668,6 +3697,24 @@
                         storageKey = 'cachedProjectAssignments';
                     } else if (fileName === 'task-templates.json') {
                         storageKey = 'cachedTaskTemplates';
+                    } else if (fileName === 'pending-tests.json') {
+                        // 處理待測試狀態
+                        if (actualData.tests) {
+                            localStorage.setItem('pending-tests', JSON.stringify(actualData.tests));
+                            console.log('✅ 已從 Google Drive 拉取待測試狀態:', Object.keys(actualData.tests).length, '個專案');
+                            
+                            // 立即更新顯示
+                            Object.keys(actualData.tests).forEach(projectId => {
+                                if (actualData.tests[projectId] && actualData.tests[projectId].status) {
+                                    window.showProjectTestPending(projectId);
+                                }
+                            });
+                        }
+                        pullResults.push({
+                            fileName: fileName,
+                            success: true
+                        });
+                        continue;  // 跳過後續處理
                     }
 
                     if (storageKey) {
