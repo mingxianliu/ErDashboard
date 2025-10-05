@@ -12,14 +12,39 @@ class TestPendingManager {
     /**
      * 初始化管理器
      */
-    init() {
+    async init() {
         // 監聽 GitHub webhook 事件（跨頁面通訊）
         window.addEventListener('storage', (e) => this.handleStorageEvent(e));
+
+        // 從 Google Drive 載入待測試狀態
+        await this.loadPendingTestsFromDrive();
 
         // 頁面載入時恢復待測試狀態
         this.restorePendingTests();
 
         console.log('✅ 測試待辦標記管理器已初始化');
+    }
+
+    /**
+     * 從 Google Drive 載入待測試狀態
+     */
+    async loadPendingTestsFromDrive() {
+        if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+            try {
+                const unifiedData = await window.googleDriveAPI.loadFile('unified-data.json');
+                if (unifiedData && unifiedData.data && unifiedData.data.devLog && unifiedData.data.devLog.pendingTests) {
+                    // 合併 Google Drive 和 localStorage 的資料
+                    const localTests = this.getPendingTests();
+                    const driveTests = unifiedData.data.devLog.pendingTests;
+                    const mergedTests = { ...driveTests, ...localTests };
+
+                    localStorage.setItem(this.storageKey, JSON.stringify(mergedTests));
+                    console.log('☁️ 從 Google Drive 載入待測試狀態');
+                }
+            } catch (error) {
+                console.warn('⚠️ 從 Google Drive 載入待測試狀態失敗:', error);
+            }
+        }
     }
 
     /**
@@ -55,7 +80,7 @@ class TestPendingManager {
     /**
      * 隱藏所有專案待測試標記
      */
-    hideAllProjectTestPending() {
+    async hideAllProjectTestPending() {
         const indicators = document.querySelectorAll('[id^="project-test-"]');
         indicators.forEach(indicator => {
             indicator.style.display = 'none';
@@ -63,15 +88,35 @@ class TestPendingManager {
 
         // 清空 localStorage
         localStorage.removeItem(this.storageKey);
+
+        // 同步到 Google Drive
+        if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+            try {
+                const unifiedData = await window.googleDriveAPI.loadFile('unified-data.json');
+                if (unifiedData && unifiedData.data) {
+                    if (!unifiedData.data.devLog) {
+                        unifiedData.data.devLog = {};
+                    }
+                    unifiedData.data.devLog.pendingTests = {};
+                    unifiedData.metadata.lastSync = new Date().toISOString();
+
+                    await window.googleDriveAPI.saveFile('unified-data.json', unifiedData, 'unified');
+                    console.log('☁️ 已清除 Google Drive 的待測試狀態');
+                }
+            } catch (error) {
+                console.warn('⚠️ 清除 Google Drive 待測試狀態失敗:', error);
+            }
+        }
+
         console.log('🧹 清除所有專案測試標記');
     }
 
     /**
-     * 儲存待測試狀態到 localStorage
+     * 儲存待測試狀態到 localStorage 和 Google Drive
      * @param {string} projectId - 專案ID
      * @param {boolean} status - 待測試狀態
      */
-    savePendingTest(projectId, status) {
+    async savePendingTest(projectId, status) {
         const pendingTests = this.getPendingTests();
 
         if (status) {
@@ -83,7 +128,28 @@ class TestPendingManager {
             delete pendingTests[projectId];
         }
 
+        // 儲存到 localStorage
         localStorage.setItem(this.storageKey, JSON.stringify(pendingTests));
+
+        // 同步到 Google Drive unified-data.json
+        if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+            try {
+                const unifiedData = await window.googleDriveAPI.loadFile('unified-data.json');
+                if (unifiedData && unifiedData.data) {
+                    // 更新 devLog 中的 pendingTests
+                    if (!unifiedData.data.devLog) {
+                        unifiedData.data.devLog = {};
+                    }
+                    unifiedData.data.devLog.pendingTests = pendingTests;
+                    unifiedData.metadata.lastSync = new Date().toISOString();
+
+                    await window.googleDriveAPI.saveFile('unified-data.json', unifiedData, 'unified');
+                    console.log('☁️ 待測試狀態已同步到 Google Drive');
+                }
+            } catch (error) {
+                console.warn('⚠️ 同步待測試狀態到 Google Drive 失敗:', error);
+            }
+        }
     }
 
     /**
