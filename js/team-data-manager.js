@@ -44,43 +44,63 @@ class TeamDataManager {
             let data = null;
 
             // 1. 優先從 Google Drive 載入統一資料結構
-            if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
-                // 確保已登入 Google Drive
-                if (!window.googleDriveAPI.isAuthenticated) {
-                    console.log('🔐 需要登入 Google Drive 來載入團隊資料');
-                    const loginSuccess = await window.googleDriveAPI.signIn();
-                    if (!loginSuccess) {
-                        throw new Error('必須登入 Google Drive 才能使用系統');
-                    }
+            if (window.googleDriveAPI) {
+                // 等待 Google Drive API 準備好
+                if (!window.googleDriveAPI.isReady()) {
+                    console.log('⏳ 等待 Google Drive API 初始化...');
+                    await new Promise(resolve => {
+                        const checkReady = setInterval(() => {
+                            if (window.googleDriveAPI.isReady()) {
+                                clearInterval(checkReady);
+                                resolve();
+                            }
+                        }, 100);
+                        // 最多等待 5 秒
+                        setTimeout(() => {
+                            clearInterval(checkReady);
+                            resolve();
+                        }, 5000);
+                    });
                 }
 
-                try {
-                    // 嘗試載入統一資料結構
-                    console.log('☁️ 優先從 Google Drive 載入統一資料結構...');
-                    const unifiedContent = await window.googleDriveAPI.retryWithReAuth(
-                        () => window.googleDriveAPI.loadFile('unified-data.json')
-                    );
-
-                    if (unifiedContent) {
-                        console.log('✅ 發現統一資料結構，使用統一格式');
-                        this.useUnifiedStructure = true;
-                        this.unifiedData = unifiedContent.data || unifiedContent;
-
-                        // 從統一結構提取成員資料
-                        data = {
-                            members: this.unifiedData.members || {},
-                            roles: this.unifiedData.roles || {},
-                            groups: this.unifiedData.organization?.groups || {}
-                        };
-
-                        // 儲存到本地快取
-                        localStorage.setItem('cachedUnifiedData', JSON.stringify(this.unifiedData));
-                        localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
-                        console.log('✅ 統一資料結構載入成功');
+                if (window.googleDriveAPI.isReady()) {
+                    // 確保已登入 Google Drive
+                    if (!window.googleDriveAPI.isAuthenticated) {
+                        console.log('🔐 需要登入 Google Drive 來載入團隊資料');
+                        const loginSuccess = await window.googleDriveAPI.signIn();
+                        if (!loginSuccess) {
+                            throw new Error('必須登入 Google Drive 才能使用系統');
+                        }
                     }
-                } catch (unifiedError) {
-                    console.log('ℹ️ 統一資料結構不存在，使用舊格式');
-                    this.useUnifiedStructure = false;
+
+                    try {
+                        // 嘗試載入統一資料結構
+                        console.log('☁️ 優先從 Google Drive 載入統一資料結構...');
+                        const unifiedContent = await window.googleDriveAPI.retryWithReAuth(
+                            () => window.googleDriveAPI.loadFile('unified-data.json')
+                        );
+
+                        if (unifiedContent) {
+                            console.log('✅ 發現統一資料結構，使用統一格式');
+                            this.useUnifiedStructure = true;
+                            this.unifiedData = unifiedContent.data || unifiedContent;
+
+                            // 從統一結構提取成員資料
+                            data = {
+                                members: this.unifiedData.members || {},
+                                roles: this.unifiedData.roles || {},
+                                groups: this.unifiedData.organization?.groups || {}
+                            };
+
+                            // 儲存到本地快取
+                            localStorage.setItem('cachedUnifiedData', JSON.stringify(this.unifiedData));
+                            localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
+                            console.log('✅ 統一資料結構載入成功');
+                        }
+                    } catch (unifiedError) {
+                        console.log('ℹ️ 統一資料結構不存在，使用舊格式');
+                        this.useUnifiedStructure = false;
+                    }
                 }
 
                 // 如果沒有統一結構，使用舊格式
