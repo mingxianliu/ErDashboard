@@ -97,18 +97,18 @@ class GoogleDriveAPI {
                         this.isAuthenticated = true;
                         console.log('✅ 使用已儲存的有效 token');
 
-                        // 自動執行同步（不重新載入頁面，避免無限循環）
-                        setTimeout(async () => {
-                            try {
-                                console.log('🔄 自動執行初始同步...');
-                                await this.syncRoleNotesFromGitHub();
-                                if (typeof window.pullFilesFromGoogleDrive === 'function') {
-                                    await window.pullFilesFromGoogleDrive();
-                                }
-                            } catch (error) {
-                                console.error('初始同步失敗:', error);
-                            }
-                        }, 1000); // 延遲1秒，確保頁面準備好
+                        // ❌ 已禁用：自動執行同步（syncRoleNotesFromGitHub 會觸發 403）
+                        // setTimeout(async () => {
+                        //     try {
+                        //         console.log('🔄 自動執行初始同步...');
+                        //         await this.syncRoleNotesFromGitHub();
+                        //         if (typeof window.pullFilesFromGoogleDrive === 'function') {
+                        //             await window.pullFilesFromGoogleDrive();
+                        //         }
+                        //     } catch (error) {
+                        //         console.error('初始同步失敗:', error);
+                        //     }
+                        // }, 1000);
                     } else {
                         // Token 無效，清除它
                         sessionStorage.removeItem('google_access_token');
@@ -249,10 +249,10 @@ class GoogleDriveAPI {
         try {
             console.log('🔄 登入成功，自動同步最新資料...');
 
-            // 1. 先同步 GitHub 上的角色備註
-            await this.syncRoleNotesFromGitHub();
+            // ❌ 已禁用：GitHub 角色備註同步（會觸發 403 錯誤）
+            // await this.syncRoleNotesFromGitHub();
 
-            // 2. 然後同步 Google Drive 資料
+            // 同步 Google Drive 資料
             if (typeof window.pullFilesFromGoogleDrive === 'function') {
                 await window.pullFilesFromGoogleDrive();
                 console.log('✅ Google Drive 同步完成');
