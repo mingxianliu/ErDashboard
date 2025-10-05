@@ -271,21 +271,60 @@ class DevLogUI {
             // 嘗試載入實際專案資料
             let loaded = false;
 
-            // 方法1: 從 teamDataManager 讀取
-            if (window.teamDataManager && window.teamDataManager.assignments && Object.keys(window.teamDataManager.assignments).length > 0) {
-                console.log('📊 使用 teamDataManager 專案資料');
+            // 方法1: 從 Google Drive 的 unified-data.json 讀取（唯一真實來源）
+            if (window.googleDriveAPI && window.googleDriveAPI.isSignedIn()) {
+                try {
+                    console.log('📊 從 Google Drive unified-data.json 讀取專案資料...');
+                    const unifiedData = await window.googleDriveAPI.loadFile('unified-data.json');
+                    if (unifiedData && unifiedData.data?.projects) {
+                        // 轉換 unified 格式為 assignments 格式
+                        this.projects = {};
+                        for (const [projectId, project] of Object.entries(unifiedData.data.projects)) {
+                            this.projects[projectId] = {
+                                projectId: project.projectId,
+                                projectName: project.projectName,
+                                progress: project.progress,
+                                members: project.members,
+                                status: project.status
+                            };
+                        }
+                        console.log('✅ 從 unified-data.json 載入專案資料成功:', Object.keys(this.projects).length, '個專案');
+                        loaded = true;
+                    } else if (unifiedData && unifiedData.projects) {
+                        // 處理舊格式
+                        this.projects = {};
+                        for (const [projectId, project] of Object.entries(unifiedData.projects)) {
+                            this.projects[projectId] = {
+                                projectId: project.projectId,
+                                projectName: project.projectName,
+                                progress: project.progress,
+                                members: project.members,
+                                status: project.status
+                            };
+                        }
+                        console.log('✅ 從 unified-data.json 載入專案資料成功:', Object.keys(this.projects).length, '個專案');
+                        loaded = true;
+                    }
+                } catch (error) {
+                    console.warn('⚠️ 從 Google Drive 載入失敗:', error);
+                }
+            }
+
+            // 方法2: 從 teamDataManager 讀取（備援）
+            if (!loaded && window.teamDataManager && window.teamDataManager.assignments && Object.keys(window.teamDataManager.assignments).length > 0) {
+                console.log('📊 使用 teamDataManager 專案資料（備援）');
                 this.projects = window.teamDataManager.assignments;
                 loaded = true;
             }
 
-            // 方法2: 從 localStorage 讀取
+            // 方法3: 從 localStorage 讀取（備援）
             if (!loaded) {
                 try {
                     const localData = localStorage.getItem('project-assignments');
                     if (localData) {
                         const parsed = JSON.parse(localData);
                         if (parsed.assignments && Object.keys(parsed.assignments).length > 0) {
-                            console.log('📊 使用 localStorage 專案資料');
+                            console.log('📊 使用 localStorage 專案資料（備援）');
                             this.projects = parsed.assignments;
                             loaded = true;
                         }
@@ -295,14 +334,14 @@ class DevLogUI {
                 }
             }
 
-            // 方法3: 從 config 檔案讀取
+            // 方法4: 從 config 檔案讀取（備援）
             if (!loaded) {
                 try {
                     const response = await fetch('config/project-assignments.json');
                     if (response.ok) {
                         const data = await response.json();
                         if (data.assignments && Object.keys(data.assignments).length > 0) {
-                            console.log('📊 使用 config 檔案專案資料');
+                            console.log('📊 使用 config 檔案專案資料（備援）');
                             this.projects = data.assignments;
                             loaded = true;
                         }
