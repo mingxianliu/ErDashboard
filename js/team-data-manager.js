@@ -414,8 +414,74 @@ class TeamDataManager {
 
                 // 同步到 Google Drive
                 console.log('☁️ 開始同步專案配置到 Google Drive...');
+
+                // 1. 更新舊格式（向後兼容）
                 await window.googleDriveAPI.saveFile('project-assignments.json', assignmentData);
-                console.log('☁️ 專案配置已同步到 Google Drive');
+                console.log('☁️ project-assignments.json 已同步');
+
+                // 2. 同時更新 unified-data.json（如果存在）
+                if (this.useUnifiedStructure && this.unifiedData) {
+                    console.log('☁️ 同步更新 unified-data.json...');
+
+                    // 更新 unified-data 中的專案資料
+                    for (const [projectId, assignment] of Object.entries(this.assignments)) {
+                        if (!this.unifiedData.projects[projectId]) {
+                            // 新專案：建立完整結構
+                            this.unifiedData.projects[projectId] = {
+                                projectId: assignment.projectId || projectId,
+                                projectName: assignment.projectName || projectId,
+                                description: "",
+                                status: assignment.status || "active",
+                                priority: 10,
+                                progress: assignment.progress || 0,
+                                metadata: {
+                                    startDate: new Date().toISOString().split('T')[0],
+                                    lastUpdated: assignment.lastUpdated || new Date().toISOString().split('T')[0],
+                                    completeDate: null,
+                                    repository: `https://github.com/mingxianliu/${projectId}`,
+                                    featurePrefix: projectId.substring(0, 3).toUpperCase()
+                                },
+                                members: assignment.members || {},
+                                memberHistory: assignment.memberHistory || [],
+                                notes: assignment.notes || "[]",
+                                coreMetrics: {
+                                    frontend: { progress: 0, status: "🎯 規劃中", tasks: [] },
+                                    backend: { progress: 0, status: "🎯 規劃中", tasks: [] },
+                                    database: { progress: 0, status: "🎯 規劃中", tasks: [] },
+                                    deployment: { progress: 0, status: "🎯 規劃中", tasks: [] },
+                                    validation: { progress: 0, status: "🎯 規劃中", tasks: [] }
+                                },
+                                features: { completed: [], inProgress: [], planned: [] },
+                                issues: [],
+                                github: {
+                                    owner: "mingxianliu",
+                                    repo: projectId,
+                                    stars: 0,
+                                    forks: 0,
+                                    openIssues: 0,
+                                    language: "",
+                                    lastPush: null
+                                }
+                            };
+                        } else {
+                            // 更新現有專案
+                            this.unifiedData.projects[projectId].progress = assignment.progress;
+                            this.unifiedData.projects[projectId].members = assignment.members;
+                            this.unifiedData.projects[projectId].memberHistory = assignment.memberHistory;
+                            this.unifiedData.projects[projectId].status = assignment.status;
+                            this.unifiedData.projects[projectId].notes = assignment.notes;
+                            this.unifiedData.projects[projectId].metadata.lastUpdated = assignment.lastUpdated;
+                        }
+                    }
+
+                    // 更新統計
+                    this.unifiedData.config.statistics = assignmentData.statistics;
+                    this.unifiedData.metadata.lastSync = new Date().toISOString();
+
+                    // 儲存到 Google Drive
+                    await window.googleDriveAPI.saveFile('unified-data.json', this.unifiedData, 'unified');
+                    console.log('☁️ unified-data.json 已同步');
+                }
 
                 // 更新同步狀態顯示
                 const syncBtn = document.getElementById('syncBtn');
