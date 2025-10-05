@@ -255,12 +255,13 @@ class DevLogUI {
         try {
             this.projects = {};
 
-            // 完整的預設專案列表
+            // 完整的預設專案列表 (9個專案)
             const defaultProjects = {
                 'ErCore': { projectName: 'ErCore', projectId: 'ErCore' },
                 'ErNexus': { projectName: 'ErNexus', projectId: 'ErNexus' },
                 'ErShield': { projectName: 'ErShield', projectId: 'ErShield' },
                 'ErTidy': { projectName: 'ErTidy', projectId: 'ErTidy' },
+                'ErPP': { projectName: 'ErPP', projectId: 'ErPP' },
                 'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
                 'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
                 'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
@@ -340,12 +341,13 @@ class DevLogUI {
 
         } catch (error) {
             console.error('❌ 載入專案列表失敗:', error);
-            // 使用完整的預設專案
+            // 使用完整的預設專案 (9個專案)
             const defaultProjects = {
                 'ErCore': { projectName: 'ErCore', projectId: 'ErCore' },
                 'ErNexus': { projectName: 'ErNexus', projectId: 'ErNexus' },
                 'ErShield': { projectName: 'ErShield', projectId: 'ErShield' },
                 'ErTidy': { projectName: 'ErTidy', projectId: 'ErTidy' },
+                'ErPP': { projectName: 'ErPP', projectId: 'ErPP' },
                 'EZOOM': { projectName: 'EZOOM', projectId: 'EZOOM' },
                 'iFMS-Frontend': { projectName: 'iFMS-Frontend', projectId: 'iFMS-Frontend' },
                 'SyncBC-Monorepo': { projectName: 'SyncBC-Monorepo', projectId: 'SyncBC-Monorepo' },
