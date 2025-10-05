@@ -171,6 +171,7 @@
     <script src="js/team-ui-components.js?v=20250920k" onerror="console.error('❌ 載入 team-ui-components.js 失敗')"></script>
     <script src="js/team-management-main.js?v=20250927-fixed" onerror="console.error('❌ 載入 team-management-main.js 失敗')"></script>
     <script src="js/dev-log.js?v=20250923a" onerror="console.error('❌ 載入 dev-log.js 失敗')"></script>
+    <script src="js/test-pending-manager.js?v=20251005"></script>
     <script src="js/markdown-dashboard-simple.js?v=20250923"></script>
     <script>
         // 安全取得 TeamDataManager 實例的輔助函數
@@ -2985,73 +2986,7 @@
             }
         });
 
-        // 專案測試標記控制函數
-        window.showProjectTestPending = function(projectId) {
-            const indicator = document.getElementById(`project-test-${projectId}`);
-            if (indicator) {
-                indicator.style.display = 'inline-block';
-                console.log(`專案 ${projectId} 標記為待測試`);
-            }
-        };
-
-        window.hideProjectTestPending = function(projectId) {
-            const indicator = document.getElementById(`project-test-${projectId}`);
-            if (indicator) {
-                indicator.style.display = 'none';
-                console.log(`專案 ${projectId} 測試完成`);
-            }
-        };
-
-        window.hideAllProjectTestPending = function() {
-            const indicators = document.querySelectorAll('[id^="project-test-"]');
-            indicators.forEach(indicator => {
-                indicator.style.display = 'none';
-            });
-            console.log('清除所有專案測試標記');
-        };
-
-        // 監聽 GitHub webhook 事件（跨頁面通訊）
-        window.addEventListener('storage', function(e) {
-            if (e.key === 'github-webhook-event' && e.newValue) {
-                try {
-                    const event = JSON.parse(e.newValue);
-                    console.log('收到 GitHub webhook 事件:', event);
-
-                    if (event.action === 'push' && event.project) {
-                        console.log(`標記 ${event.project} 為待測試`);
-                        window.showProjectTestPending(event.project);
-                    } else if (event.action === 'merge') {
-                        console.log('清除所有待測試標記');
-                        window.hideAllProjectTestPending();
-                    }
-
-                    // 清除事件，避免重複處理
-                    localStorage.removeItem('github-webhook-event');
-                } catch (error) {
-                    console.error('處理 webhook 事件失敗:', error);
-                }
-            }
-        });
-
-        // 頁面載入時檢查待測試狀態
-        const checkAndRestorePendingTests = () => {
-            const pendingTests = JSON.parse(localStorage.getItem('pending-tests') || '{}');
-            Object.keys(pendingTests).forEach(projectId => {
-                if (pendingTests[projectId] && pendingTests[projectId].status) {
-                    console.log(`恢復待測試標記: ${projectId}`);
-                    window.showProjectTestPending(projectId);
-                }
-            });
-        };
-
-        // 初始檢查 - 快速恢復徽章
-        setTimeout(checkAndRestorePendingTests, 500);
-
-        // 再次檢查 - 確保在 Google Drive 同步後恢復
-        setTimeout(checkAndRestorePendingTests, 3000);
-
-        // 定期檢查 (每 30 秒)
-        setInterval(checkAndRestorePendingTests, 30000);
+        // 測試待辦標記功能已移至 js/test-pending-manager.js
 
         // 測試推送按鈕
         document.getElementById('testPushBtn').addEventListener('click', function() {
