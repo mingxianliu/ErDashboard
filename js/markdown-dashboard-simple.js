@@ -447,10 +447,18 @@ ${templateContent}`,
                             <div class="d-flex align-items-center">
                                 <span class="badge bg-warning text-dark me-2"
                                       id="project-test-${project.id}"
-                                      style="display: none;"
-                                      title="有新推送，待測試">
+                                      style="display: none; cursor: pointer;"
+                                      onclick="window.testPendingManager?.manualClearPending('${project.id}')"
+                                      title="點擊清除待測試標記">
                                     <i class="fas fa-exclamation-triangle"></i> 待測試
                                 </span>
+                                <button class="btn btn-sm btn-outline-warning me-2"
+                                        id="manual-test-btn-${project.id}"
+                                        onclick="window.testPendingManager?.manualMarkPending('${project.id}')"
+                                        title="手動標記為待測試"
+                                        style="padding: 2px 8px; font-size: 0.75rem;">
+                                    <i class="fas fa-vial"></i>
+                                </button>
                                 <span class="badge bg-primary me-2 progress-badge"
                                       onclick="editProgress('${project.id}', ${project.progress})"
                                       style="cursor: pointer;" title="點擊編輯進度">
