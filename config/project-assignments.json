@@ -91,6 +91,18 @@
       },
       "lastUpdated": "2025-09-24",
       "status": "active"
+    },
+    "ErPP": {
+      "projectId": "ErPP",
+      "projectName": "ErPP",
+      "progress": 45,
+      "members": {
+        "A-CI": { "memberId": "A-CI", "memberName": "KodesA", "role": "fullstack", "assignedDate": "2025-09-01", "tasks": ["P2P 核心開發"] },
+        "C-GI": { "memberId": "C-GI", "memberName": "JaymenightC", "role": "backend", "assignedDate": "2025-09-01", "tasks": ["後端微服務"] },
+        "B-CA": { "memberId": "B-CA", "memberName": "KersirAjenB", "role": "frontend", "assignedDate": "2025-09-10", "tasks": ["前端介面"] }
+      },
+      "lastUpdated": "2025-10-05",
+      "status": "active"
     }
   },
   "constraints": {
@@ -100,10 +112,10 @@
     "maxMembersPerRole": 3
   },
   "statistics": {
-    "totalAssignments": 15,
-    "activeProjects": 8,
+    "totalAssignments": 18,
+    "activeProjects": 9,
     "completedProjects": 0,
-    "membersInUse": 15,
-    "availableMembers": 3
+    "membersInUse": 18,
+    "availableMembers": 0
   }
 }

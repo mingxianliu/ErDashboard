@@ -11,6 +11,8 @@ class TeamDataManager {
         this.constraints = {};
         this.teamConfig = {};
         this.isInitialized = false;
+        this.useUnifiedStructure = false; // 是否使用統一資料結構
+        this.unifiedData = null; // 統一資料結構快取
     }
 
     async init() {
@@ -41,8 +43,8 @@ class TeamDataManager {
         try {
             let data = null;
 
-            // 1. 優先從 Google Drive 載入 (確保資料最新)
-            if (window.googleDriveAPI) {
+            // 1. 優先從 Google Drive 載入統一資料結構
+            if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
                 // 確保已登入 Google Drive
                 if (!window.googleDriveAPI.isAuthenticated) {
                     console.log('🔐 需要登入 Google Drive 來載入團隊資料');
@@ -53,19 +55,49 @@ class TeamDataManager {
                 }
 
                 try {
-                    console.log('☁️ 優先從 Google Drive 載入團隊成員資料...');
-                    const driveContent = await window.googleDriveAPI.retryWithReAuth(
-                        () => window.googleDriveAPI.loadFile('team-members.json')
+                    // 嘗試載入統一資料結構
+                    console.log('☁️ 優先從 Google Drive 載入統一資料結構...');
+                    const unifiedContent = await window.googleDriveAPI.retryWithReAuth(
+                        () => window.googleDriveAPI.loadFile('unified-data.json')
                     );
-                    if (driveContent) {
-                        // 處理包裝格式的資料 (從 saveFile 儲存的格式)
-                        data = driveContent.data || driveContent;
-                        // 儲存到本地快取作為備份
+
+                    if (unifiedContent) {
+                        console.log('✅ 發現統一資料結構，使用統一格式');
+                        this.useUnifiedStructure = true;
+                        this.unifiedData = unifiedContent.data || unifiedContent;
+
+                        // 從統一結構提取成員資料
+                        data = {
+                            members: this.unifiedData.members || {},
+                            roles: this.unifiedData.roles || {},
+                            groups: this.unifiedData.organization?.groups || {}
+                        };
+
+                        // 儲存到本地快取
+                        localStorage.setItem('cachedUnifiedData', JSON.stringify(this.unifiedData));
                         localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
-                        console.log('✅ 從 Google Drive 載入團隊成員資料成功');
+                        console.log('✅ 統一資料結構載入成功');
                     }
-                } catch (driveError) {
-                    console.warn('⚠️ Google Drive 載入失敗，嘗試使用備份:', driveError.message);
+                } catch (unifiedError) {
+                    console.log('ℹ️ 統一資料結構不存在，使用舊格式');
+                    this.useUnifiedStructure = false;
+                }
+
+                // 如果沒有統一結構，使用舊格式
+                if (!data) {
+                    try {
+                        console.log('☁️ 從 Google Drive 載入團隊成員資料 (舊格式)...');
+                        const driveContent = await window.googleDriveAPI.retryWithReAuth(
+                            () => window.googleDriveAPI.loadFile('team-members.json')
+                        );
+                        if (driveContent) {
+                            data = driveContent.data || driveContent;
+                            localStorage.setItem('cachedTeamMembers', JSON.stringify(data));
+                            console.log('✅ 從 Google Drive 載入團隊成員資料成功 (舊格式)');
+                        }
+                    } catch (driveError) {
+                        console.warn('⚠️ Google Drive 載入失敗，嘗試使用備份:', driveError.message);
+                    }
                 }
             }
 
@@ -146,8 +178,36 @@ class TeamDataManager {
         try {
             let data = null;
 
-            // 1. 優先從 Google Drive 載入 (確保資料最新)
-            if (window.googleDriveAPI && window.googleDriveAPI.isReady()) {
+            // 1. 如果使用統一結構，從 unifiedData 提取
+            if (this.useUnifiedStructure && this.unifiedData) {
+                console.log('📦 從統一資料結構提取專案配置...');
+
+                // 轉換統一結構的專案資料為舊格式
+                data = {
+                    assignments: {},
+                    constraints: this.unifiedData.config?.constraints || {},
+                    statistics: this.unifiedData.config?.statistics || {}
+                };
+
+                for (const [projectId, project] of Object.entries(this.unifiedData.projects || {})) {
+                    data.assignments[projectId] = {
+                        projectId: project.projectId,
+                        projectName: project.projectName,
+                        progress: project.progress,
+                        members: project.members,
+                        memberHistory: project.memberHistory,
+                        lastUpdated: project.metadata?.lastUpdated,
+                        status: project.status,
+                        notes: project.notes
+                    };
+                }
+
+                const assignmentCount = Object.keys(data.assignments).length;
+                console.log(`✅ 從統一資料結構提取專案配置成功 (${assignmentCount} 個專案)`);
+            }
+
+            // 2. 如果沒有統一結構，優先從 Google Drive 載入 (確保資料最新)
+            if (!data && window.googleDriveAPI && window.googleDriveAPI.isReady()) {
                 // 如果未登入，嘗試自動登入
                 if (!window.googleDriveAPI.isAuthenticated) {
                     const loginSuccess = await window.googleDriveAPI.signIn();
@@ -159,7 +219,7 @@ class TeamDataManager {
                 // 如果已登入，載入雲端資料
                 if (window.googleDriveAPI.isAuthenticated) {
                     try {
-                        console.log('☁️ 優先從 Google Drive 載入專案配置...');
+                        console.log('☁️ 優先從 Google Drive 載入專案配置 (舊格式)...');
                         const driveContent = await window.googleDriveAPI.retryWithReAuth(
                             () => window.googleDriveAPI.loadFile('project-assignments.json')
                         );
