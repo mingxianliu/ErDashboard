@@ -494,6 +494,17 @@ class TeamDataManager {
                         }
                     }
 
+                    // 3. 檢測並移除已刪除的專案
+                    const currentProjectIds = new Set(Object.keys(this.assignments));
+                    const unifiedProjectIds = Object.keys(this.unifiedData.projects);
+
+                    for (const projectId of unifiedProjectIds) {
+                        if (!currentProjectIds.has(projectId)) {
+                            console.log(`🗑️ 從 unified-data.json 刪除專案: ${projectId}`);
+                            delete this.unifiedData.projects[projectId];
+                        }
+                    }
+
                     // 更新統計
                     this.unifiedData.config.statistics = assignmentData.statistics;
                     this.unifiedData.metadata.lastSync = new Date().toISOString();
